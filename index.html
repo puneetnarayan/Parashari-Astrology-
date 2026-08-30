@@ -52,6 +52,32 @@
 
   .av-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #a04000; background: #fff6e8; font-weight: bold; font-size: 0.95em; color: #a04000; }
   .vedic-chart-cell .av-score-circle { width: 20px; height: 20px; font-size: 0.85em; margin-top: 2px; }
+
+  /* Distinct pastel borders for the "all divisional charts at once" grid */
+  .chart-block { border-radius: 10px; padding: 8px; border: 3px solid transparent; }
+  .cb-0  { border-color: #a9c6e8; background: #eef6ff; }
+  .cb-1  { border-color: #f2b8c6; background: #fff0f4; }
+  .cb-2  { border-color: #b8e0c8; background: #f0fbf4; }
+  .cb-3  { border-color: #f2d59b; background: #fff8ec; }
+  .cb-4  { border-color: #c9b8ea; background: #f6f1fd; }
+  .cb-5  { border-color: #9bd8d8; background: #ecfbfb; }
+  .cb-6  { border-color: #eaa8a0; background: #fdf1ef; }
+  .cb-7  { border-color: #b0d99b; background: #f3fbee; }
+  .cb-8  { border-color: #e8b0e0; background: #fcf0fb; }
+  .cb-9  { border-color: #b3c6f0; background: #f0f4fe; }
+  .cb-10 { border-color: #f0c48a; background: #fdf3e6; }
+  .cb-11 { border-color: #9cc9c0; background: #edf8f5; }
+  .cb-12 { border-color: #e0a9c4; background: #fcf0f6; }
+  .cb-13 { border-color: #a8d0e0; background: #eef7fb; }
+  .cb-14 { border-color: #d0c090; background: #faf6e9; }
+  .cb-15 { border-color: #c0aee0; background: #f6f0fc; }
+
+  .av-interpretation ul { margin: 4px 0; padding-left: 20px; }
+  .av-interpretation li { margin: 3px 0; }
+  .av-label-Excellent, .av-label-Favorable   { color: #2e7d32; font-weight: bold; }
+  .av-label-Good                              { color: #4c8c3c; font-weight: bold; }
+  .av-label-Average                           { color: #a06a00; font-weight: bold; }
+  .av-label-Weak, .av-label-Unfavorable       { color: #b23b3b; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -124,15 +150,15 @@
   </label>
 </div>
 <div class="vedic-chart-container" id="ashtakvargaChartOutput"></div>
+
+<h3>Interpretation (D1 Ashtakvarga)</h3>
+<div id="ashtakvargaInterpretationOutput" class="output-box pastel-mint av-interpretation"></div>
 </div>
 
 <div class="tab-panel" id="tabDivisional">
 <h2>Divisional (Varga) Charts</h2>
-<p>Generate a chart on the "Chart &amp; Analysis" tab first. All 16 classical Shodasavarga divisional charts, one at a time.</p>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. All 16 classical Shodasavarga divisional charts, shown together, each with its own border color.</p>
 <div class="controls">
-  <label>Divisional Chart:
-    <select id="divisionalVargaSelect"></select>
-  </label>
   <label>Layout:
     <select id="divisionalChartLayout">
       <option value="north" selected>North Indian</option>
@@ -153,6 +179,7 @@
 <script src="js/birthChart.js"></script>
 <script src="js/parashariCharts.js"></script>
 <script src="js/ashtakvarga.js"></script>
+<script src="js/ashtakvargaInterpretations.js"></script>
 <script src="js/divisionalCharts.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
