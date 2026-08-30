@@ -1,6 +1,15 @@
 // UI glue: tabs, birth input handling, Planet Table rendering, D1/D9 chart
-// rendering (South/North Indian). No astrology math lives here — everything
-// is delegated to the other modules.
+// rendering (South/North Indian), Ashtakvarga rendering. No astrology math
+// lives here — everything is delegated to the other modules.
+
+const DEFAULT_BIRTH = {
+  date: '1970-06-02',
+  time: '18:45:00',
+  lat: '26.7663',
+  lon: '83.3689',
+  timezoneMode: 'offset',
+  utcOffset: '+5:30'
+};
 
 const state = {
   chart: null // { planets, ascendant }
@@ -13,6 +22,10 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(btn.dataset.tab).classList.add('active');
+      // Every tab renders straight from state, so switching tabs always
+      // reflects the latest generated chart without recomputation.
+      if (btn.dataset.tab === 'tabCharts') renderCharts();
+      if (btn.dataset.tab === 'tabAshtakvarga') renderAshtakvargaTab();
     });
   });
 }
@@ -56,6 +69,31 @@ function initTimezoneModeToggle() {
     document.getElementById('ianaZoneLabel').hidden = !isIana;
     document.getElementById('utcOffsetLabel').hidden = isIana;
   });
+}
+
+function applyDefaultBirthInputs() {
+  document.getElementById('birthLocalDate').value = DEFAULT_BIRTH.date;
+  document.getElementById('birthLocalTime').value = DEFAULT_BIRTH.time;
+  document.getElementById('birthLat').value = DEFAULT_BIRTH.lat;
+  document.getElementById('birthLon').value = DEFAULT_BIRTH.lon;
+  document.getElementById('timezoneMode').value = DEFAULT_BIRTH.timezoneMode;
+  document.getElementById('utcOffset').value = DEFAULT_BIRTH.utcOffset;
+  document.getElementById('ianaZoneLabel').hidden = DEFAULT_BIRTH.timezoneMode !== 'iana';
+  document.getElementById('utcOffsetLabel').hidden = DEFAULT_BIRTH.timezoneMode === 'iana';
+}
+
+function clearOutputs() {
+  state.chart = null;
+  document.getElementById('ascendantOutput').innerHTML = '';
+  document.getElementById('planetTableOutput').innerHTML = '';
+  document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('ashtakvargaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('ashtakvargaChartOutput').innerHTML = '';
+}
+
+function resetForm() {
+  applyDefaultBirthInputs();
+  clearOutputs();
 }
 
 function birthDateUtcFromInputs() {
@@ -103,24 +141,26 @@ function renderPlanetTable(planets) {
     </table>`;
 }
 
-function renderSouthIndianChart(title, bySign) {
+function renderSouthIndianChart(title, bySign, scoresBySign) {
   const cells = SOUTH_INDIAN_GRID.map(sign => {
     if (!sign) return '<div class="vedic-chart-cell"></div>';
     const planets = bySign[sign] || [];
     const planetLines = planets.map(p => `${p.name} ${formatDegMinSec(p.longitude)}`).join('<br>');
-    return `<div class="vedic-chart-cell"><span class="sign-name">${sign.slice(0, 3)}</span>${planetLines}</div>`;
+    const scoreHtml = scoresBySign ? `<br><span class="av-score-circle">${scoresBySign[SIGNS.indexOf(sign)]}</span>` : '';
+    return `<div class="vedic-chart-cell"><span class="sign-name">${sign.slice(0, 3)}</span>${planetLines}${scoreHtml}</div>`;
   }).join('');
   return `<div class="chart-block"><h3>${title} (South Indian)</h3><div class="vedic-chart-grid">${cells}</div></div>`;
 }
 
-function renderNorthIndianChart(title, byHouse) {
+function renderNorthIndianChart(title, byHouse, scoresBySign) {
   const polygons = NORTH_INDIAN_HOUSES.map(h => {
     const data = byHouse[h.house];
     const sign = SIGNS[data.signIndex];
     const planetText = data.planets.map(p => `${p.name} ${formatDegMinSec(p.longitude)}`).join(' | ');
+    const scoreText = scoresBySign ? ` (${scoresBySign[data.signIndex]})` : '';
     return `
       <polygon points="${h.points}" fill="none" stroke="#555" stroke-width="1.5" />
-      <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}</text>
+      <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}${scoreText}</text>
       <text x="${h.label[0]}" y="${h.label[1] + 12}" text-anchor="middle" font-size="8">${planetText}</text>
     `;
   }).join('');
@@ -135,6 +175,7 @@ function renderNorthIndianChart(title, byHouse) {
 
 function renderCharts() {
   const output = document.getElementById('chartsOutput');
+  output.innerHTML = '';
   if (!state.chart) {
     output.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     return;
@@ -153,6 +194,65 @@ function renderCharts() {
   }
 }
 
+// House number (1-12 from Ascendant) for a given zodiac sign index.
+function houseNumberForSign(signIndex, ascSignIndex) {
+  return wholeSignHouseOf(signIndex, ascSignIndex);
+}
+
+function renderAshtakvargaTable(av, ascSignIndex) {
+  const el = document.getElementById('ashtakvargaTableOutput');
+  const houseHeaders = Array.from({ length: 12 }, (_, i) => `<th>H${i + 1}</th>`).join('');
+  const rows = AV_PLANETS.map(name => {
+    // Re-order each planet's 12-sign array into house order (H1=Ascendant's sign).
+    const byHouse = new Array(12);
+    for (let signIndex = 0; signIndex < 12; signIndex++) {
+      byHouse[houseNumberForSign(signIndex, ascSignIndex) - 1] = av.bav[name][signIndex];
+    }
+    return `<tr><td>${name}</td>${byHouse.map(v => `<td>${v}</td>`).join('')}<td><strong>${byHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+  }).join('');
+
+  const savByHouse = new Array(12);
+  for (let signIndex = 0; signIndex < 12; signIndex++) {
+    savByHouse[houseNumberForSign(signIndex, ascSignIndex) - 1] = av.sav[signIndex];
+  }
+  const savRow = `<tr><td><strong>Sarvashtakavarga</strong></td>${savByHouse.map(v => `<td><strong>${v}</strong></td>`).join('')}<td><strong>${savByHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Planet</th>${houseHeaders}<th>Total</th></tr></thead>
+      <tbody>${rows}${savRow}</tbody>
+    </table>`;
+}
+
+function renderAshtakvargaChart(av) {
+  const el = document.getElementById('ashtakvargaChartOutput');
+  el.innerHTML = '';
+  if (!state.chart) return;
+  const layout = document.getElementById('avChartLayout').value;
+  const { planets, ascendant } = state.chart;
+
+  if (layout === 'south') {
+    const d1BySign = buildD1ChartData(planets);
+    el.innerHTML = renderSouthIndianChart('Sarvashtakavarga', d1BySign, av.sav);
+  } else {
+    const d1ByHouse = buildD1NorthIndian(planets, ascendant.longitude);
+    el.innerHTML = renderNorthIndianChart('Sarvashtakavarga', d1ByHouse, av.sav);
+  }
+}
+
+function renderAshtakvargaTab() {
+  if (!state.chart) {
+    document.getElementById('ashtakvargaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('ashtakvargaChartOutput').innerHTML = '';
+    return;
+  }
+  const { planets, ascendant } = state.chart;
+  const av = computeAshtakvarga(planets, ascendant.longitude);
+  state.ashtakvarga = av;
+  renderAshtakvargaTable(av, av.ascendantSignIndex);
+  renderAshtakvargaChart(av);
+}
+
 function generateChart() {
   const statusEl = document.getElementById('ascendantOutput');
   try {
@@ -163,12 +263,42 @@ function generateChart() {
 
     const { planets, ascendant } = generateBirthChart(birthUtc, lat, lon);
     state.chart = { planets, ascendant };
+    // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
+    // re-rendered from this fresh state, so any change to the birth inputs
+    // automatically propagates everywhere the next time this runs.
     renderAscendant(ascendant);
     renderPlanetTable(planets);
     renderCharts();
+    renderAshtakvargaTab();
   } catch (err) {
+    state.chart = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
+    document.getElementById('planetTableOutput').innerHTML = '';
+    document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('ashtakvargaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('ashtakvargaChartOutput').innerHTML = '';
   }
+}
+
+// Auto-regenerate (debounced) whenever a birth input changes, so every tab
+// always reflects the latest entered data without requiring the button.
+function initAutoRegenerate() {
+  const inputIds = ['birthLocalDate', 'birthLocalTime', 'birthLat', 'birthLon', 'timezoneMode', 'ianaZone', 'utcOffset'];
+  let debounceTimer = null;
+  const trigger = () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const hasDate = document.getElementById('birthLocalDate').value;
+      const hasLat = document.getElementById('birthLat').value.trim() !== '';
+      const hasLon = document.getElementById('birthLon').value.trim() !== '';
+      if (hasDate && hasLat && hasLon) generateChart();
+    }, 400);
+  };
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', trigger);
+    el.addEventListener('change', trigger);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -176,6 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initEngineStatusBadge();
   populateIanaZones();
   initTimezoneModeToggle();
+  applyDefaultBirthInputs();
   document.getElementById('generateChartBtn').addEventListener('click', generateChart);
+  document.getElementById('resetBtn').addEventListener('click', resetForm);
   document.getElementById('chartLayout').addEventListener('change', renderCharts);
+  document.getElementById('avChartLayout').addEventListener('change', () => renderAshtakvargaChart(state.ashtakvarga));
+  initAutoRegenerate();
+  generateChart();
 });

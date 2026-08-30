@@ -49,6 +49,9 @@
   .vedic-chart-container { display: flex; flex-wrap: wrap; gap: 24px; }
   .chart-block { display: flex; flex-direction: column; gap: 8px; }
   .chart-block h3 { margin: 4px 0; }
+
+  .av-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #a04000; background: #fff6e8; font-weight: bold; font-size: 0.95em; color: #a04000; }
+  .vedic-chart-cell .av-score-circle { width: 20px; height: 20px; font-size: 0.85em; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -58,6 +61,7 @@
 <div class="tab-strip">
   <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
   <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
+  <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
 </div>
 
 <div class="tab-panel active" id="tabMain">
@@ -78,6 +82,7 @@
   <label id="ianaZoneLabel">Time zone: <select id="ianaZone"></select></label>
   <label id="utcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="utcOffset" placeholder="+5:30"></label><br><br>
   <button id="generateChartBtn">Generate Chart (Offline)</button>
+  <button id="resetBtn" type="button">Reset</button>
 </fieldset>
 <div id="ascendantOutput" class="output-box pastel-peach"></div>
 
@@ -100,6 +105,22 @@
 <div class="vedic-chart-container" id="chartsOutput"></div>
 </div>
 
+<div class="tab-panel" id="tabAshtakvarga">
+<h2>Ashtakvarga</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (per-planet bindus) and Sarvashtakavarga (total bindus) by house, counted from the Ascendant.</p>
+<div id="ashtakvargaTableOutput" class="output-box pastel-yellow"></div>
+<h3>Sarvashtakavarga Chart</h3>
+<div class="controls">
+  <label>Layout:
+    <select id="avChartLayout">
+      <option value="south">South Indian</option>
+      <option value="north">North Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="ashtakvargaChartOutput"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -109,6 +130,7 @@
 <script src="js/conjunctions.js"></script>
 <script src="js/birthChart.js"></script>
 <script src="js/parashariCharts.js"></script>
+<script src="js/ashtakvarga.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
