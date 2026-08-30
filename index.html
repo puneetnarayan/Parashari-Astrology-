@@ -94,6 +94,14 @@
 
   .condition-flag-on  { color: #a04000; font-weight: bold; }
   .condition-flag-off { color: #999; }
+
+  /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
+  .bav-weak       { background-color: #ffdcdc !important; }
+  .bav-average    { background-color: #fff6c9 !important; }
+  .bav-auspicious { background-color: #d9f2d9 !important; }
+  .bav-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #555; background: #fff; font-weight: bold; font-size: 0.85em; color: #333; }
+  .vedic-chart-cell .bav-score-circle { width: 18px; height: 18px; font-size: 0.8em; margin-top: 2px; }
+  .bav-legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.2); }
 </style>
 </head>
 <body>
@@ -107,6 +115,7 @@
   <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
   <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
   <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
+  <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
 </div>
 
 <div class="controls">
@@ -213,6 +222,30 @@
 <h3>4. Planetary Conditions: Dignity, Combustion &amp; Retrograde</h3>
 <p>Dignity = Exalted / Moolatrikona / Own Sign / Neutral / Debilitated, including whether an Exalted or Debilitated placement is "deep" (within 1° of the exact classical degree). Combust and Retrograde notes only appear when this chart actually has that condition for the planet.</p>
 <div id="planetConditionsOutput" class="output-box pastel-yellow"></div>
+</div>
+
+<div class="tab-panel" id="tabBhinnashtakavarga">
+<h2>Bhinnashtakavarga (All Planets)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (bindus, 0-8, per house) for each of the 7 classical planets, in table and chart form.</p>
+<div class="controls">
+  <span><span class="bav-legend-swatch bav-weak"></span>Weak (0-3 bindus)</span>
+  <span><span class="bav-legend-swatch bav-average"></span>Average (4-5 bindus)</span>
+  <span><span class="bav-legend-swatch bav-auspicious"></span>Auspicious (6-8 bindus)</span>
+</div>
+
+<h3>Table</h3>
+<div id="bavAllTableOutput" class="output-box pastel-yellow"></div>
+
+<h3>Charts</h3>
+<div class="controls">
+  <label>Layout:
+    <select id="bavAllChartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="bavAllChartOutput"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>

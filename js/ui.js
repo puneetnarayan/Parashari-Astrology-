@@ -29,6 +29,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabDivisional') renderDivisionalTab();
       if (btn.dataset.tab === 'tabStrength') renderStrengthTab();
       if (btn.dataset.tab === 'tabInterpretations') renderInterpretationsTab();
+      if (btn.dataset.tab === 'tabBhinnashtakavarga') renderBavAllTab();
     });
   });
 }
@@ -100,6 +101,8 @@ function clearOutputs() {
   document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
   document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
   document.getElementById('planetConditionsOutput').innerHTML = '';
+  document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('bavAllChartOutput').innerHTML = '';
 }
 
 function resetForm() {
@@ -163,28 +166,38 @@ function planetLabel(name) {
   return PLANET_ABBR[name] || name;
 }
 
-function renderSouthIndianChart(title, bySign, scoresBySign, borderClass) {
+// cellClassFn(sign) -> extra CSS class name for that sign's cell (e.g.
+// Bhinnashtakavarga strength shading). scoreCircleClass overrides the
+// default amber Ashtakvarga circle style (e.g. for a neutral BAV circle).
+function renderSouthIndianChart(title, bySign, scoresBySign, borderClass, cellClassFn, scoreCircleClass) {
   const cells = SOUTH_INDIAN_GRID.map(sign => {
     if (!sign) return '<div class="vedic-chart-cell"></div>';
     const planets = bySign[sign] || [];
     const planetLines = planets.map(p => `${planetLabel(p.name)} ${chartDegreeFormat(p.longitude)}`).join('<br>');
-    const scoreHtml = scoresBySign ? `<br><span class="av-score-circle">${scoresBySign[SIGNS.indexOf(sign)]}</span>` : '';
-    return `<div class="vedic-chart-cell"><span class="sign-name">${sign.slice(0, 3)}</span>${planetLines}${scoreHtml}</div>`;
+    const circleClass = scoreCircleClass || 'av-score-circle';
+    const scoreHtml = scoresBySign ? `<br><span class="${circleClass}">${scoresBySign[SIGNS.indexOf(sign)]}</span>` : '';
+    const extraClass = cellClassFn ? ' ' + cellClassFn(sign) : '';
+    return `<div class="vedic-chart-cell${extraClass}"><span class="sign-name">${sign.slice(0, 3)}</span>${planetLines}${scoreHtml}</div>`;
   }).join('');
   return `<div class="chart-block${borderClass ? ' ' + borderClass : ''}"><h3>${title} (South Indian)</h3><div class="vedic-chart-grid">${cells}</div></div>`;
 }
 
-function renderNorthIndianChart(title, byHouse, scoresBySign, borderClass) {
+// fillColorFn(signIndex) -> hex fill color for that house's polygon (e.g.
+// Bhinnashtakavarga strength shading). circleColors overrides the default
+// amber score-circle colors ({ fill, stroke, text }).
+function renderNorthIndianChart(title, byHouse, scoresBySign, borderClass, fillColorFn, circleColors) {
+  const colors = circleColors || { fill: '#fff6e8', stroke: '#a04000', text: '#a04000' };
   const polygons = NORTH_INDIAN_HOUSES.map(h => {
     const data = byHouse[h.house];
     const sign = SIGNS[data.signIndex];
     const planetText = data.planets.map(p => `${planetLabel(p.name)} ${chartDegreeFormat(p.longitude)}`).join(' | ');
+    const fill = fillColorFn ? fillColorFn(data.signIndex) : 'none';
     const scoreCircle = scoresBySign ? `
-      <circle cx="${h.label[0]}" cy="${h.label[1] + 22}" r="10" fill="#fff6e8" stroke="#a04000" stroke-width="1.5" />
-      <text x="${h.label[0]}" y="${h.label[1] + 26}" text-anchor="middle" font-weight="bold" font-size="11" fill="#a04000">${scoresBySign[data.signIndex]}</text>
+      <circle cx="${h.label[0]}" cy="${h.label[1] + 22}" r="10" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="1.5" />
+      <text x="${h.label[0]}" y="${h.label[1] + 26}" text-anchor="middle" font-weight="bold" font-size="11" fill="${colors.text}">${scoresBySign[data.signIndex]}</text>
     ` : '';
     return `
-      <polygon points="${h.points}" fill="none" stroke="#555" stroke-width="1.5" />
+      <polygon points="${h.points}" fill="${fill}" stroke="#555" stroke-width="1.5" />
       <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}</text>
       <text x="${h.label[0]}" y="${h.label[1] + 12}" text-anchor="middle" font-size="8">${planetText}</text>
       ${scoreCircle}
@@ -304,6 +317,72 @@ function renderAshtakvargaTab() {
 // palette defined in index.html (.cb-0 .. .cb-15).
 function borderClassForIndex(i) {
   return `cb-${i % 16}`;
+}
+
+// Bhinnashtakavarga strength banding (bindus, 0-8 per house): weak/average/
+// auspicious, matching the legend and CSS classes in the Bhinnashtakavarga tab.
+function bavStrengthClass(score) {
+  if (score <= 3) return 'bav-weak';
+  if (score <= 5) return 'bav-average';
+  return 'bav-auspicious';
+}
+function bavFillColor(score) {
+  if (score <= 3) return '#ffdcdc';
+  if (score <= 5) return '#fff6c9';
+  return '#d9f2d9';
+}
+const BAV_CIRCLE_COLORS = { fill: '#ffffff', stroke: '#555', text: '#333' };
+
+function renderBavAllTable(av, ascSignIndex) {
+  const el = document.getElementById('bavAllTableOutput');
+  const houseHeaders = Array.from({ length: 12 }, (_, i) => `<th>H${i + 1}</th>`).join('');
+  const rows = AV_PLANETS.map(name => {
+    const byHouse = new Array(12);
+    for (let signIndex = 0; signIndex < 12; signIndex++) {
+      byHouse[houseNumberForSign(signIndex, ascSignIndex) - 1] = av.bav[name][signIndex];
+    }
+    const cells = byHouse.map(v => `<td class="${bavStrengthClass(v)}">${v}</td>`).join('');
+    return `<tr><td>${name}</td>${cells}<td><strong>${byHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+  }).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Planet</th>${houseHeaders}<th>Total</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderBavAllCharts(av) {
+  const el = document.getElementById('bavAllChartOutput');
+  el.innerHTML = '';
+  if (!state.chart) return;
+  const layout = document.getElementById('bavAllChartLayout').value;
+  const { planets, ascendant } = state.chart;
+
+  el.innerHTML = AV_PLANETS.map((name, i) => {
+    const scores = av.bav[name];
+    const borderClass = borderClassForIndex(i);
+    if (layout === 'south') {
+      const d1BySign = buildD1ChartData(planets);
+      return renderSouthIndianChart(`${name} Bhinnashtakavarga`, d1BySign, scores, borderClass,
+        sign => bavStrengthClass(scores[SIGNS.indexOf(sign)]), 'bav-score-circle');
+    }
+    const d1ByHouse = buildD1NorthIndian(planets, ascendant.longitude);
+    return renderNorthIndianChart(`${name} Bhinnashtakavarga`, d1ByHouse, scores, borderClass,
+      signIndex => bavFillColor(scores[signIndex]), BAV_CIRCLE_COLORS);
+  }).join('');
+}
+
+function renderBavAllTab() {
+  if (!state.chart) {
+    document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('bavAllChartOutput').innerHTML = '';
+    return;
+  }
+  const { planets, ascendant } = state.chart;
+  const av = computeAshtakvarga(planets, ascendant.longitude);
+  state.ashtakvarga = av;
+  renderBavAllTable(av, av.ascendantSignIndex);
+  renderBavAllCharts(av);
 }
 
 function renderDivisionalTab() {
@@ -481,6 +560,7 @@ function generateChart() {
     renderDivisionalTab();
     renderStrengthTab();
     renderInterpretationsTab();
+    renderBavAllTab();
   } catch (err) {
     state.chart = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -496,6 +576,8 @@ function generateChart() {
     document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
     document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
     document.getElementById('planetConditionsOutput').innerHTML = '';
+    document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('bavAllChartOutput').innerHTML = '';
   }
 }
 
@@ -531,9 +613,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('chartLayout').addEventListener('change', renderCharts);
   document.getElementById('avChartLayout').addEventListener('change', () => renderAshtakvargaChart(state.ashtakvarga));
   document.getElementById('divisionalChartLayout').addEventListener('change', renderDivisionalTab);
+  document.getElementById('bavAllChartLayout').addEventListener('change', () => renderBavAllCharts(state.ashtakvarga));
   document.getElementById('showSecondsToggle').addEventListener('change', () => {
     renderCharts();
-    if (state.ashtakvarga) renderAshtakvargaChart(state.ashtakvarga);
+    if (state.ashtakvarga) {
+      renderAshtakvargaChart(state.ashtakvarga);
+      renderBavAllCharts(state.ashtakvarga);
+    }
     renderDivisionalTab();
   });
   initAutoRegenerate();
