@@ -93,7 +93,10 @@ function computeAscendant(date, latitude, longitude) {
   const lstRad = lst * Math.PI / 180;
   const y = -Math.cos(lstRad);
   const x = Math.sin(lstRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad);
-  let ascTropical = normalizeDegrees(Math.atan2(y, x) * 180 / Math.PI);
+  // atan2(y, x) here lands on the DESCENDANT (verified against Swiss
+  // Ephemeris across multiple latitudes/dates: consistently exactly 180°
+  // off) rather than the Ascendant, so add 180° to get the actual Ascendant.
+  let ascTropical = normalizeDegrees(Math.atan2(y, x) * 180 / Math.PI + 180);
   return normalizeDegrees(ascTropical - ayanamsa);
 }
 

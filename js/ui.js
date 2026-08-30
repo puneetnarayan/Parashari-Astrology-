@@ -645,4 +645,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   initAutoRegenerate();
   generateChart();
+  // The initial generateChart() above can run before Swiss Ephemeris
+  // finishes loading (it's async), in which case it silently used the
+  // lower-precision offline fallback engine. Once the real engine becomes
+  // ready, regenerate so every tab reflects the higher-precision result
+  // instead of leaving the fallback-computed chart in place indefinitely.
+  document.addEventListener('swisseph-ready', () => {
+    if (state.chart) generateChart();
+  });
 });
