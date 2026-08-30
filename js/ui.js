@@ -27,6 +27,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabCharts') renderCharts();
       if (btn.dataset.tab === 'tabAshtakvarga') renderAshtakvargaTab();
       if (btn.dataset.tab === 'tabDivisional') renderDivisionalTab();
+      if (btn.dataset.tab === 'tabStrength') renderStrengthTab();
     });
   });
 }
@@ -92,6 +93,8 @@ function clearOutputs() {
   document.getElementById('ashtakvargaChartOutput').innerHTML = '';
   document.getElementById('ashtakvargaInterpretationOutput').innerHTML = '';
   document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('relationsTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('strengthTableOutput').innerHTML = '';
 }
 
 function resetForm() {
@@ -320,6 +323,61 @@ function renderDivisionalTab() {
   }).join('');
 }
 
+function relationList(items) {
+  if (!items.length) return '—';
+  return items.map(i => `${i.name} <span class="rel-${i.relation}">(${i.relation})</span>`).join(', ');
+}
+
+function renderRelationsTable(strengthData) {
+  const el = document.getElementById('relationsTableOutput');
+  const rows = strengthData.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.sign}</td>
+      <td class="rel-${p.signRelation}">${p.signRelation}</td>
+      <td>${relationList(p.conjRelations)}</td>
+      <td>${relationList(p.aspectRelations)}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Planet</th><th>Sign</th><th>Sign Lord Relation</th><th>Conjunct With</th><th>Aspected By</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderStrengthTable(strengthData) {
+  const el = document.getElementById('strengthTableOutput');
+  const scoreCell = v => `<span class="${v >= 0 ? 'score-positive' : 'score-negative'}">${v >= 0 ? '+' : ''}${v}%</span>`;
+  const rows = strengthData.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td>${scoreCell(p.signScore)}</td>
+      <td>${scoreCell(p.conjScore)}</td>
+      <td>${scoreCell(p.aspectScore)}</td>
+      <td>${scoreCell(p.total)}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Planet</th><th>Sign Relation Score</th><th>Conjunction Score</th><th>Aspect Score</th><th>Total Strength</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderStrengthTab() {
+  if (!state.chart) {
+    document.getElementById('relationsTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('strengthTableOutput').innerHTML = '';
+    return;
+  }
+  const strengthData = computePlanetaryStrength(state.chart.planets);
+  renderRelationsTable(strengthData);
+  renderStrengthTable(strengthData);
+}
+
 function generateChart() {
   const statusEl = document.getElementById('ascendantOutput');
   try {
@@ -338,6 +396,7 @@ function generateChart() {
     renderCharts();
     renderAshtakvargaTab();
     renderDivisionalTab();
+    renderStrengthTab();
   } catch (err) {
     state.chart = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -347,6 +406,8 @@ function generateChart() {
     document.getElementById('ashtakvargaChartOutput').innerHTML = '';
     document.getElementById('ashtakvargaInterpretationOutput').innerHTML = '';
     document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('relationsTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('strengthTableOutput').innerHTML = '';
   }
 }
 
