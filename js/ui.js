@@ -99,6 +99,7 @@ function clearOutputs() {
   document.getElementById('lagnaInterpretationOutput').innerHTML = '';
   document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
   document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
+  document.getElementById('planetConditionsOutput').innerHTML = '';
 }
 
 function resetForm() {
@@ -399,7 +400,7 @@ function renderLagnaInterpretation(ascendant) {
 function renderPlanetInSignInterpretation(planets) {
   const el = document.getElementById('planetInSignInterpretationOutput');
   const rows = planets.map(p => {
-    const result = interpretPlanetInSign(p.name, p.sign);
+    const result = interpretPlanetInSign(p.name, p.sign, p.longitude);
     return `<tr><td>${p.name}</td><td>${p.sign}</td><td class="${dignityClass(result.dignity)}">${result.dignity}</td><td>${result.text}</td></tr>`;
   }).join('');
   el.innerHTML = `
@@ -421,17 +422,43 @@ function renderPlanetInHouseInterpretation(planets) {
     </table>`;
 }
 
+function flagCell(isOn, label) {
+  return `<span class="${isOn ? 'condition-flag-on' : 'condition-flag-off'}">${isOn ? label : 'No'}</span>`;
+}
+
+function renderPlanetConditions(planets) {
+  const el = document.getElementById('planetConditionsOutput');
+  const rows = planets.map(p => {
+    const result = interpretPlanetConditions(p);
+    return `
+      <tr>
+        <td>${p.name}</td>
+        <td class="${dignityClass(result.dignityTier)}">${result.dignityTier}</td>
+        <td>${flagCell(result.combust, 'Combust')}</td>
+        <td>${flagCell(result.retrograde, 'Retrograde')}</td>
+        <td>${result.text}</td>
+      </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Planet</th><th>Dignity</th><th>Combust</th><th>Retrograde</th><th>Notes</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
 function renderInterpretationsTab() {
   if (!state.chart) {
     document.getElementById('lagnaInterpretationOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
     document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
+    document.getElementById('planetConditionsOutput').innerHTML = '';
     return;
   }
   const { planets, ascendant } = state.chart;
   renderLagnaInterpretation(ascendant);
   renderPlanetInSignInterpretation(planets);
   renderPlanetInHouseInterpretation(planets);
+  renderPlanetConditions(planets);
 }
 
 function generateChart() {
@@ -468,6 +495,7 @@ function generateChart() {
     document.getElementById('lagnaInterpretationOutput').innerHTML = '';
     document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
     document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
+    document.getElementById('planetConditionsOutput').innerHTML = '';
   }
 }
 

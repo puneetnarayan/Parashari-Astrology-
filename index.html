@@ -90,6 +90,10 @@
   .dignity-Own-Sign    { color: #4c8c3c; font-weight: bold; }
   .dignity-Neutral     { color: #666; }
   .dignity-Debilitated { color: #b23b3b; font-weight: bold; }
+  .dignity-Moolatrikona { color: #2e7d32; font-weight: bold; }
+
+  .condition-flag-on  { color: #a04000; font-weight: bold; }
+  .condition-flag-off { color: #999; }
 </style>
 </head>
 <body>
@@ -205,6 +209,10 @@
 
 <h3>3. Planet in House</h3>
 <div id="planetInHouseInterpretationOutput" class="output-box pastel-mint"></div>
+
+<h3>4. Planetary Conditions: Dignity, Combustion &amp; Retrograde</h3>
+<p>Dignity = Exalted / Moolatrikona / Own Sign / Neutral / Debilitated, including whether an Exalted or Debilitated placement is "deep" (within 1° of the exact classical degree). Combust and Retrograde notes only appear when this chart actually has that condition for the planet.</p>
+<div id="planetConditionsOutput" class="output-box pastel-yellow"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>
@@ -223,6 +231,9 @@
 <script src="js/interpretations/signTraits.js"></script>
 <script src="js/interpretations/planetTraits.js"></script>
 <script src="js/interpretations/houseThemes.js"></script>
+<script src="js/interpretations/dignityDetails.js"></script>
+<script src="js/interpretations/combustionInterpretations.js"></script>
+<script src="js/interpretations/retrogradeInterpretations.js"></script>
 <script src="js/interpretations/lagnaInterpretations.js"></script>
 <script src="js/interpretations/interpretationEngine.js"></script>
 <script src="js/timezone.js"></script>
