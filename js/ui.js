@@ -238,6 +238,23 @@ function houseNumberForSign(signIndex, ascSignIndex) {
   return wholeSignHouseOf(signIndex, ascSignIndex);
 }
 
+// Sarvashtakavarga strength banding (sum of 7 planets' bindus, typical
+// range 0-56, average ~28 per house) — same weak/average/auspicious scheme
+// as Bhinnashtakavarga's bavStrengthClass/bavFillColor, just re-scaled:
+// mirrors the Excellent/Good vs Average vs Weak cutoffs already used by
+// ashtakvargaInterpretations.js's SAV_STRENGTH_THRESHOLDS (Good-and-above
+// collapses into "auspicious" for this 3-color scheme).
+function savStrengthClass(score) {
+  if (score < 20) return 'bav-weak';
+  if (score < 30) return 'bav-average';
+  return 'bav-auspicious';
+}
+function savFillColor(score) {
+  if (score < 20) return '#ffdcdc';
+  if (score < 30) return '#fff6c9';
+  return '#d9f2d9';
+}
+
 function renderAshtakvargaTable(av, ascSignIndex) {
   const el = document.getElementById('ashtakvargaTableOutput');
   const houseHeaders = Array.from({ length: 12 }, (_, i) => `<th>H${i + 1}</th>`).join('');
@@ -247,14 +264,16 @@ function renderAshtakvargaTable(av, ascSignIndex) {
     for (let signIndex = 0; signIndex < 12; signIndex++) {
       byHouse[houseNumberForSign(signIndex, ascSignIndex) - 1] = av.bav[name][signIndex];
     }
-    return `<tr><td>${name}</td>${byHouse.map(v => `<td>${v}</td>`).join('')}<td><strong>${byHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+    const cells = byHouse.map(v => `<td class="${bavStrengthClass(v)}">${v}</td>`).join('');
+    return `<tr><td>${name}</td>${cells}<td><strong>${byHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
   }).join('');
 
   const savByHouse = new Array(12);
   for (let signIndex = 0; signIndex < 12; signIndex++) {
     savByHouse[houseNumberForSign(signIndex, ascSignIndex) - 1] = av.sav[signIndex];
   }
-  const savRow = `<tr><td><strong>Sarvashtakavarga</strong></td>${savByHouse.map(v => `<td><strong>${v}</strong></td>`).join('')}<td><strong>${savByHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
+  const savCells = savByHouse.map(v => `<td class="${savStrengthClass(v)}"><strong>${v}</strong></td>`).join('');
+  const savRow = `<tr><td><strong>Sarvashtakavarga</strong></td>${savCells}<td><strong>${savByHouse.reduce((a, b) => a + b, 0)}</strong></td></tr>`;
 
   el.innerHTML = `
     <table>
@@ -272,10 +291,12 @@ function renderAshtakvargaChart(av) {
 
   if (layout === 'south') {
     const d1BySign = buildD1ChartData(planets);
-    el.innerHTML = renderSouthIndianChart('Sarvashtakavarga', d1BySign, av.sav);
+    el.innerHTML = renderSouthIndianChart('Sarvashtakavarga', d1BySign, av.sav, null,
+      sign => savStrengthClass(av.sav[SIGNS.indexOf(sign)]), 'bav-score-circle');
   } else {
     const d1ByHouse = buildD1NorthIndian(planets, ascendant.longitude);
-    el.innerHTML = renderNorthIndianChart('Sarvashtakavarga', d1ByHouse, av.sav);
+    el.innerHTML = renderNorthIndianChart('Sarvashtakavarga', d1ByHouse, av.sav, null,
+      signIndex => savFillColor(av.sav[signIndex]), BAV_CIRCLE_COLORS);
   }
 }
 
