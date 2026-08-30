@@ -50,6 +50,13 @@ const NAKSHATRA_TABLE = buildNakshatraTable();
 
 const PLANET_NAMES = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
 
+// Standard 2-letter abbreviations, used in chart cells (the Planet Table
+// keeps full names; only drawn charts use these, to save cell space).
+const PLANET_ABBR = {
+  Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju',
+  Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke'
+};
+
 function normalizeDegrees(deg) {
   return ((deg % 360) + 360) % 360;
 }
@@ -103,11 +110,20 @@ function formatDegMinSec(longitude) {
   return `${degree}°${pad(minute)}'${pad(second)}"`;
 }
 
+// "12°34'" — degree-minute only, no seconds (used in chart cells when the
+// "show seconds" option is off, to keep cells compact).
+function formatDegMin(longitude) {
+  if (longitude === undefined || longitude === null || longitude === '' || isNaN(Number(longitude))) return '';
+  const { degree, minute } = longitudeToDegMinSec(longitude);
+  const pad = n => String(n).padStart(2, '0');
+  return `${degree}°${pad(minute)}'`;
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     PARASHARI_TABLES_LOGIC_TEXT, SIGNS, SIGN_LORD, MOVABLE_SIGNS, FIXED_SIGNS,
-    NAKSHATRAS, NAKSHATRA_TABLE, PLANET_NAMES,
+    NAKSHATRAS, NAKSHATRA_TABLE, PLANET_NAMES, PLANET_ABBR,
     normalizeDegrees, nakshatraFromLongitude, padaOf,
-    longitudeToDegMinSec, formatDegMinSec, formatDegMinSecShort
+    longitudeToDegMinSec, formatDegMinSec, formatDegMinSecShort, formatDegMin
   };
 }

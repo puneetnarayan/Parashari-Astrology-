@@ -26,6 +26,7 @@ function initTabs() {
       // reflects the latest generated chart without recomputation.
       if (btn.dataset.tab === 'tabCharts') renderCharts();
       if (btn.dataset.tab === 'tabAshtakvarga') renderAshtakvargaTab();
+      if (btn.dataset.tab === 'tabDivisional') renderDivisionalTab();
     });
   });
 }
@@ -89,6 +90,7 @@ function clearOutputs() {
   document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('ashtakvargaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('ashtakvargaChartOutput').innerHTML = '';
+  document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
 }
 
 function resetForm() {
@@ -141,11 +143,22 @@ function renderPlanetTable(planets) {
     </table>`;
 }
 
+// Reads the shared "Show seconds in charts" checkbox — DMS with seconds
+// when on, degree-minute only when off (the default).
+function chartDegreeFormat(longitude) {
+  const showSeconds = document.getElementById('showSecondsToggle').checked;
+  return showSeconds ? formatDegMinSec(longitude) : formatDegMin(longitude);
+}
+
+function planetLabel(name) {
+  return PLANET_ABBR[name] || name;
+}
+
 function renderSouthIndianChart(title, bySign, scoresBySign) {
   const cells = SOUTH_INDIAN_GRID.map(sign => {
     if (!sign) return '<div class="vedic-chart-cell"></div>';
     const planets = bySign[sign] || [];
-    const planetLines = planets.map(p => `${p.name} ${formatDegMinSec(p.longitude)}`).join('<br>');
+    const planetLines = planets.map(p => `${planetLabel(p.name)} ${chartDegreeFormat(p.longitude)}`).join('<br>');
     const scoreHtml = scoresBySign ? `<br><span class="av-score-circle">${scoresBySign[SIGNS.indexOf(sign)]}</span>` : '';
     return `<div class="vedic-chart-cell"><span class="sign-name">${sign.slice(0, 3)}</span>${planetLines}${scoreHtml}</div>`;
   }).join('');
@@ -156,7 +169,7 @@ function renderNorthIndianChart(title, byHouse, scoresBySign) {
   const polygons = NORTH_INDIAN_HOUSES.map(h => {
     const data = byHouse[h.house];
     const sign = SIGNS[data.signIndex];
-    const planetText = data.planets.map(p => `${p.name} ${formatDegMinSec(p.longitude)}`).join(' | ');
+    const planetText = data.planets.map(p => `${planetLabel(p.name)} ${chartDegreeFormat(p.longitude)}`).join(' | ');
     const scoreCircle = scoresBySign ? `
       <circle cx="${h.label[0]}" cy="${h.label[1] + 22}" r="10" fill="#fff6e8" stroke="#a04000" stroke-width="1.5" />
       <text x="${h.label[0]}" y="${h.label[1] + 26}" text-anchor="middle" font-weight="bold" font-size="11" fill="#a04000">${scoresBySign[data.signIndex]}</text>
@@ -257,6 +270,33 @@ function renderAshtakvargaTab() {
   renderAshtakvargaChart(av);
 }
 
+function populateDivisionalVargaSelect() {
+  const select = document.getElementById('divisionalVargaSelect');
+  select.innerHTML = DIVISIONAL_CHART_LIST.map(key => `<option value="${key}">${DIVISIONAL_CHART_NAMES[key]}</option>`).join('');
+  select.value = 'D9';
+}
+
+function renderDivisionalTab() {
+  const output = document.getElementById('divisionalChartOutput');
+  output.innerHTML = '';
+  if (!state.chart) {
+    output.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const vargaKey = document.getElementById('divisionalVargaSelect').value;
+  const layout = document.getElementById('divisionalChartLayout').value;
+  const { planets, ascendant } = state.chart;
+  const title = DIVISIONAL_CHART_NAMES[vargaKey];
+
+  if (layout === 'south') {
+    const data = buildDivisionalChartData(planets, vargaKey);
+    output.innerHTML = renderSouthIndianChart(title, data.bySign);
+  } else {
+    const data = buildDivisionalNorthIndian(planets, ascendant.longitude, vargaKey);
+    output.innerHTML = renderNorthIndianChart(title, data.byHouse);
+  }
+}
+
 function generateChart() {
   const statusEl = document.getElementById('ascendantOutput');
   try {
@@ -274,6 +314,7 @@ function generateChart() {
     renderPlanetTable(planets);
     renderCharts();
     renderAshtakvargaTab();
+    renderDivisionalTab();
   } catch (err) {
     state.chart = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -281,6 +322,7 @@ function generateChart() {
     document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ashtakvargaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ashtakvargaChartOutput').innerHTML = '';
+    document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
@@ -311,10 +353,18 @@ document.addEventListener('DOMContentLoaded', () => {
   populateIanaZones();
   initTimezoneModeToggle();
   applyDefaultBirthInputs();
+  populateDivisionalVargaSelect();
   document.getElementById('generateChartBtn').addEventListener('click', generateChart);
   document.getElementById('resetBtn').addEventListener('click', resetForm);
   document.getElementById('chartLayout').addEventListener('change', renderCharts);
   document.getElementById('avChartLayout').addEventListener('change', () => renderAshtakvargaChart(state.ashtakvarga));
+  document.getElementById('divisionalVargaSelect').addEventListener('change', renderDivisionalTab);
+  document.getElementById('divisionalChartLayout').addEventListener('change', renderDivisionalTab);
+  document.getElementById('showSecondsToggle').addEventListener('change', () => {
+    renderCharts();
+    if (state.ashtakvarga) renderAshtakvargaChart(state.ashtakvarga);
+    renderDivisionalTab();
+  });
   initAutoRegenerate();
   generateChart();
 });

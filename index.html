@@ -62,6 +62,11 @@
   <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
   <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
   <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
+  <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
+</div>
+
+<div class="controls">
+  <label><input type="checkbox" id="showSecondsToggle"> Show seconds in charts (off = degree-minute only)</label>
 </div>
 
 <div class="tab-panel active" id="tabMain">
@@ -121,6 +126,23 @@
 <div class="vedic-chart-container" id="ashtakvargaChartOutput"></div>
 </div>
 
+<div class="tab-panel" id="tabDivisional">
+<h2>Divisional (Varga) Charts</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. All 16 classical Shodasavarga divisional charts, one at a time.</p>
+<div class="controls">
+  <label>Divisional Chart:
+    <select id="divisionalVargaSelect"></select>
+  </label>
+  <label>Layout:
+    <select id="divisionalChartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="divisionalChartOutput"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -131,6 +153,7 @@
 <script src="js/birthChart.js"></script>
 <script src="js/parashariCharts.js"></script>
 <script src="js/ashtakvarga.js"></script>
+<script src="js/divisionalCharts.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
