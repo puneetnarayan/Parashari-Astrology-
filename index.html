@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parashari Astrology</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; max-width: 1200px; }
+  h1 { font-size: 1.4em; }
+  h2 { font-size: 1.1em; margin-top: 2em; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.85em; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  input[type=text] { width: 110px; box-sizing: border-box; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+  #statusMsg { color: #555; font-style: italic; }
+  fieldset { margin-top: 10px; }
+
+  /* Boxed display used for each results section, each with its own pastel color */
+  .output-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .output-box table { background: transparent; }
+  .pastel-blue      { background-color: #e3f2fd; }
+  .pastel-peach     { background-color: #ffe8d6; }
+  .pastel-lavender  { background-color: #f1e6ff; }
+  .pastel-mint      { background-color: #e0f7ec; }
+  .pastel-yellow    { background-color: #fff9db; }
+  .pastel-pink      { background-color: #ffe3ec; }
+
+  /* Pastel buttons throughout the app */
+  button { background-color: #d9ecff; border: 1px solid #a9c6e8; border-radius: 6px; padding: 6px 14px; font-size: 0.9em; cursor: pointer; color: #2c3e50; }
+  button:hover { background-color: #c3e0ff; }
+  button:active { background-color: #aed1f7; }
+  select { border-radius: 6px; padding: 4px 8px; }
+
+  /* Tab strip (room left for future tabs: yogas, bhava bala, dasha, transits...) */
+  .tab-strip { display: flex; gap: 8px; margin: 16px 0; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  .tab-button { background-color: #f0e6ff; border: 1px solid #cbb8ee; border-radius: 6px 6px 0 0; padding: 8px 18px; font-size: 0.95em; cursor: pointer; color: #2c3e50; }
+  .tab-button:hover { background-color: #e4d3ff; }
+  .tab-button.active { background-color: #b98cf2; color: #fff; border-color: #9a6bd8; font-weight: bold; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .yes-flag { color: #b23b3b; font-weight: bold; }
+  .no-flag { color: #999; }
+
+  .vedic-chart-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; width: 360px; height: 360px; border: 2px solid #555; }
+  .vedic-chart-cell { border: 1px solid #999; background: #fff; padding: 3px; font-size: 0.62em; overflow: hidden; }
+  .vedic-chart-cell .sign-name { font-weight: bold; display: block; }
+  .vedic-chart-cell .house-badge { color: #a04000; font-weight: bold; }
+  .vedic-chart-svg text { font-size: 10px; }
+  .vedic-chart-container { display: flex; flex-wrap: wrap; gap: 24px; }
+  .chart-block { display: flex; flex-direction: column; gap: 8px; }
+  .chart-block h3 { margin: 4px 0; }
+</style>
+</head>
+<body>
+<h1>Parashari Astrology</h1>
+<p id="engineStatusBadge" style="font-size:0.8em;color:#666;">Loading calculation engine...</p>
+
+<div class="tab-strip">
+  <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
+  <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
+</div>
+
+<div class="tab-panel active" id="tabMain">
+<p>All calculations run entirely in your browser, offline, using the real Swiss Ephemeris (WebAssembly) once loaded — no data leaves this page.</p>
+
+<h2>Birth Details</h2>
+<fieldset>
+  <label>Birth Date: <input type="date" id="birthLocalDate"></label>
+  <label>Birth Time (local clock time at birth place): <input type="time" id="birthLocalTime" step="1"></label><br><br>
+  <label>Birth Latitude: <input type="text" id="birthLat" placeholder="e.g. 28.6139"></label>
+  <label>Birth Longitude: <input type="text" id="birthLon" placeholder="e.g. 77.2090"></label><br><br>
+  <label>Timezone mode:
+    <select id="timezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="ianaZoneLabel">Time zone: <select id="ianaZone"></select></label>
+  <label id="utcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="utcOffset" placeholder="+5:30"></label><br><br>
+  <button id="generateChartBtn">Generate Chart (Offline)</button>
+</fieldset>
+<div id="ascendantOutput" class="output-box pastel-peach"></div>
+
+<h2>Planet Table</h2>
+<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign.</p>
+<div id="planetTableOutput" class="output-box pastel-blue"></div>
+</div>
+
+<div class="tab-panel" id="tabCharts">
+<h2>D1 (Rasi) &amp; D9 (Navamsa) Charts</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Whole-sign houses: house 1 = Ascendant's sign.</p>
+<div class="controls">
+  <label>Layout:
+    <select id="chartLayout">
+      <option value="south">South Indian</option>
+      <option value="north">North Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="chartsOutput"></div>
+</div>
+
+<script type="module" src="js/swissephBridge.js"></script>
+<script src="js/astronomy.browser.min.js"></script>
+<script src="js/parashariTables.js"></script>
+<script src="js/ephemeris.js"></script>
+<script src="js/combustion.js"></script>
+<script src="js/aspects.js"></script>
+<script src="js/conjunctions.js"></script>
+<script src="js/birthChart.js"></script>
+<script src="js/parashariCharts.js"></script>
+<script src="js/timezone.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

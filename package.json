@@ -1,0 +1,9 @@
+{
+  "name": "parashari-astrology",
+  "version": "1.0.0",
+  "description": "Offline-first Parashari (classical Vedic) astrology app",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8000"
+  }
+}
