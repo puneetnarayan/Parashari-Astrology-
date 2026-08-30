@@ -85,6 +85,11 @@
   .rel-Enemy    { color: #b23b3b; font-weight: bold; }
   .score-positive { color: #2e7d32; font-weight: bold; }
   .score-negative { color: #b23b3b; font-weight: bold; }
+
+  .dignity-Exalted     { color: #2e7d32; font-weight: bold; }
+  .dignity-Own-Sign    { color: #4c8c3c; font-weight: bold; }
+  .dignity-Neutral     { color: #666; }
+  .dignity-Debilitated { color: #b23b3b; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -97,6 +102,7 @@
   <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
   <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
   <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
+  <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
 </div>
 
 <div class="controls">
@@ -187,6 +193,20 @@
 <div id="strengthTableOutput" class="output-box pastel-pink"></div>
 </div>
 
+<div class="tab-panel" id="tabInterpretations">
+<h2>Interpretations</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. General classical readings for the Lagna, each planet's sign placement, and each planet's house placement — rule data lives in js/interpretations/ (a separate file per rule category).</p>
+
+<h3>1. Lagna (Ascendant)</h3>
+<div id="lagnaInterpretationOutput" class="output-box pastel-peach"></div>
+
+<h3>2. Planet in Sign</h3>
+<div id="planetInSignInterpretationOutput" class="output-box pastel-blue"></div>
+
+<h3>3. Planet in House</h3>
+<div id="planetInHouseInterpretationOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -200,6 +220,11 @@
 <script src="js/ashtakvargaInterpretations.js"></script>
 <script src="js/divisionalCharts.js"></script>
 <script src="js/planetaryStrength.js"></script>
+<script src="js/interpretations/signTraits.js"></script>
+<script src="js/interpretations/planetTraits.js"></script>
+<script src="js/interpretations/houseThemes.js"></script>
+<script src="js/interpretations/lagnaInterpretations.js"></script>
+<script src="js/interpretations/interpretationEngine.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>

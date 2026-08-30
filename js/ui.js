@@ -28,6 +28,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabAshtakvarga') renderAshtakvargaTab();
       if (btn.dataset.tab === 'tabDivisional') renderDivisionalTab();
       if (btn.dataset.tab === 'tabStrength') renderStrengthTab();
+      if (btn.dataset.tab === 'tabInterpretations') renderInterpretationsTab();
     });
   });
 }
@@ -95,6 +96,9 @@ function clearOutputs() {
   document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('relationsTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('strengthTableOutput').innerHTML = '';
+  document.getElementById('lagnaInterpretationOutput').innerHTML = '';
+  document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
+  document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
 }
 
 function resetForm() {
@@ -378,6 +382,58 @@ function renderStrengthTab() {
   renderStrengthTable(strengthData);
 }
 
+function dignityClass(dignity) {
+  return `dignity-${dignity.replace(' ', '-')}`;
+}
+
+function renderLagnaInterpretation(ascendant) {
+  const el = document.getElementById('lagnaInterpretationOutput');
+  const text = interpretLagna(ascendant.sign);
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Lagna Sign</th><th>Interpretation</th></tr></thead>
+      <tbody><tr><td>${ascendant.sign}</td><td>${text}</td></tr></tbody>
+    </table>`;
+}
+
+function renderPlanetInSignInterpretation(planets) {
+  const el = document.getElementById('planetInSignInterpretationOutput');
+  const rows = planets.map(p => {
+    const result = interpretPlanetInSign(p.name, p.sign);
+    return `<tr><td>${p.name}</td><td>${p.sign}</td><td class="${dignityClass(result.dignity)}">${result.dignity}</td><td>${result.text}</td></tr>`;
+  }).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Planet</th><th>Sign</th><th>Dignity</th><th>Interpretation</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderPlanetInHouseInterpretation(planets) {
+  const el = document.getElementById('planetInHouseInterpretationOutput');
+  const rows = planets.map(p =>
+    `<tr><td>${p.name}</td><td>${p.house}</td><td>${interpretPlanetInHouse(p.name, p.house)}</td></tr>`
+  ).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr><th>Planet</th><th>House</th><th>Interpretation</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderInterpretationsTab() {
+  if (!state.chart) {
+    document.getElementById('lagnaInterpretationOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
+    document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
+    return;
+  }
+  const { planets, ascendant } = state.chart;
+  renderLagnaInterpretation(ascendant);
+  renderPlanetInSignInterpretation(planets);
+  renderPlanetInHouseInterpretation(planets);
+}
+
 function generateChart() {
   const statusEl = document.getElementById('ascendantOutput');
   try {
@@ -397,6 +453,7 @@ function generateChart() {
     renderAshtakvargaTab();
     renderDivisionalTab();
     renderStrengthTab();
+    renderInterpretationsTab();
   } catch (err) {
     state.chart = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -408,6 +465,9 @@ function generateChart() {
     document.getElementById('divisionalChartOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('relationsTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('strengthTableOutput').innerHTML = '';
+    document.getElementById('lagnaInterpretationOutput').innerHTML = '';
+    document.getElementById('planetInSignInterpretationOutput').innerHTML = '';
+    document.getElementById('planetInHouseInterpretationOutput').innerHTML = '';
   }
 }
 
