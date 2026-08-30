@@ -157,11 +157,15 @@ function renderNorthIndianChart(title, byHouse, scoresBySign) {
     const data = byHouse[h.house];
     const sign = SIGNS[data.signIndex];
     const planetText = data.planets.map(p => `${p.name} ${formatDegMinSec(p.longitude)}`).join(' | ');
-    const scoreText = scoresBySign ? ` (${scoresBySign[data.signIndex]})` : '';
+    const scoreCircle = scoresBySign ? `
+      <circle cx="${h.label[0]}" cy="${h.label[1] + 22}" r="10" fill="#fff6e8" stroke="#a04000" stroke-width="1.5" />
+      <text x="${h.label[0]}" y="${h.label[1] + 26}" text-anchor="middle" font-weight="bold" font-size="11" fill="#a04000">${scoresBySign[data.signIndex]}</text>
+    ` : '';
     return `
       <polygon points="${h.points}" fill="none" stroke="#555" stroke-width="1.5" />
-      <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}${scoreText}</text>
+      <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}</text>
       <text x="${h.label[0]}" y="${h.label[1] + 12}" text-anchor="middle" font-size="8">${planetText}</text>
+      ${scoreCircle}
     `;
   }).join('');
   return `<div class="chart-block"><h3>${title} (North Indian)</h3>
