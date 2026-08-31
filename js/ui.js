@@ -53,8 +53,8 @@ function initEngineStatusBadge() {
   setTimeout(update, 1500);
 }
 
-function populateIanaZones() {
-  const select = document.getElementById('ianaZone');
+function populateIanaZoneSelect(selectId) {
+  const select = document.getElementById(selectId);
   let zones;
   try {
     zones = Intl.supportedValuesOf('timeZone');
@@ -66,12 +66,25 @@ function populateIanaZones() {
   if (guessed && zones.includes(guessed)) select.value = guessed;
 }
 
+function populateIanaZones() {
+  populateIanaZoneSelect('ianaZone');
+}
+
 function initTimezoneModeToggle() {
   const modeSelect = document.getElementById('timezoneMode');
   modeSelect.addEventListener('change', () => {
     const isIana = modeSelect.value === 'iana';
     document.getElementById('ianaZoneLabel').hidden = !isIana;
     document.getElementById('utcOffsetLabel').hidden = isIana;
+  });
+}
+
+function initMatchingTimezoneModeToggle() {
+  const modeSelect = document.getElementById('matchingTimezoneMode');
+  modeSelect.addEventListener('change', () => {
+    const isIana = modeSelect.value === 'iana';
+    document.getElementById('matchingIanaZoneLabel').hidden = !isIana;
+    document.getElementById('matchingUtcOffsetLabel').hidden = isIana;
   });
 }
 
@@ -406,6 +419,86 @@ function renderBavAllTab() {
   renderBavAllCharts(av);
 }
 
+// --- Kundali Matching ---
+
+function matchingBirthDateUtc(prefix) {
+  const dateStr = document.getElementById(`${prefix}Date`).value;
+  const timeStr = document.getElementById(`${prefix}Time`).value || '00:00:00';
+  if (!dateStr) throw new Error(`Enter the ${prefix === 'boy' ? "boy's" : "girl's"} birth date.`);
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+
+  const mode = document.getElementById('matchingTimezoneMode').value;
+  if (mode === 'iana') {
+    const zone = document.getElementById('matchingIanaZone').value;
+    return zonedLocalToUtc(year, month, day, hour, minute || 0, zone);
+  }
+  const offsetMinutes = parseUtcOffsetToMinutes(document.getElementById('matchingUtcOffset').value || '0');
+  return offsetLocalToUtc(year, month, day, hour, minute || 0, offsetMinutes);
+}
+
+function generatePartnerChart(prefix) {
+  const birthUtc = matchingBirthDateUtc(prefix);
+  const lat = parseFloat(document.getElementById(`${prefix}Lat`).value);
+  const lon = parseFloat(document.getElementById(`${prefix}Lon`).value);
+  if (isNaN(lat) || isNaN(lon)) throw new Error(`Enter valid ${prefix === 'boy' ? "boy's" : "girl's"} latitude and longitude.`);
+  return generateBirthChart(birthUtc, lat, lon);
+}
+
+function kootaRowClass(score, max) {
+  if (score === 0) return 'bav-weak';
+  if (score >= max) return 'bav-auspicious';
+  return 'bav-average';
+}
+
+function renderMatchingResult(boyName, girlName, result) {
+  const el = document.getElementById('matchingOutput');
+  const rows = result.kootas.map(k =>
+    `<tr class="${kootaRowClass(k.score, k.max)}">
+      <td>${k.koota}</td><td>${k.boyValue}</td><td>${k.girlValue}</td><td>${k.score} / ${k.max}</td>
+    </tr>`
+  ).join('');
+
+  const mangal = result.mangalDosha;
+  const mangalRow = `
+    <p><strong>Mangal Dosha:</strong>
+      ${boyName || 'Boy'}: <span class="${mangal.boy.hasDosha ? 'yes-flag' : 'no-flag'}">${mangal.boy.hasDosha ? `Yes (Mars in House ${mangal.boy.marsHouse})` : 'No'}</span> &nbsp;|&nbsp;
+      ${girlName || 'Girl'}: <span class="${mangal.girl.hasDosha ? 'yes-flag' : 'no-flag'}">${mangal.girl.hasDosha ? `Yes (Mars in House ${mangal.girl.marsHouse})` : 'No'}</span>
+    </p>
+    <p>${mangal.verdict}</p>`;
+
+  el.innerHTML = `
+    <p>${boyName || 'Boy'}'s Moon: <strong>${result.boyMoon.sign}</strong> (${result.boyMoon.nakshatra}) &nbsp;|&nbsp;
+       ${girlName || 'Girl'}'s Moon: <strong>${result.girlMoon.sign}</strong> (${result.girlMoon.nakshatra})</p>
+    <table>
+      <thead><tr><th>Koota</th><th>${boyName || 'Boy'}</th><th>${girlName || 'Girl'}</th><th>Score</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="matching-verdict"><strong>Total: ${result.total} / ${result.maxTotal} — ${result.grade}</strong>${result.nadiDosha ? ' <span class="yes-flag">(Nadi Dosha present)</span>' : ''}</p>
+    ${mangalRow}`;
+}
+
+function onMatchKundalisClick() {
+  const el = document.getElementById('matchingOutput');
+  try {
+    const boyChart = generatePartnerChart('boy');
+    const girlChart = generatePartnerChart('girl');
+    const result = matchKundalis(boyChart, girlChart);
+    const boyName = document.getElementById('boyName').value.trim();
+    const girlName = document.getElementById('girlName').value.trim();
+    renderMatchingResult(boyName, girlName, result);
+  } catch (err) {
+    el.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
+  }
+}
+
+function resetMatchingForm() {
+  ['boyName', 'girlName', 'boyDate', 'boyTime', 'boyLat', 'boyLon', 'girlDate', 'girlTime', 'girlLat', 'girlLon'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('matchingOutput').innerHTML = '';
+}
+
 function renderDivisionalTab() {
   const output = document.getElementById('divisionalChartOutput');
   output.innerHTML = '';
@@ -628,6 +721,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initEngineStatusBadge();
   populateIanaZones();
   initTimezoneModeToggle();
+  populateIanaZoneSelect('matchingIanaZone');
+  initMatchingTimezoneModeToggle();
+  document.getElementById('matchKundalisBtn').addEventListener('click', onMatchKundalisClick);
+  document.getElementById('matchingResetBtn').addEventListener('click', resetMatchingForm);
   applyDefaultBirthInputs();
   document.getElementById('generateChartBtn').addEventListener('click', generateChart);
   document.getElementById('resetBtn').addEventListener('click', resetForm);

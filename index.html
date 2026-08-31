@@ -95,6 +95,10 @@
   .condition-flag-on  { color: #a04000; font-weight: bold; }
   .condition-flag-off { color: #999; }
 
+  .matching-columns { display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+  .matching-fieldset { flex: 1 1 320px; }
+  .matching-verdict { font-size: 1.05em; margin: 8px 0; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -116,6 +120,7 @@
   <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
   <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
   <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
+  <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
 </div>
 
 <div class="controls">
@@ -254,6 +259,48 @@
 <div class="vedic-chart-container" id="bavAllChartOutput"></div>
 </div>
 
+<div class="tab-panel" id="tabMatching">
+<h2>Kundali Matching (Ashtakoot Guna Milan)</h2>
+<p>Enter both partners' birth details (offline Swiss Ephemeris, same engine as the rest of this app) and click Match to compute the classical 8-koota, 36-point Guna Milan score plus a Mangal Dosha check.</p>
+
+<div class="matching-columns">
+  <fieldset class="matching-fieldset">
+    <legend>Boy</legend>
+    <label>Name: <input type="text" id="boyName" placeholder="e.g. Rohan" style="width:180px;"></label><br><br>
+    <label>Birth Date: <input type="date" id="boyDate"></label>
+    <label>Birth Time: <input type="time" id="boyTime" step="1"></label><br><br>
+    <label>Latitude: <input type="text" id="boyLat" placeholder="e.g. 28.6139"></label>
+    <label>Longitude: <input type="text" id="boyLon" placeholder="e.g. 77.2090"></label>
+  </fieldset>
+
+  <fieldset class="matching-fieldset">
+    <legend>Girl</legend>
+    <label>Name: <input type="text" id="girlName" placeholder="e.g. Priya" style="width:180px;"></label><br><br>
+    <label>Birth Date: <input type="date" id="girlDate"></label>
+    <label>Birth Time: <input type="time" id="girlTime" step="1"></label><br><br>
+    <label>Latitude: <input type="text" id="girlLat" placeholder="e.g. 28.6139"></label>
+    <label>Longitude: <input type="text" id="girlLon" placeholder="e.g. 77.2090"></label>
+  </fieldset>
+</div>
+
+<div class="controls">
+  <label>Timezone mode (applied to both):
+    <select id="matchingTimezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="matchingIanaZoneLabel">Time zone: <select id="matchingIanaZone"></select></label>
+  <label id="matchingUtcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="matchingUtcOffset" placeholder="+5:30"></label>
+</div>
+<div class="controls">
+  <button id="matchKundalisBtn">Match Kundalis (Offline)</button>
+  <button id="matchingResetBtn" type="button">Reset</button>
+</div>
+
+<div id="matchingOutput" class="output-box pastel-lavender"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -275,6 +322,9 @@
 <script src="js/interpretations/retrogradeInterpretations.js"></script>
 <script src="js/interpretations/lagnaInterpretations.js"></script>
 <script src="js/interpretations/interpretationEngine.js"></script>
+<script src="js/matching/ashtakootRules.js"></script>
+<script src="js/matching/mangalDoshaRules.js"></script>
+<script src="js/matching/kundaliMatching.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
