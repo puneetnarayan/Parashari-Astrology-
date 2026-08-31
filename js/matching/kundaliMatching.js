@@ -45,7 +45,7 @@ function matchKundalis(boyChart, girlChart) {
   ];
 
   const total = kootas.reduce((sum, k) => sum + k.score, 0);
-  const mangalDosha = compareMangalDosha(boyChart.planets, girlChart.planets);
+  const mangalDosha = compareMangalDosha(boyChart.planets, boyChart.ascendant, girlChart.planets, girlChart.ascendant);
 
   return {
     boyMoon: { sign: boyMoon.sign, nakshatra: boyNak.name },

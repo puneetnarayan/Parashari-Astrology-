@@ -11,6 +11,13 @@ const DEFAULT_BIRTH = {
   utcOffset: '+5:30'
 };
 
+const DEFAULT_MATCHING = {
+  timezoneMode: 'offset',
+  utcOffset: '+5:30',
+  boy: { name: 'Puneet Narayan', date: '1970-06-02', time: '18:45:00', lat: '26.7658', lon: '83.3649' },
+  girl: { name: 'Sapna Narayan', date: '1972-01-11', time: '05:15:00', lat: '22.8056', lon: '86.2031' }
+};
+
 const state = {
   chart: null // { planets, ascendant }
 };
@@ -460,12 +467,21 @@ function renderMatchingResult(boyName, girlName, result) {
   ).join('');
 
   const mangal = result.mangalDosha;
-  const mangalRow = `
-    <p><strong>Mangal Dosha:</strong>
-      ${boyName || 'Boy'}: <span class="${mangal.boy.hasDosha ? 'yes-flag' : 'no-flag'}">${mangal.boy.hasDosha ? `Yes (Mars in House ${mangal.boy.marsHouse})` : 'No'}</span> &nbsp;|&nbsp;
-      ${girlName || 'Girl'}: <span class="${mangal.girl.hasDosha ? 'yes-flag' : 'no-flag'}">${mangal.girl.hasDosha ? `Yes (Mars in House ${mangal.girl.marsHouse})` : 'No'}</span>
-    </p>
-    <p>${mangal.verdict}</p>`;
+  const mangalPartner = (name, detail) => `
+    <div class="mangal-partner">
+      <p><strong>${name}:</strong> <span class="${detail.hasDosha ? 'yes-flag' : 'no-flag'}">${detail.hasDosha ? `Mangal Dosha present — ${detail.severityPercent}% severity` : 'No Mangal Dosha'}</span></p>
+      <ul>${detail.contributingFactors.map(f => `<li>${f}</li>`).join('')}</ul>
+    </div>`;
+
+  const mangalSection = `
+    <h3>Mangal Dosha (Kuja Dosha)</h3>
+    <p style="font-size:0.85em;color:#555;">Mangal Dosha is checked when Mars occupies house 1, 2, 4, 7, 8, or 12 from each partner's own Ascendant. The severity % and reductions below are this app's own simplified scoring — see the logic notes in js/matching/mangalDoshaRules.js for the exact weighting.</p>
+    <div class="mangal-columns">
+      ${mangalPartner(boyName || 'Boy', mangal.boy)}
+      ${mangalPartner(girlName || 'Girl', mangal.girl)}
+    </div>
+    <p class="matching-verdict"><strong>Marriage recommendation: ${mangal.recommendation}</strong></p>
+    <p>${mangal.reasoning}</p>`;
 
   el.innerHTML = `
     <p>${boyName || 'Boy'}'s Moon: <strong>${result.boyMoon.sign}</strong> (${result.boyMoon.nakshatra}) &nbsp;|&nbsp;
@@ -475,7 +491,7 @@ function renderMatchingResult(boyName, girlName, result) {
       <tbody>${rows}</tbody>
     </table>
     <p class="matching-verdict"><strong>Total: ${result.total} / ${result.maxTotal} — ${result.grade}</strong>${result.nadiDosha ? ' <span class="yes-flag">(Nadi Dosha present)</span>' : ''}</p>
-    ${mangalRow}`;
+    ${mangalSection}`;
 }
 
 function onMatchKundalisClick() {
@@ -492,10 +508,27 @@ function onMatchKundalisClick() {
   }
 }
 
+function applyDefaultMatchingInputs() {
+  document.getElementById('boyName').value = DEFAULT_MATCHING.boy.name;
+  document.getElementById('boyDate').value = DEFAULT_MATCHING.boy.date;
+  document.getElementById('boyTime').value = DEFAULT_MATCHING.boy.time;
+  document.getElementById('boyLat').value = DEFAULT_MATCHING.boy.lat;
+  document.getElementById('boyLon').value = DEFAULT_MATCHING.boy.lon;
+
+  document.getElementById('girlName').value = DEFAULT_MATCHING.girl.name;
+  document.getElementById('girlDate').value = DEFAULT_MATCHING.girl.date;
+  document.getElementById('girlTime').value = DEFAULT_MATCHING.girl.time;
+  document.getElementById('girlLat').value = DEFAULT_MATCHING.girl.lat;
+  document.getElementById('girlLon').value = DEFAULT_MATCHING.girl.lon;
+
+  document.getElementById('matchingTimezoneMode').value = DEFAULT_MATCHING.timezoneMode;
+  document.getElementById('matchingUtcOffset').value = DEFAULT_MATCHING.utcOffset;
+  document.getElementById('matchingIanaZoneLabel').hidden = DEFAULT_MATCHING.timezoneMode !== 'iana';
+  document.getElementById('matchingUtcOffsetLabel').hidden = DEFAULT_MATCHING.timezoneMode === 'iana';
+}
+
 function resetMatchingForm() {
-  ['boyName', 'girlName', 'boyDate', 'boyTime', 'boyLat', 'boyLon', 'girlDate', 'girlTime', 'girlLat', 'girlLon'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  applyDefaultMatchingInputs();
   document.getElementById('matchingOutput').innerHTML = '';
 }
 
@@ -725,6 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMatchingTimezoneModeToggle();
   document.getElementById('matchKundalisBtn').addEventListener('click', onMatchKundalisClick);
   document.getElementById('matchingResetBtn').addEventListener('click', resetMatchingForm);
+  applyDefaultMatchingInputs();
   applyDefaultBirthInputs();
   document.getElementById('generateChartBtn').addEventListener('click', generateChart);
   document.getElementById('resetBtn').addEventListener('click', resetForm);
