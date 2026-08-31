@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parashari Astrology</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; max-width: 1200px; }
+  h1 { font-size: 1.4em; }
+  h2 { font-size: 1.1em; margin-top: 2em; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.85em; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  input[type=text] { width: 110px; box-sizing: border-box; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+  #statusMsg { color: #555; font-style: italic; }
+  fieldset { margin-top: 10px; }
+
+  /* Boxed display used for each results section, each with its own pastel color */
+  .output-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .output-box table { background: transparent; }
+  .pastel-blue      { background-color: #e3f2fd; }
+  .pastel-peach     { background-color: #ffe8d6; }
+  .pastel-lavender  { background-color: #f1e6ff; }
+  .pastel-mint      { background-color: #e0f7ec; }
+  .pastel-yellow    { background-color: #fff9db; }
+  .pastel-pink      { background-color: #ffe3ec; }
+
+  /* Pastel buttons throughout the app */
+  button { background-color: #d9ecff; border: 1px solid #a9c6e8; border-radius: 6px; padding: 6px 14px; font-size: 0.9em; cursor: pointer; color: #2c3e50; }
+  button:hover { background-color: #c3e0ff; }
+  button:active { background-color: #aed1f7; }
+  select { border-radius: 6px; padding: 4px 8px; }
+
+  /* Tab strip (room left for future tabs: yogas, bhava bala, dasha, transits...) */
+  .tab-strip { display: flex; gap: 8px; margin: 16px 0; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  .tab-button { background-color: #f0e6ff; border: 1px solid #cbb8ee; border-radius: 6px 6px 0 0; padding: 8px 18px; font-size: 0.95em; cursor: pointer; color: #2c3e50; }
+  .tab-button:hover { background-color: #e4d3ff; }
+  .tab-button.active { background-color: #b98cf2; color: #fff; border-color: #9a6bd8; font-weight: bold; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .yes-flag { color: #b23b3b; font-weight: bold; }
+  .no-flag { color: #999; }
+
+  .vedic-chart-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; width: 360px; height: 360px; border: 2px solid #555; }
+  .vedic-chart-cell { border: 1px solid #999; background: #fff; padding: 3px; font-size: 0.62em; overflow: hidden; }
+  .vedic-chart-cell .sign-name { font-weight: bold; display: block; }
+  .vedic-chart-cell .house-badge { color: #a04000; font-weight: bold; }
+  .vedic-chart-svg text { font-size: 10px; }
+  .vedic-chart-container { display: flex; flex-wrap: wrap; gap: 24px; }
+  .chart-block { display: flex; flex-direction: column; gap: 8px; }
+  .chart-block h3 { margin: 4px 0; }
+
+  .av-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #a04000; background: #fff6e8; font-weight: bold; font-size: 0.95em; color: #a04000; }
+  .vedic-chart-cell .av-score-circle { width: 20px; height: 20px; font-size: 0.85em; margin-top: 2px; }
+
+  /* Distinct pastel borders for the "all divisional charts at once" grid */
+  .chart-block { border-radius: 10px; padding: 8px; border: 3px solid transparent; }
+  .cb-0  { border-color: #a9c6e8; background: #eef6ff; }
+  .cb-1  { border-color: #f2b8c6; background: #fff0f4; }
+  .cb-2  { border-color: #b8e0c8; background: #f0fbf4; }
+  .cb-3  { border-color: #f2d59b; background: #fff8ec; }
+  .cb-4  { border-color: #c9b8ea; background: #f6f1fd; }
+  .cb-5  { border-color: #9bd8d8; background: #ecfbfb; }
+  .cb-6  { border-color: #eaa8a0; background: #fdf1ef; }
+  .cb-7  { border-color: #b0d99b; background: #f3fbee; }
+  .cb-8  { border-color: #e8b0e0; background: #fcf0fb; }
+  .cb-9  { border-color: #b3c6f0; background: #f0f4fe; }
+  .cb-10 { border-color: #f0c48a; background: #fdf3e6; }
+  .cb-11 { border-color: #9cc9c0; background: #edf8f5; }
+  .cb-12 { border-color: #e0a9c4; background: #fcf0f6; }
+  .cb-13 { border-color: #a8d0e0; background: #eef7fb; }
+  .cb-14 { border-color: #d0c090; background: #faf6e9; }
+  .cb-15 { border-color: #c0aee0; background: #f6f0fc; }
+
+  .av-interpretation ul { margin: 4px 0; padding-left: 20px; }
+  .av-interpretation li { margin: 3px 0; }
+  .av-label-Excellent, .av-label-Favorable   { color: #2e7d32; font-weight: bold; }
+  .av-label-Good                              { color: #4c8c3c; font-weight: bold; }
+  .av-label-Average                           { color: #a06a00; font-weight: bold; }
+  .av-label-Weak, .av-label-Unfavorable       { color: #b23b3b; font-weight: bold; }
+
+  .rel-Own      { color: #2e7d32; font-weight: bold; }
+  .rel-Friend   { color: #4c8c3c; font-weight: bold; }
+  .rel-Neutral  { color: #a06a00; font-weight: bold; }
+  .rel-Enemy    { color: #b23b3b; font-weight: bold; }
+  .score-positive { color: #2e7d32; font-weight: bold; }
+  .score-negative { color: #b23b3b; font-weight: bold; }
+
+  .dignity-Exalted     { color: #2e7d32; font-weight: bold; }
+  .dignity-Own-Sign    { color: #4c8c3c; font-weight: bold; }
+  .dignity-Neutral     { color: #666; }
+  .dignity-Debilitated { color: #b23b3b; font-weight: bold; }
+  .dignity-Moolatrikona { color: #2e7d32; font-weight: bold; }
+
+  .condition-flag-on  { color: #a04000; font-weight: bold; }
+  .condition-flag-off { color: #999; }
+
+  /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
+  .bav-weak       { background-color: #ffdcdc !important; }
+  .bav-average    { background-color: #fff6c9 !important; }
+  .bav-auspicious { background-color: #d9f2d9 !important; }
+  .bav-score-circle { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #555; background: #fff; font-weight: bold; font-size: 0.85em; color: #333; }
+  .vedic-chart-cell .bav-score-circle { width: 18px; height: 18px; font-size: 0.8em; margin-top: 2px; }
+  .bav-legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.2); }
+</style>
+</head>
+<body>
+<h1>Parashari Astrology</h1>
+<p id="engineStatusBadge" style="font-size:0.8em;color:#666;">Loading calculation engine...</p>
+
+<div class="tab-strip">
+  <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
+  <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
+  <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
+  <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
+  <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
+  <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
+  <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
+</div>
+
+<div class="controls">
+  <label><input type="checkbox" id="showSecondsToggle"> Show seconds in charts (off = degree-minute only)</label>
+</div>
+
+<div class="tab-panel active" id="tabMain">
+<p>All calculations run entirely in your browser, offline, using the real Swiss Ephemeris (WebAssembly) once loaded — no data leaves this page.</p>
+
+<h2>Birth Details</h2>
+<fieldset>
+  <label>Birth Date: <input type="date" id="birthLocalDate"></label>
+  <label>Birth Time (local clock time at birth place): <input type="time" id="birthLocalTime" step="1"></label><br><br>
+  <label>Birth Latitude: <input type="text" id="birthLat" placeholder="e.g. 28.6139"></label>
+  <label>Birth Longitude: <input type="text" id="birthLon" placeholder="e.g. 77.2090"></label><br><br>
+  <label>Timezone mode:
+    <select id="timezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="ianaZoneLabel">Time zone: <select id="ianaZone"></select></label>
+  <label id="utcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="utcOffset" placeholder="+5:30"></label><br><br>
+  <button id="generateChartBtn">Generate Chart (Offline)</button>
+  <button id="resetBtn" type="button">Reset</button>
+</fieldset>
+<div id="ascendantOutput" class="output-box pastel-peach"></div>
+
+<h2>Planet Table</h2>
+<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign.</p>
+<div id="planetTableOutput" class="output-box pastel-blue"></div>
+</div>
+
+<div class="tab-panel" id="tabCharts">
+<h2>D1 (Rasi) &amp; D9 (Navamsa) Charts</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Whole-sign houses: house 1 = Ascendant's sign.</p>
+<div class="controls">
+  <label>Layout:
+    <select id="chartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="chartsOutput"></div>
+</div>
+
+<div class="tab-panel" id="tabAshtakvarga">
+<h2>Ashtakvarga</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (per-planet bindus) and Sarvashtakavarga (total bindus) by house, counted from the Ascendant.</p>
+<div class="controls">
+  <span><span class="bav-legend-swatch bav-weak"></span>Weak</span>
+  <span><span class="bav-legend-swatch bav-average"></span>Average</span>
+  <span><span class="bav-legend-swatch bav-auspicious"></span>Auspicious</span>
+  <span style="font-size:0.8em;color:#666;">(Bhinnashtakavarga: 0-3 / 4-5 / 6-8 bindus. Sarvashtakavarga: &lt;20 / 20-29 / 30+.)</span>
+</div>
+<div id="ashtakvargaTableOutput" class="output-box pastel-yellow"></div>
+<h3>Sarvashtakavarga Chart</h3>
+<div class="controls">
+  <label>Layout:
+    <select id="avChartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="ashtakvargaChartOutput"></div>
+
+<h3>Interpretation (D1 Ashtakvarga)</h3>
+<div id="ashtakvargaInterpretationOutput" class="output-box pastel-mint av-interpretation"></div>
+</div>
+
+<div class="tab-panel" id="tabDivisional">
+<h2>Divisional (Varga) Charts</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. All 16 classical Shodasavarga divisional charts, shown together, each with its own border color.</p>
+<div class="controls">
+  <label>Layout:
+    <select id="divisionalChartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="divisionalChartOutput"></div>
+</div>
+
+<div class="tab-panel" id="tabStrength">
+<h2>Planet Relations Table</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Sign Lord Relation = the planet's Naisargika Maitri (natural friendship) relation to the lord of the sign it occupies ("Own" = its own sign). Conjunct/Aspected relations use the same natural-friendship lookup against each conjunct or aspecting planet.</p>
+<div id="relationsTableOutput" class="output-box pastel-lavender"></div>
+
+<h2>Strength Score Table</h2>
+<p>A simplified composite percentage score (-100 to +100) combining the Sign Lord Relation, Conjunction, and Aspect effects above — positive means favorable support for the native from that planet, negative means unfavorable. See the Strength tab's logic notes (planetaryStrength.js) for the exact weighting; this is a quick-read aggregate, not classical Shadbala.</p>
+<div id="strengthTableOutput" class="output-box pastel-pink"></div>
+</div>
+
+<div class="tab-panel" id="tabInterpretations">
+<h2>Interpretations</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. General classical readings for the Lagna, each planet's sign placement, and each planet's house placement — rule data lives in js/interpretations/ (a separate file per rule category).</p>
+
+<h3>1. Lagna (Ascendant)</h3>
+<div id="lagnaInterpretationOutput" class="output-box pastel-peach"></div>
+
+<h3>2. Planet in Sign</h3>
+<div id="planetInSignInterpretationOutput" class="output-box pastel-blue"></div>
+
+<h3>3. Planet in House</h3>
+<div id="planetInHouseInterpretationOutput" class="output-box pastel-mint"></div>
+
+<h3>4. Planetary Conditions: Dignity, Combustion &amp; Retrograde</h3>
+<p>Dignity = Exalted / Moolatrikona / Own Sign / Neutral / Debilitated, including whether an Exalted or Debilitated placement is "deep" (within 1° of the exact classical degree). Combust and Retrograde notes only appear when this chart actually has that condition for the planet.</p>
+<div id="planetConditionsOutput" class="output-box pastel-yellow"></div>
+</div>
+
+<div class="tab-panel" id="tabBhinnashtakavarga">
+<h2>Bhinnashtakavarga (All Planets)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (bindus, 0-8, per house) for each of the 7 classical planets, in table and chart form.</p>
+<div class="controls">
+  <span><span class="bav-legend-swatch bav-weak"></span>Weak (0-3 bindus)</span>
+  <span><span class="bav-legend-swatch bav-average"></span>Average (4-5 bindus)</span>
+  <span><span class="bav-legend-swatch bav-auspicious"></span>Auspicious (6-8 bindus)</span>
+</div>
+
+<h3>Table</h3>
+<div id="bavAllTableOutput" class="output-box pastel-yellow"></div>
+
+<h3>Charts</h3>
+<div class="controls">
+  <label>Layout:
+    <select id="bavAllChartLayout">
+      <option value="north" selected>North Indian</option>
+      <option value="south">South Indian</option>
+    </select>
+  </label>
+</div>
+<div class="vedic-chart-container" id="bavAllChartOutput"></div>
+</div>
+
+<script type="module" src="js/swissephBridge.js"></script>
+<script src="js/astronomy.browser.min.js"></script>
+<script src="js/parashariTables.js"></script>
+<script src="js/ephemeris.js"></script>
+<script src="js/combustion.js"></script>
+<script src="js/aspects.js"></script>
+<script src="js/conjunctions.js"></script>
+<script src="js/birthChart.js"></script>
+<script src="js/parashariCharts.js"></script>
+<script src="js/ashtakvarga.js"></script>
+<script src="js/ashtakvargaInterpretations.js"></script>
+<script src="js/divisionalCharts.js"></script>
+<script src="js/planetaryStrength.js"></script>
+<script src="js/interpretations/signTraits.js"></script>
+<script src="js/interpretations/planetTraits.js"></script>
+<script src="js/interpretations/houseThemes.js"></script>
+<script src="js/interpretations/dignityDetails.js"></script>
+<script src="js/interpretations/combustionInterpretations.js"></script>
+<script src="js/interpretations/retrogradeInterpretations.js"></script>
+<script src="js/interpretations/lagnaInterpretations.js"></script>
+<script src="js/interpretations/interpretationEngine.js"></script>
+<script src="js/timezone.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
