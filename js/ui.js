@@ -728,6 +728,58 @@ function generateChart() {
   }
 }
 
+// --- Location selectors (Native/Birth + Astrologer's Location) ---
+// Two independent instances of the same reusable component/service
+// (js/location/locationSelector.js + locationSearch.js). Neither's
+// selection is ever read by the other's calculation path.
+
+let astrologerLocationSelector = null;
+
+function renderAstrologerLocationOutput(location) {
+  const el = document.getElementById('astrologerLocationOutput');
+  if (!location) {
+    el.innerHTML = '<em>No astrologer/query location selected yet.</em>';
+    return;
+  }
+  const regionCountry = [location.state, location.country].filter(Boolean).join(', ');
+  el.innerHTML = `<strong>${location.name}</strong>${regionCountry ? ' — ' + regionCountry : ''}<br>
+    Latitude: ${location.latitude} &nbsp; Longitude: ${location.longitude} &nbsp; Timezone: ${location.timezone || '—'}`;
+}
+
+function initLocationSelectors() {
+  // Birth Location: writes into the EXISTING birthLat/birthLon/ianaZone
+  // fields that generateChart()/birthDateUtcFromInputs() already read —
+  // no change to the calculation pipeline itself, just a faster way to
+  // fill those same fields correctly (including timezone).
+  const birthLocationSelector = createLocationSelector({
+    inputId: 'birthPlaceSearch', dropdownId: 'birthPlaceDropdown',
+    stateFieldId: 'birthPlaceState', countryFieldId: 'birthPlaceCountry',
+    latFieldId: 'birthLat', lonFieldId: 'birthLon', timezoneSelectId: 'ianaZone',
+    editManualBtnId: 'birthPlaceEditManualBtn', label: 'Birth place',
+    onChange: location => {
+      if (location && !location.manual) {
+        document.getElementById('timezoneMode').value = 'iana';
+        document.getElementById('ianaZoneLabel').hidden = false;
+        document.getElementById('utcOffsetLabel').hidden = true;
+      }
+      if (location) generateChart();
+    }
+  });
+
+  astrologerLocationSelector = createLocationSelector({
+    inputId: 'astroPlaceSearch', dropdownId: 'astroPlaceDropdown',
+    stateFieldId: 'astroPlaceState', countryFieldId: 'astroPlaceCountry',
+    latFieldId: 'astroLat', lonFieldId: 'astroLon', timezoneSelectId: 'astroTimezone',
+    editManualBtnId: 'astroPlaceEditManualBtn', currentLocationBtnId: 'astroUseCurrentLocationBtn',
+    label: "Astrologer's location",
+    onChange: renderAstrologerLocationOutput
+  });
+  renderAstrologerLocationOutput(null);
+
+  state.birthLocationSelector = birthLocationSelector;
+  state.astrologerLocationSelector = astrologerLocationSelector;
+}
+
 // Auto-regenerate (debounced) whenever a birth input changes, so every tab
 // always reflects the latest entered data without requiring the button.
 function initAutoRegenerate() {
@@ -759,6 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('matchKundalisBtn').addEventListener('click', onMatchKundalisClick);
   document.getElementById('matchingResetBtn').addEventListener('click', resetMatchingForm);
   applyDefaultMatchingInputs();
+  populateIanaZoneSelect('astroTimezone');
+  initLocationSelectors();
   applyDefaultBirthInputs();
   document.getElementById('generateChartBtn').addEventListener('click', generateChart);
   document.getElementById('resetBtn').addEventListener('click', resetForm);
