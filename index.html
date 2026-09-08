@@ -103,14 +103,12 @@
   .mangal-partner ul { margin: 4px 0; padding-left: 20px; font-size: 0.9em; }
   .mangal-partner li { margin: 3px 0; }
 
-  .yoga-card { border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 14px; margin: 8px 0; background: rgba(255,255,255,0.55); }
-  .yoga-card-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-  .yoga-score-badge { border-radius: 12px; padding: 2px 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
-  .yoga-score-good { background: #2e7d32; }
-  .yoga-score-bad { background: #b23b3b; }
-  .yoga-planets { font-size: 0.85em; color: #555; margin: 3px 0; }
-  .yoga-description { font-size: 0.88em; }
-  .yoga-empty { font-style: italic; color: #777; }
+  .yoga-row-good   td { background-color: #d9f2d9 !important; }
+  .yoga-row-bad    td { background-color: #ffdcdc !important; }
+  .yoga-row-medium td { background-color: #fff3d6 !important; color: #666; }
+  span.yoga-row-good   { background-color: #d9f2d9; }
+  span.yoga-row-bad    { background-color: #ffdcdc; }
+  span.yoga-row-medium { background-color: #fff3d6; }
 
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
@@ -317,13 +315,13 @@
 
 <div class="tab-panel" id="tabYogas">
 <h2>Yogas (Planetary Combinations)</h2>
-<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart — auspicious yogas are listed best first, inauspicious yogas worst first.</p>
-
-<h3>Auspicious Yogas (Best First)</h3>
-<div id="goodYogasOutput" class="output-box pastel-mint"></div>
-
-<h3>Inauspicious Yogas (Worst First)</h3>
-<div id="badYogasOutput" class="output-box pastel-pink"></div>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart. Present auspicious yogas are listed first (best/highest magnitude first), then present inauspicious yogas (worst/highest magnitude first), then every yoga not found in this chart — its derivation and meaning are always shown either way.</p>
+<div class="controls">
+  <span><span class="bav-legend-swatch yoga-row-good"></span>Present — Auspicious</span>
+  <span><span class="bav-legend-swatch yoga-row-bad"></span>Present — Inauspicious</span>
+  <span><span class="bav-legend-swatch yoga-row-medium"></span>Not Present</span>
+</div>
+<div id="yogasTableOutput" class="output-box pastel-yellow"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>

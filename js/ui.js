@@ -124,8 +124,7 @@ function clearOutputs() {
   document.getElementById('planetConditionsOutput').innerHTML = '';
   document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('bavAllChartOutput').innerHTML = '';
-  document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
-  document.getElementById('badYogasOutput').innerHTML = '';
+  document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
 }
 
 function resetForm() {
@@ -431,32 +430,38 @@ function renderBavAllTab() {
 
 // --- Yogas ---
 
-function renderYogaList(elId, yogas, scoreClass, scoreField) {
-  const el = document.getElementById(elId);
-  if (!yogas.length) {
-    el.innerHTML = `<p class="yoga-empty">None of the coded yogas were found for this chart.</p>`;
-    return;
-  }
-  el.innerHTML = yogas.map(y => `
-    <div class="yoga-card">
-      <div class="yoga-card-header">
-        <span>${y.name}</span>
-        <span class="yoga-score-badge ${scoreClass}">${y[scoreField]}</span>
-      </div>
-      <div class="yoga-planets">Planets involved: ${y.planets.join(', ')}</div>
-      <div class="yoga-description">${y.description}</div>
-    </div>`).join('');
+function yogaRowClass(row) {
+  if (!row.present) return 'yoga-row-medium';
+  return row.polarity === 'good' ? 'yoga-row-good' : 'yoga-row-bad';
+}
+
+function renderYogasTable(yogaResult) {
+  const el = document.getElementById('yogasTableOutput');
+  const rows = yogaResult.rows.map(r => `
+    <tr class="${yogaRowClass(r)}">
+      <td>${r.name}</td>
+      <td>${r.howDerived}</td>
+      <td>${r.meaning}</td>
+      <td>${r.present ? 'Yes' : 'No'}</td>
+      <td><strong>${r.magnitude}</strong></td>
+      <td>${r.present ? r.details : '—'}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Yoga</th><th>How It's Derived</th><th>What It Means</th><th>Present</th><th>Magnitude</th><th>Details (this chart)</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 function renderYogasTab() {
   if (!state.chart) {
-    document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
-    document.getElementById('badYogasOutput').innerHTML = '';
+    document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     return;
   }
-  const { goodYogas, badYogas } = state.yogas || computeYogas(state.chart.planets, state.chart.ascendant);
-  renderYogaList('goodYogasOutput', goodYogas, 'yoga-score-good', 'strength');
-  renderYogaList('badYogasOutput', badYogas, 'yoga-score-bad', 'severity');
+  const yogaResult = state.yogas || computeYogas(state.chart.planets, state.chart.ascendant);
+  renderYogasTable(yogaResult);
 }
 
 // --- Kundali Matching ---
@@ -761,8 +766,7 @@ function generateChart() {
     document.getElementById('planetConditionsOutput').innerHTML = '';
     document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('bavAllChartOutput').innerHTML = '';
-    document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
-    document.getElementById('badYogasOutput').innerHTML = '';
+    document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
