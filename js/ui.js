@@ -466,40 +466,107 @@ function renderYogasTab() {
   renderYogasTable(yogaResult);
 }
 
-// --- Vimshottari Dasha ---
+// --- Vimshottari Dasha: 4-level drill-down (MD -> AD -> PD -> SD) ---
+// state.dashaSelection = { antarIndex, pratyIndex } — which AD/PD is
+// currently drilled into (cleared on a fresh Generate Chart). Each level's
+// column is independently re-rendered; selecting a row in one column
+// populates the next column and clears any deeper selection.
 
-function formatDashaDate(date) {
-  return date.toISOString().slice(0, 10);
+const DASHA_LEVEL_LABELS = ['Mahadasha', 'Antardasha', 'Pratyantardasha', 'Sookshma Dasha'];
+
+function formatDashaDateTime(date) {
+  const tz = (state.chart && state.chart.birthTimeZoneInfo) || null;
+  if (tz && tz.mode === 'iana') {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz.zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(date).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    } catch (e) { /* fall through to UTC-based formatting below */ }
+  }
+  if (tz && tz.mode === 'offset' && typeof tz.offsetMinutes === 'number') {
+    const shifted = new Date(date.getTime() + tz.offsetMinutes * 60000);
+    return shifted.toISOString().slice(0, 16).replace('T', ' ');
+  }
+  return date.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 }
 
-function renderDashaTable(mahadashas) {
-  const el = document.getElementById('dashaTableOutput');
-  const { maha: currentMaha, antar: currentAntar } = findCurrentDasha(mahadashas);
-  const rows = mahadashas.map(maha => {
-    const isCurrentMaha = maha === currentMaha;
-    const mahaRow = `
-      <tr class="dasha-maha-row${isCurrentMaha ? ' dasha-current' : ''}">
-        <td><strong>${maha.lord} Mahadasha</strong></td>
-        <td>${formatDashaDate(maha.startDate)}</td>
-        <td>${formatDashaDate(maha.endDate)}</td>
-        <td>${maha.years.toFixed(2)} yrs</td>
+function formatAge(age) {
+  return `${age.years}y ${age.months}m ${age.days}d`;
+}
+
+function formatDuration(years) {
+  const totalDays = Math.round(years * 365.25);
+  const y = Math.floor(totalDays / 365.25);
+  const remDays = Math.round(totalDays - y * 365.25);
+  const m = Math.floor(remDays / 30.44);
+  const d = Math.round(remDays - m * 30.44);
+  return `${y}y ${m}m ${d}d`;
+}
+
+// Renders one drill-down column (a <table>) for one dasha level.
+// periods: array of {lord, years, startDate, endDate}.
+// onRowClick(index): called when a row is clicked (ignored for the deepest level).
+function renderDashaColumn(containerId, levelLabel, periods, selectedIndex, onRowClick) {
+  const container = document.getElementById(containerId);
+  if (!periods || !periods.length) { container.innerHTML = ''; return; }
+  const currentIndex = findCurrentIndex(periods);
+  const rows = periods.map((p, i) => {
+    const classes = [];
+    if (i === selectedIndex) classes.push('dasha-selected');
+    else if (i === currentIndex) classes.push('dasha-current');
+    const clickable = onRowClick ? ' class="dasha-clickable"' : '';
+    return `
+      <tr class="${classes.join(' ')}" data-index="${i}">
+        <td${clickable}><a href="#" class="dasha-lord-link" data-index="${i}">${p.lord}</a></td>
+        <td>${formatDashaDateTime(p.startDate)}</td>
+        <td>${formatAge(ageAt(state.chart.birthUtc, p.startDate))}</td>
+        <td>${formatDuration(p.years)}</td>
       </tr>`;
-    const antarRows = maha.antardashas.map(antar => `
-      <tr class="dasha-antar-row${antar === currentAntar ? ' dasha-current' : ''}">
-        <td>&nbsp;&nbsp;&nbsp;&nbsp;${maha.lord} / ${antar.lord} Antardasha</td>
-        <td>${formatDashaDate(antar.startDate)}</td>
-        <td>${formatDashaDate(antar.endDate)}</td>
-        <td>${antar.years.toFixed(2)} yrs</td>
-      </tr>`).join('');
-    return mahaRow + antarRows;
   }).join('');
 
-  el.innerHTML = `
-    <p style="font-size:0.85em;color:#555;">The currently running Mahadasha/Antardasha (as of today) is highlighted.</p>
-    <table>
-      <thead><tr><th>Period</th><th>Start</th><th>End</th><th>Duration</th></tr></thead>
+  container.innerHTML = `
+    <h4>${levelLabel}</h4>
+    <table class="dasha-column-table">
+      <thead><tr><th>Lord</th><th>Start (birth time zone)</th><th>Age at Start</th><th>Duration</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+  if (onRowClick) {
+    container.querySelectorAll('.dasha-lord-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        onRowClick(Number(link.dataset.index));
+      });
+    });
+  }
+}
+
+function renderDashaColumns() {
+  const mahadashas = state.dasha;
+  const sel = state.dashaSelection || {};
+
+  renderDashaColumn('dashaColumnMD', 'Mahadasha (MD)', mahadashas, sel.mahaIndex, (i) => {
+    state.dashaSelection = { mahaIndex: i };
+    renderDashaColumns();
+  });
+
+  const selectedMaha = sel.mahaIndex !== undefined ? mahadashas[sel.mahaIndex] : null;
+  renderDashaColumn('dashaColumnAD', 'Antardasha (AD)', selectedMaha ? selectedMaha.antardashas : null, sel.antarIndex, (i) => {
+    state.dashaSelection = { mahaIndex: sel.mahaIndex, antarIndex: i };
+    renderDashaColumns();
+  });
+
+  const selectedAntar = selectedMaha && sel.antarIndex !== undefined ? selectedMaha.antardashas[sel.antarIndex] : null;
+  const pratyantardashas = selectedAntar ? buildSubPeriods(selectedAntar.lord, selectedAntar.years, selectedAntar.startDate) : null;
+  renderDashaColumn('dashaColumnPD', 'Pratyantardasha (PD)', pratyantardashas, sel.pratyIndex, (i) => {
+    state.dashaSelection = { mahaIndex: sel.mahaIndex, antarIndex: sel.antarIndex, pratyIndex: i };
+    renderDashaColumns();
+  });
+
+  const selectedPraty = pratyantardashas && sel.pratyIndex !== undefined ? pratyantardashas[sel.pratyIndex] : null;
+  const sookshmaDashas = selectedPraty ? buildSubPeriods(selectedPraty.lord, selectedPraty.years, selectedPraty.startDate) : null;
+  renderDashaColumn('dashaColumnSD', 'Sookshma Dasha (SD)', sookshmaDashas, null, null);
 }
 
 function renderDashaTab() {
@@ -507,8 +574,19 @@ function renderDashaTab() {
     document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     return;
   }
-  const mahadashas = state.dasha || computeVimshottariDasha(state.chart.planets.find(p => p.name === 'Moon').longitude, state.chart.birthUtc);
-  renderDashaTable(mahadashas);
+  if (!state.dasha) {
+    state.dasha = computeVimshottariDasha(state.chart.planets.find(p => p.name === 'Moon').longitude, state.chart.birthUtc);
+  }
+  if (!state.dashaSelection) state.dashaSelection = {};
+  document.getElementById('dashaTableOutput').innerHTML = `
+    <p style="font-size:0.85em;color:#555;">Click a planet name to drill into its sub-periods. Orange = currently running (as of today); yellow = your selection.</p>
+    <div class="dasha-columns">
+      <div id="dashaColumnMD" class="dasha-column"></div>
+      <div id="dashaColumnAD" class="dasha-column"></div>
+      <div id="dashaColumnPD" class="dasha-column"></div>
+      <div id="dashaColumnSD" class="dasha-column"></div>
+    </div>`;
+  renderDashaColumns();
 }
 
 // --- Kundali Matching ---
@@ -781,9 +859,14 @@ function generateChart() {
     if (isNaN(lat) || isNaN(lon)) throw new Error('Enter valid birth latitude and longitude.');
 
     const { planets, ascendant } = generateBirthChart(birthUtc, lat, lon);
-    state.chart = { planets, ascendant, birthUtc };
+    const tzMode = document.getElementById('timezoneMode').value;
+    const birthTimeZoneInfo = tzMode === 'iana'
+      ? { mode: 'iana', zone: document.getElementById('ianaZone').value }
+      : { mode: 'offset', offsetMinutes: parseUtcOffsetToMinutes(document.getElementById('utcOffset').value || '0') };
+    state.chart = { planets, ascendant, birthUtc, birthTimeZoneInfo };
     state.yogas = computeYogas(planets, ascendant);
     state.dasha = computeVimshottariDasha(planets.find(p => p.name === 'Moon').longitude, birthUtc);
+    state.dashaSelection = {}; // clears any drill-down selection from a previous chart
     // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
     // re-rendered from this fresh state, so any change to the birth inputs
     // automatically propagates everywhere the next time this runs.

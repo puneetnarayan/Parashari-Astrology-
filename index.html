@@ -110,9 +110,16 @@
   span.yoga-row-bad    { background-color: #ffdcdc; }
   span.yoga-row-medium { background-color: #fff3d6; }
 
-  .dasha-maha-row td { background-color: #eef2ff; }
-  .dasha-antar-row td { font-size: 0.9em; color: #444; }
-  .dasha-current td { background-color: #fff3b0 !important; font-weight: bold; }
+  .dasha-columns { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .dasha-column { flex: 1 1 260px; min-width: 240px; }
+  .dasha-column h4 { margin: 0 0 6px 0; }
+  .dasha-column-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  .dasha-column-table th, .dasha-column-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  .dasha-lord-link { background: none; border: none; padding: 0; color: #1a5cb0; text-decoration: underline; cursor: pointer; font: inherit; }
+  .dasha-lord-link:hover { color: #0d3a75; }
+  /* Current running period: orange. A user-selected (clicked) row: yellow. Current takes visual precedence if a row is both. */
+  .dasha-selected td { background-color: #fff3b0 !important; }
+  .dasha-current td { background-color: #ffb347 !important; font-weight: bold; }
 
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
@@ -331,7 +338,7 @@
 
 <div class="tab-panel" id="tabDasha">
 <h2>Vimshottari Dasha</h2>
-<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart from the Moon's nakshatra at birth — the classical 120-year Mahadasha/Antardasha cycle, with today's currently running period highlighted.</p>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart from the Moon's nakshatra at birth — the classical 120-year Vimshottari cycle, shown to 4 levels: Mahadasha (MD), Antardasha (AD), Pratyantardasha (PD) and Sookshma Dasha (SD). Click a planet name in a column to open its sub-periods in the next column. The currently running period at each level is highlighted <strong style="color:#b35c00;">orange</strong>; any row you click is highlighted <strong style="background:#fff3b0;">yellow</strong>.</p>
 <div id="dashaTableOutput" class="output-box pastel-mint"></div>
 </div>
 
