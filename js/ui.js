@@ -37,6 +37,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabStrength') renderStrengthTab();
       if (btn.dataset.tab === 'tabInterpretations') renderInterpretationsTab();
       if (btn.dataset.tab === 'tabBhinnashtakavarga') renderBavAllTab();
+      if (btn.dataset.tab === 'tabYogas') renderYogasTab();
     });
   });
 }
@@ -123,6 +124,8 @@ function clearOutputs() {
   document.getElementById('planetConditionsOutput').innerHTML = '';
   document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('bavAllChartOutput').innerHTML = '';
+  document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('badYogasOutput').innerHTML = '';
 }
 
 function resetForm() {
@@ -426,6 +429,36 @@ function renderBavAllTab() {
   renderBavAllCharts(av);
 }
 
+// --- Yogas ---
+
+function renderYogaList(elId, yogas, scoreClass, scoreField) {
+  const el = document.getElementById(elId);
+  if (!yogas.length) {
+    el.innerHTML = `<p class="yoga-empty">None of the coded yogas were found for this chart.</p>`;
+    return;
+  }
+  el.innerHTML = yogas.map(y => `
+    <div class="yoga-card">
+      <div class="yoga-card-header">
+        <span>${y.name}</span>
+        <span class="yoga-score-badge ${scoreClass}">${y[scoreField]}</span>
+      </div>
+      <div class="yoga-planets">Planets involved: ${y.planets.join(', ')}</div>
+      <div class="yoga-description">${y.description}</div>
+    </div>`).join('');
+}
+
+function renderYogasTab() {
+  if (!state.chart) {
+    document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('badYogasOutput').innerHTML = '';
+    return;
+  }
+  const { goodYogas, badYogas } = state.yogas || computeYogas(state.chart.planets, state.chart.ascendant);
+  renderYogaList('goodYogasOutput', goodYogas, 'yoga-score-good', 'strength');
+  renderYogaList('badYogasOutput', badYogas, 'yoga-score-bad', 'severity');
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -697,6 +730,7 @@ function generateChart() {
 
     const { planets, ascendant } = generateBirthChart(birthUtc, lat, lon);
     state.chart = { planets, ascendant };
+    state.yogas = computeYogas(planets, ascendant);
     // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
     // re-rendered from this fresh state, so any change to the birth inputs
     // automatically propagates everywhere the next time this runs.
@@ -708,8 +742,10 @@ function generateChart() {
     renderStrengthTab();
     renderInterpretationsTab();
     renderBavAllTab();
+    renderYogasTab();
   } catch (err) {
     state.chart = null;
+    state.yogas = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
     document.getElementById('planetTableOutput').innerHTML = '';
     document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
@@ -725,6 +761,8 @@ function generateChart() {
     document.getElementById('planetConditionsOutput').innerHTML = '';
     document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('bavAllChartOutput').innerHTML = '';
+    document.getElementById('goodYogasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('badYogasOutput').innerHTML = '';
   }
 }
 

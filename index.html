@@ -103,6 +103,15 @@
   .mangal-partner ul { margin: 4px 0; padding-left: 20px; font-size: 0.9em; }
   .mangal-partner li { margin: 3px 0; }
 
+  .yoga-card { border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 10px 14px; margin: 8px 0; background: rgba(255,255,255,0.55); }
+  .yoga-card-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+  .yoga-score-badge { border-radius: 12px; padding: 2px 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
+  .yoga-score-good { background: #2e7d32; }
+  .yoga-score-bad { background: #b23b3b; }
+  .yoga-planets { font-size: 0.85em; color: #555; margin: 3px 0; }
+  .yoga-description { font-size: 0.88em; }
+  .yoga-empty { font-style: italic; color: #777; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -125,6 +134,7 @@
   <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
   <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
   <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
+  <button class="tab-button" id="tabBtnYogas" data-tab="tabYogas">Yogas</button>
 </div>
 
 <div class="controls">
@@ -305,6 +315,17 @@
 <div id="matchingOutput" class="output-box pastel-lavender"></div>
 </div>
 
+<div class="tab-panel" id="tabYogas">
+<h2>Yogas (Planetary Combinations)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart — auspicious yogas are listed best first, inauspicious yogas worst first.</p>
+
+<h3>Auspicious Yogas (Best First)</h3>
+<div id="goodYogasOutput" class="output-box pastel-mint"></div>
+
+<h3>Inauspicious Yogas (Worst First)</h3>
+<div id="badYogasOutput" class="output-box pastel-pink"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -329,6 +350,8 @@
 <script src="js/matching/ashtakootRules.js"></script>
 <script src="js/matching/mangalDoshaRules.js"></script>
 <script src="js/matching/kundaliMatching.js"></script>
+<script src="js/yogas/yogaRules.js"></script>
+<script src="js/yogas/yogaEngine.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
