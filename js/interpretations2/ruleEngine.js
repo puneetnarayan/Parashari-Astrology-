@@ -21,7 +21,7 @@ const RULE_ENGINE_LOGIC_TEXT = [
   ['5. Conjunction narratives combine each pair\'s Naisargika Maitri relation (from planetaryStrength.js) with both planets\' significations; a 3-or-more-planet stellium and a within-1 deg Graha Yuddha (planetary war, among Mars/Mercury/Jupiter/Venus/Saturn only) are flagged separately.'],
   ['6. Aspect narratives classify each aspecting planet as a natural benefic (Jupiter/Venus/unafflicted Mercury/waxing Moon) or malefic (Sun/Mars/Saturn/Rahu/Ketu) and note mutual (bidirectional) aspects.'],
   ['7. Functional Benefic/Malefic Classification (the 7 classical planets only) follows the lordship rule: a planet ruling a Trikona (1st/5th/9th) AND a Kendra (1st/4th/7th/10th) house from this Lagna is a Yogakaraka; Trikona-only is a functional benefic; Kendra-only is functionally neutral; a planet ruling ONLY Dusthana houses (6th/8th/12th) is a functional malefic. Rahu/Ketu are not classical house lords and are treated by their natural-malefic tendency, tempered by dispositor, instead.'],
-  ['8. Neecha Bhanga (debilitation cancellation) here checks 3 of the 5 classically cited conditions (the dispositor of the debilitation sign in a Kendra from Lagna; the debilitated planet conjunct/aspected by its own exaltation-sign lord; the dispositor itself being exalted) — flagged as "possible cancellation, verify manually" rather than a final verdict, since sources differ on the full condition set.'],
+  ['8. Neecha Bhanga (debilitation cancellation) here checks 4 commonly cited conditions, applied only to the 7 classical planets (Rahu/Ketu have no settled classical exaltation/debilitation, per this app\'s own caveat): (a) the dispositor of the debilitation sign is in a Kendra (1/4/7/10) from Lagna OR from the Moon; (b) the lord of the debilitated planet\'s OWN exaltation sign is in a Kendra from Lagna or Moon — distinct from (c); (c) the planet that is itself EXALTED IN the debilitated planet\'s current sign is conjunct with, or aspects, the debilitated planet; (d) the dispositor is itself exalted. Flagged as "possible cancellation, verify manually" rather than a final verdict, since sources also cite a 5th/6th condition (the debilitated planet being retrograde, or exalted in Navamsa) that this engine does not check.'],
   [''],
   ['Caveat: as the reference spec itself notes, several thresholds here (Gandanta orb, Graha Yuddha winner convention, functional-benefic edge cases) vary across classical sources; this engine picks one commonly used convention per rule and states it, rather than asserting false precision.']
 ];
@@ -197,34 +197,69 @@ function neechaBhangaCheck(planets, lagnaSign) {
   const byName = {};
   planets.forEach(p => { byName[p.name] = p; });
   const lagnaSignIndex = SIGNS.indexOf(lagnaSign);
+  const moon = byName.Moon;
+  const moonSignIndex = moon ? SIGNS.indexOf(moon.sign) : null;
+  const classicalPlanets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+  // A placement is a Kendra (1/4/7/10) from EITHER the Lagna or the Moon —
+  // most classical sources cite the condition disjunctively ("from Lagna or
+  // from Moon"), not Lagna alone.
+  function isKendraFromLagnaOrMoon(signName) {
+    const idx = SIGNS.indexOf(signName);
+    const fromLagna = wholeSignHouseOf(idx, lagnaSignIndex);
+    const fromMoon = moonSignIndex !== null ? wholeSignHouseOf(idx, moonSignIndex) : null;
+    return {
+      fromLagna: [1, 4, 7, 10].includes(fromLagna) ? fromLagna : null,
+      fromMoon: fromMoon !== null && [1, 4, 7, 10].includes(fromMoon) ? fromMoon : null
+    };
+  }
+
   const results = [];
   planets.forEach(p => {
+    if (!classicalPlanets.includes(p.name)) return; // Rahu/Ketu excluded: no settled classical exaltation/debilitation, per this app's own caveat
     if (DEBILITATION_SIGN[p.name] !== p.sign) return;
     const dispositorName = SIGN_LORD[p.sign];
     const dispositor = byName[dispositorName];
     const conditions = [];
+
+    // 1. Dispositor (lord of the sign occupied) is in a Kendra from Lagna or Moon.
     if (dispositor) {
-      const dispositorHouse = wholeSignHouseOf(SIGNS.indexOf(dispositor.sign), lagnaSignIndex);
-      if ([1, 4, 7, 10].includes(dispositorHouse)) {
-        conditions.push(`its dispositor ${dispositorName} is placed in a Kendra (house ${dispositorHouse}) from Lagna`);
+      const k = isKendraFromLagnaOrMoon(dispositor.sign);
+      if (k.fromLagna) conditions.push(`its dispositor ${dispositorName} is in a Kendra (house ${k.fromLagna}) from Lagna`);
+      else if (k.fromMoon) conditions.push(`its dispositor ${dispositorName} is in a Kendra (house ${k.fromMoon}) from the Moon`);
+    }
+
+    // 2. The lord of THIS planet's own exaltation sign is in a Kendra from Lagna or Moon.
+    const exaltSignLordName = SIGN_LORD[EXALTATION_SIGN[p.name]];
+    const exaltSignLord = byName[exaltSignLordName];
+    if (exaltSignLord && exaltSignLordName !== p.name) {
+      const k = isKendraFromLagnaOrMoon(exaltSignLord.sign);
+      if (k.fromLagna) conditions.push(`the lord of its own exaltation sign, ${exaltSignLordName}, is in a Kendra (house ${k.fromLagna}) from Lagna`);
+      else if (k.fromMoon) conditions.push(`the lord of its own exaltation sign, ${exaltSignLordName}, is in a Kendra (house ${k.fromMoon}) from the Moon`);
+    }
+
+    // 3. The planet that is EXALTED IN this debilitation sign (not the same as
+    // condition 2's "lord of the exaltation sign") is conjunct with, or
+    // aspects, the debilitated planet.
+    const exaltedInThisSignName = classicalPlanets.find(name => EXALTATION_SIGN[name] === p.sign && name !== p.name);
+    if (exaltedInThisSignName) {
+      if ((p.conjunctWith || []).includes(exaltedInThisSignName)) {
+        conditions.push(`it is conjunct ${exaltedInThisSignName}, which is exalted in this very sign (${p.sign})`);
+      } else if ((p.aspectedBy || []).includes(exaltedInThisSignName)) {
+        conditions.push(`it is aspected by ${exaltedInThisSignName}, which is exalted in this very sign (${p.sign})`);
       }
-      if (EXALTATION_SIGN[dispositorName] === dispositor.sign) {
-        conditions.push(`its dispositor ${dispositorName} is itself exalted (in ${dispositor.sign})`);
-      }
     }
-    const exaltLordName = SIGN_LORD[EXALTATION_SIGN[p.name]];
-    const exaltLord = byName[exaltLordName];
-    if (exaltLord && (p.conjunctWith || []).includes(exaltLordName)) {
-      conditions.push(`it is conjunct its own exaltation-sign lord (${exaltLordName})`);
+
+    // 4. The dispositor is itself exalted.
+    if (dispositor && EXALTATION_SIGN[dispositorName] === dispositor.sign) {
+      conditions.push(`its dispositor ${dispositorName} is itself exalted (in ${dispositor.sign})`);
     }
-    if (exaltLord && (p.aspectedBy || []).includes(exaltLordName)) {
-      conditions.push(`it is aspected by its own exaltation-sign lord (${exaltLordName})`);
-    }
+
     results.push({
       planet: p.name, sign: p.sign, conditionsMet: conditions,
       text: conditions.length
-        ? `${p.name} is debilitated in ${p.sign}, but ${conditions.length} classical cancellation (Neecha Bhanga) condition(s) checked here are met: ${conditions.join('; ')}. This is a POSSIBLE cancellation — verify against your source text, since only 3 of the 5 commonly cited conditions are checked by this engine.`
-        : `${p.name} is debilitated in ${p.sign}. None of the 3 cancellation conditions checked here are met (dispositor in Kendra, dispositor exalted, conjunct/aspected by its own exaltation-sign lord) — this does not rule out cancellation by one of the 2 conditions this engine does not check; verify manually if needed.`
+        ? `${p.name} is debilitated in ${p.sign}, but ${conditions.length} classical cancellation (Neecha Bhanga) condition(s) checked here are met: ${conditions.join('; ')}. This is a POSSIBLE cancellation — verify against your source text, since sources cite a 5th-6th condition (e.g. the debilitated planet itself being retrograde, or exalted in Navamsa) that this engine does not check.`
+        : `${p.name} is debilitated in ${p.sign}. None of the 4 cancellation conditions checked here are met (dispositor in Kendra from Lagna/Moon; lord of its own exaltation sign in Kendra from Lagna/Moon; conjunct/aspected by the planet exalted in this sign; dispositor itself exalted) — this does not rule out cancellation by another classically cited condition (e.g. retrograde status, Navamsa exaltation) that this engine does not check; verify manually if needed.`
     });
   });
   return results;
