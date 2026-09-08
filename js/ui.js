@@ -589,6 +589,65 @@ function renderDashaTab() {
   renderDashaColumns();
 }
 
+// --- Interpretation-2 (reference spec, static content) ---
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderRuleTabulationTable(rows, headers) {
+  const head = `<tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+  const body = rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('');
+  return `<table class="interp2-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+function renderInterpretation2Tab() {
+  const el = document.getElementById('interpretation2Output');
+  if (!el) return;
+
+  const futureTopicsHtml = INTERPRETATION2_FUTURE_TOPICS
+    .map(([title, note]) => `<li><strong>${escapeHtml(title)}</strong> — ${escapeHtml(note)}</li>`)
+    .join('');
+
+  el.innerHTML = `
+    <p>${escapeHtml(INTERPRETATION2_INTRO.trim())}</p>
+    <div class="interp2-note">${escapeHtml(INTERPRETATION2_ACCURACY_NOTE.trim())}</div>
+
+    <h3>1. System Prompt (for an LLM-based interpretation engine)</h3>
+    <div class="interp2-pre">${escapeHtml(INTERPRETATION2_SYSTEM_PROMPT)}</div>
+
+    <h3>2. Expected Input Schema (example)</h3>
+    <div class="interp2-pre">${escapeHtml(INTERPRETATION2_INPUT_SCHEMA)}</div>
+
+    <h3>3. Suggested Per-Topic Call Structure</h3>
+    <p>${escapeHtml(INTERPRETATION2_CALL_STRUCTURE.trim())}</p>
+
+    <h3>4. Topics Worth Adding Later</h3>
+    <ul>${futureTopicsHtml}</ul>
+
+    <h3>5. Rule Taxonomy Workbook — Category Summary</h3>
+    ${renderRuleTabulationTable(
+      RULE_TABULATION_SUMMARY.map(([cat, count, type]) => [cat, count, type]),
+      ['Category', 'Rule Count', 'Core / Optional']
+    )}
+    <p style="font-size:0.85em;color:#555;">
+      Core build total: <strong>${RULE_TABULATION_TOTALS.core}</strong> &nbsp;|&nbsp;
+      Optional Phase 2 total: <strong>${RULE_TABULATION_TOTALS.optionalPhase2}</strong> &nbsp;|&nbsp;
+      Grand total: <strong>${RULE_TABULATION_TOTALS.grandTotal}</strong>
+    </p>
+    <div class="interp2-note">${escapeHtml(RULE_TABULATION_TOTALS.note)}</div>
+
+    <h3>6. Rule Taxonomy Workbook — Rule Detail</h3>
+    ${renderRuleTabulationTable(
+      RULE_TABULATION_DETAIL.map(([n, cat, sub, count, type, notes]) => [n, cat, sub, count, type, notes || '']),
+      ['#', 'Category', 'Subcategory', 'Rule Count', 'Type', 'Notes']
+    )}
+
+    <h3>7. Read Me (workbook)</h3>
+    <div class="interp2-pre">${escapeHtml(RULE_TABULATION_READ_ME.trim())}</div>
+  `;
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -951,6 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDivisionalTab();
   });
   initAutoRegenerate();
+  renderInterpretation2Tab();
   generateChart();
   // The initial generateChart() above can run before Swiss Ephemeris
   // finishes loading (it's async), in which case it silently used the

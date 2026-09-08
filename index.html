@@ -121,6 +121,13 @@
   .dasha-selected td { background-color: #fff3b0 !important; }
   .dasha-current td { background-color: #ffb347 !important; font-weight: bold; }
 
+  /* Interpretation-2 reference tab: long verbatim spec text + reference tables */
+  .interp2-pre { white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 0.82em; line-height: 1.4; background: #fffefa; border: 1px solid #ddd; padding: 12px; overflow-x: auto; }
+  .interp2-note { font-style: italic; color: #664400; background: #fff8e1; border-left: 3px solid #e0a800; padding: 8px 12px; margin: 10px 0; }
+  .interp2-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin: 10px 0; }
+  .interp2-table th, .interp2-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; }
+  .interp2-table th { background: #f0f0f0; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -141,6 +148,7 @@
   <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
   <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
   <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
+  <button class="tab-button" id="tabBtnInterpretations2" data-tab="tabInterpretations2">Interpretation-2</button>
   <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
   <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
   <button class="tab-button" id="tabBtnYogas" data-tab="tabYogas">Yogas</button>
@@ -259,6 +267,11 @@
 <div id="planetConditionsOutput" class="output-box pastel-yellow"></div>
 </div>
 
+<div class="tab-panel" id="tabInterpretations2">
+<h2>Interpretation-2 (Reference Spec)</h2>
+<div id="interpretation2Output" class="output-box pastel-peach"></div>
+</div>
+
 <div class="tab-panel" id="tabBhinnashtakavarga">
 <h2>Bhinnashtakavarga (All Planets)</h2>
 <p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (bindus, 0-8, per house) for each of the 7 classical planets, in table and chart form.</p>
@@ -363,6 +376,7 @@
 <script src="js/interpretations/retrogradeInterpretations.js"></script>
 <script src="js/interpretations/lagnaInterpretations.js"></script>
 <script src="js/interpretations/interpretationEngine.js"></script>
+<script src="js/interpretations2/promptReference.js"></script>
 <script src="js/matching/ashtakootRules.js"></script>
 <script src="js/matching/mangalDoshaRules.js"></script>
 <script src="js/matching/kundaliMatching.js"></script>
