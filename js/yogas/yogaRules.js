@@ -16,7 +16,7 @@ const YOGA_RULES_LOGIC_TEXT = [
   ['3. Kendra houses = 1, 4, 7, 10. Trikona (trine) houses = 1, 5, 9. Dusthana (malefic) houses = 6, 8, 12 — the classical building blocks most yogas below are defined in terms of.'],
   ['4. Raja Yoga and Neecha Bhanga Raja Yoga can each be satisfied by more than one planet pairing in the same chart; when that happens the strongest pairing sets the magnitude and all matching pairings are listed in the Details column.'],
   [''],
-  ['Caveat: yoga detection is one of the most elaborated (and most debated) areas of classical practice — this is a representative, commonly-taught subset (Panch Mahapurush, Gaja Kesari, Raja/Dhana combinations, Neecha Bhanga, Budhaditya, Chandra-Mangal, Kaal Sarpa, Kemadruma, and several others), not an exhaustive classical catalog. Cancellation/exception sub-rules beyond what is coded here are not evaluated.']
+  ['Caveat: yoga detection is one of the most elaborated (and most debated) areas of classical practice — this is a representative, commonly-taught subset (Panch Mahapurush, Gaja Kesari, Raja/Dhana combinations, Neecha Bhanga, Budhaditya, Chandra-Mangal, Kaal Sarpa, Kemadruma, and several others), not an exhaustive classical catalog. Cancellation/exception sub-rules beyond what is coded here are not evaluated. Sunapha/Anapha/Durudhara/Vesi/Vasi/Ubhayachari restrict "any other planet" to the 5 classical non-luminary grahas (Rahu/Ketu excluded), the commonly followed classical convention. Kaal Sarpa and Shrapit Yoga are popular modern/folk-astrology combinations, not terms found in Brihat Parashara Hora Shastra itself, though both are widely taught.']
 ];
 
 const KENDRA_HOUSES = [1, 4, 7, 10];
@@ -112,20 +112,39 @@ function rajaYoga(planets, ascendant) {
   };
 }
 
+// Kendra (1/4/7/10) from EITHER Lagna or the Moon — most classical sources
+// cite Neecha Bhanga's Kendra condition disjunctively ("from Lagna or from
+// Moon"), matching the fuller check in interpretations2/ruleEngine.js.
+function isKendraFromLagnaOrMoonHouse(planets, ascendant, signName) {
+  const ascSignIndex = ascSignIndexOf(ascendant);
+  const moon = byName(planets, 'Moon');
+  const signIdx = SIGNS.indexOf(signName);
+  const fromLagna = wholeSignHouseOf(signIdx, ascSignIndex);
+  if (KENDRA_HOUSES.includes(fromLagna)) return fromLagna;
+  if (moon) {
+    const moonSignIndex = SIGNS.indexOf(moon.sign);
+    const fromMoon = wholeSignHouseOf(signIdx, moonSignIndex);
+    if (KENDRA_HOUSES.includes(fromMoon)) return fromMoon;
+  }
+  return null;
+}
+
 function neechaBhangaYoga(planets, ascendant) {
   const matches = [];
   planets.forEach(p => {
     if (DEBILITATION_SIGN[p.name] !== p.sign) return;
     const debSignLord = SIGN_LORD[p.sign];
     const lordPlanet = byName(planets, debSignLord);
-    if (!lordPlanet || !KENDRA_HOUSES.includes(Number(lordPlanet.house))) return;
-    matches.push({ planet: p.name, sign: p.sign, lord: debSignLord, lordHouse: lordPlanet.house });
+    if (!lordPlanet) return;
+    const kendraHouse = isKendraFromLagnaOrMoonHouse(planets, ascendant, lordPlanet.sign);
+    if (!kendraHouse) return;
+    matches.push({ planet: p.name, sign: p.sign, lord: debSignLord, lordHouse: lordPlanet.house, kendraHouse });
   });
   if (!matches.length) return NOT_PRESENT;
   const planetsSet = Array.from(new Set(matches.flatMap(m => [m.planet, m.lord])));
   return {
     present: true, magnitude: 65, planets: planetsSet,
-    details: matches.map(m => `${m.planet} debilitated in ${m.sign}, but its dispositor ${m.lord} is angular (House ${m.lordHouse})`).join('; ')
+    details: matches.map(m => `${m.planet} debilitated in ${m.sign}, but its dispositor ${m.lord} is angular (House ${m.lordHouse}, a Kendra from Lagna or Moon)`).join('; ')
   };
 }
 
@@ -191,18 +210,23 @@ function isStrong(p) {
   return SIGN_LORD[p.sign] === p.name || EXALTATION_SIGN[p.name] === p.sign;
 }
 
-// Sunapha/Anapha/Durudhara: planets (other than Sun) in the 2nd and/or 12th house from the Moon.
+// Sunapha/Anapha/Durudhara: one of the 5 classical non-luminary planets
+// (Mars/Mercury/Jupiter/Venus/Saturn) in the 2nd and/or 12th house from the
+// Moon. Rahu/Ketu are excluded — these yogas predate the common modern
+// practice of including the nodes, and most classical sources restrict
+// "any other planet" here to the 5 classical grahas besides the luminaries.
+const SUNAPHA_ANAPHA_ELIGIBLE = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 function sunaphaYoga(planets) {
   const moon = byName(planets, 'Moon');
   if (!moon) return NOT_PRESENT;
-  const found = planets.filter(p => p.name !== 'Moon' && p.name !== 'Sun' && houseDistance(Number(moon.house), Number(p.house)) === 2);
+  const found = planets.filter(p => SUNAPHA_ANAPHA_ELIGIBLE.includes(p.name) && houseDistance(Number(moon.house), Number(p.house)) === 2);
   if (!found.length) return NOT_PRESENT;
   return { present: true, magnitude: 45, planets: found.map(p => p.name), details: `${found.map(p => p.name).join(', ')} in the 2nd house from the Moon (House ${moon.house}).` };
 }
 function anaphaYoga(planets) {
   const moon = byName(planets, 'Moon');
   if (!moon) return NOT_PRESENT;
-  const found = planets.filter(p => p.name !== 'Moon' && p.name !== 'Sun' && houseDistance(Number(moon.house), Number(p.house)) === 12);
+  const found = planets.filter(p => SUNAPHA_ANAPHA_ELIGIBLE.includes(p.name) && houseDistance(Number(moon.house), Number(p.house)) === 12);
   if (!found.length) return NOT_PRESENT;
   return { present: true, magnitude: 45, planets: found.map(p => p.name), details: `${found.map(p => p.name).join(', ')} in the 12th house from the Moon (House ${moon.house}).` };
 }
@@ -239,16 +263,21 @@ function saraswatiYoga(planets) {
   return { present: true, magnitude: 75, planets: ['Jupiter', 'Venus', 'Mercury'], details: `Jupiter (strong, House ${jup.house}), Venus (House ${ven.house}), and Mercury (House ${merc.house}) all occupy Kendra/Trikona/2nd houses.` };
 }
 
-// Lakshmi Yoga: 9th lord strong (own/exalted) and Venus strong (own/exalted or in Kendra).
+// Lakshmi Yoga, per the commonly cited Phaladeepika-style formulation: the
+// Lagna lord is strong (own sign or exalted) AND the 9th lord (Bhagyesh) is
+// also strong (own/exalted) while occupying a Kendra or Trikona from Lagna.
+// (Some later/regional sources cite a Venus-in-Kendra variant instead of
+// this Lagna-lord condition — this app uses the more widely attested
+// classical version.)
 function lakshmiYoga(planets, ascendant) {
   const ascSignIndex = ascSignIndexOf(ascendant);
+  const lagnaLordName = SIGN_LORD[ascendant.sign];
+  const lagnaLord = byName(planets, lagnaLordName);
   const lord9 = houseLord(planets, ascSignIndex, 9);
   const p9 = byName(planets, lord9);
-  const venus = byName(planets, 'Venus');
-  if (!p9 || !venus || !isStrong(p9)) return NOT_PRESENT;
-  const venusStrong = isStrong(venus) || KENDRA_HOUSES.includes(Number(venus.house));
-  if (!venusStrong) return NOT_PRESENT;
-  return { present: true, magnitude: 70, planets: [lord9, 'Venus'], details: `9th lord ${lord9} is strong (House ${p9.house}) and Venus is strong/angular (House ${venus.house}).` };
+  if (!lagnaLord || !p9 || !isStrong(lagnaLord) || !isStrong(p9)) return NOT_PRESENT;
+  if (![...KENDRA_HOUSES, ...TRIKONA_HOUSES].includes(Number(p9.house))) return NOT_PRESENT;
+  return { present: true, magnitude: 70, planets: [lagnaLordName, lord9], details: `Lagna lord ${lagnaLordName} is strong (House ${lagnaLord.house}) and 9th lord ${lord9} is strong and angular/trinal (House ${p9.house}).` };
 }
 
 // Kahala Yoga: 4th and 9th lords in mutual Kendra, and Jupiter is in a Kendra or Trikona from Lagna.
@@ -287,18 +316,19 @@ function chamaraYoga(planets, ascendant) {
   return { present: true, magnitude: 80, planets: [lagnaLordName, 'Jupiter'], details: `Lagna lord ${lagnaLordName} is exalted and angular (House ${lagnaLord.house}), ${conjunct ? 'conjunct' : 'aspected by'} Jupiter.` };
 }
 
-// Vesi/Vasi/Ubhayachari: planets (other than Moon) in the 2nd and/or 12th house from the Sun.
+// Vesi/Vasi/Ubhayachari: one of the 5 classical non-luminary planets in the
+// 2nd and/or 12th house from the Sun (same node exclusion as Sunapha/Anapha).
 function vesiYoga(planets) {
   const sun = byName(planets, 'Sun');
   if (!sun) return NOT_PRESENT;
-  const found = planets.filter(p => p.name !== 'Sun' && p.name !== 'Moon' && houseDistance(Number(sun.house), Number(p.house)) === 2);
+  const found = planets.filter(p => SUNAPHA_ANAPHA_ELIGIBLE.includes(p.name) && houseDistance(Number(sun.house), Number(p.house)) === 2);
   if (!found.length) return NOT_PRESENT;
   return { present: true, magnitude: 35, planets: found.map(p => p.name), details: `${found.map(p => p.name).join(', ')} in the 2nd house from the Sun (House ${sun.house}).` };
 }
 function vasiYoga(planets) {
   const sun = byName(planets, 'Sun');
   if (!sun) return NOT_PRESENT;
-  const found = planets.filter(p => p.name !== 'Sun' && p.name !== 'Moon' && houseDistance(Number(sun.house), Number(p.house)) === 12);
+  const found = planets.filter(p => SUNAPHA_ANAPHA_ELIGIBLE.includes(p.name) && houseDistance(Number(sun.house), Number(p.house)) === 12);
   if (!found.length) return NOT_PRESENT;
   return { present: true, magnitude: 35, planets: found.map(p => p.name), details: `${found.map(p => p.name).join(', ')} in the 12th house from the Sun (House ${sun.house}).` };
 }
@@ -362,21 +392,21 @@ const YOGA_DEFINITIONS = [
   { key: 'chandramangal', name: 'Chandra-Mangal Yoga', polarity: 'good', howDerived: 'Moon and Mars are conjunct (same sign).', meaning: 'Drive, resourcefulness, and the ability to generate wealth through determined effort.', compute: chandraMangalYoga },
   { key: 'dhana', name: 'Dhana Yoga', polarity: 'good', howDerived: 'The lords of the 2nd house (wealth) and 11th house (gains) are conjunct (same sign).', meaning: 'A classical wealth-producing combination — accumulated assets and income working together.', compute: dhanaYoga },
   { key: 'raja', name: 'Raja Yoga', polarity: 'good', howDerived: 'The lord of a Kendra house (1st/4th/7th/10th) is conjunct the lord of a Trikona house (1st/5th/9th), same sign.', meaning: 'Power, status, and success — the union of an angular and a trinal lord is one of the classical hallmarks of a strong chart.', compute: rajaYoga },
-  { key: 'neechabhanga', name: 'Neecha Bhanga Raja Yoga', polarity: 'good', howDerived: 'A debilitated planet\'s dispositor (the lord of its debilitation sign) is itself angular (Kendra) from the Ascendant, cancelling the debilitation.', meaning: 'A weakness that classically converts into an unusually strong, self-made rise once the cancellation takes hold.', compute: neechaBhangaYoga },
+  { key: 'neechabhanga', name: 'Neecha Bhanga Raja Yoga', polarity: 'good', howDerived: 'A debilitated planet\'s dispositor (the lord of its debilitation sign) is itself angular (Kendra) from the Ascendant OR from the Moon, cancelling the debilitation. This checks 1 of several classically cited cancellation conditions — see the fuller 4-condition check on the Interpretation-2 tab.', meaning: 'A weakness that classically converts into an unusually strong, self-made rise once the cancellation takes hold.', compute: neechaBhangaYoga },
   { key: 'adhi', name: 'Adhi Yoga', polarity: 'good', howDerived: 'One or more of Mercury, Venus, Jupiter occupy the 6th, 7th, or 8th house counted from the Moon.', meaning: 'A comfortable, well-supported life; strengthens with each additional benefic found in these houses.', compute: adhiYoga },
-  { key: 'sunapha', name: 'Sunapha Yoga', polarity: 'good', howDerived: 'A planet other than the Sun occupies the 2nd house counted from the Moon.', meaning: 'Self-earned wealth, intelligence, and reputation independent of family inheritance.', compute: sunaphaYoga },
-  { key: 'anapha', name: 'Anapha Yoga', polarity: 'good', howDerived: 'A planet other than the Sun occupies the 12th house counted from the Moon.', meaning: 'Good health, dignified conduct, and a contented, comfortable temperament.', compute: anaphaYoga },
-  { key: 'durudhara', name: 'Durudhara Yoga', polarity: 'good', howDerived: 'Planets other than the Sun occupy BOTH the 2nd and 12th houses counted from the Moon (Sunapha and Anapha together).', meaning: 'Wealth, vehicles, and comforts, combining the benefits of both Sunapha and Anapha.', compute: durudharaYoga },
+  { key: 'sunapha', name: 'Sunapha Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Mars/Mercury/Jupiter/Venus/Saturn — Sun and the nodes excluded) occupies the 2nd house counted from the Moon.', meaning: 'Self-earned wealth, intelligence, and reputation independent of family inheritance.', compute: sunaphaYoga },
+  { key: 'anapha', name: 'Anapha Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Mars/Mercury/Jupiter/Venus/Saturn — Sun and the nodes excluded) occupies the 12th house counted from the Moon.', meaning: 'Good health, dignified conduct, and a contented, comfortable temperament.', compute: anaphaYoga },
+  { key: 'durudhara', name: 'Durudhara Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Sun and the nodes excluded) occupies BOTH the 2nd and 12th houses counted from the Moon (Sunapha and Anapha together).', meaning: 'Wealth, vehicles, and comforts, combining the benefits of both Sunapha and Anapha.', compute: durudharaYoga },
   { key: 'vasumati', name: 'Vasumati Yoga', polarity: 'good', howDerived: 'Benefics (Mercury, Venus, Jupiter) occupy Upachaya houses (3rd/6th/10th/11th) from the Ascendant.', meaning: 'Growing prosperity and success that builds steadily over the native\'s lifetime.', compute: vasumatiYoga },
   { key: 'amala', name: 'Amala Yoga', polarity: 'good', howDerived: 'Only a benefic (no malefic) occupies the 10th house from the Ascendant.', meaning: 'An unblemished reputation and enduring fame through one\'s career/public actions.', compute: amalaYoga },
   { key: 'saraswati', name: 'Saraswati Yoga', polarity: 'good', howDerived: 'Jupiter, Venus, and Mercury all occupy Kendra, Trikona, or the 2nd house from the Ascendant, with Jupiter strong (own/exalted sign).', meaning: 'Deep learning, eloquence, artistic and scholarly accomplishment.', compute: saraswatiYoga },
-  { key: 'lakshmi', name: 'Lakshmi Yoga', polarity: 'good', howDerived: 'The 9th lord is strong (own/exalted sign) and Venus is strong (own/exalted sign) or angular from the Ascendant.', meaning: 'Fortune, prosperity, and a graceful, well-favored life.', compute: lakshmiYoga },
+  { key: 'lakshmi', name: 'Lakshmi Yoga', polarity: 'good', howDerived: 'The Lagna lord is strong (own/exalted sign) AND the 9th lord is also strong (own/exalted sign) while occupying a Kendra or Trikona from the Ascendant.', meaning: 'Fortune, prosperity, and a graceful, well-favored life.', compute: lakshmiYoga },
   { key: 'kahala', name: 'Kahala Yoga', polarity: 'good', howDerived: 'The 4th and 9th lords are in mutual Kendra, and Jupiter is angular or trinal from the Ascendant.', meaning: 'Courage, authority, and the confidence to take bold, decisive action.', compute: kahalaYoga },
-  { key: 'parvata', name: 'Parvata Yoga', polarity: 'good', howDerived: 'The lords of the 6th and 8th houses are both themselves placed in Kendra houses (rather than in Dusthanas).', meaning: 'A generally happy, obstacle-light life with good social standing.', compute: parvataYoga },
+  { key: 'parvata', name: 'Parvata Yoga', polarity: 'good', howDerived: 'Simplified: the lords of the 6th and 8th houses are both themselves placed in Kendra houses (rather than in Dusthanas). The full classical rule adds an alternate clause (a strong, angular Lagna lord alongside a benefic) not evaluated here.', meaning: 'A generally happy, obstacle-light life with good social standing.', compute: parvataYoga },
   { key: 'chamara', name: 'Chamara Yoga', polarity: 'good', howDerived: 'The Lagna lord is exalted and angular, and is conjunct or aspected by Jupiter.', meaning: 'Fame, long life, and eloquence — a classically celebrated combination for eminence.', compute: chamaraYoga },
-  { key: 'vesi', name: 'Vesi Yoga', polarity: 'good', howDerived: 'A planet other than the Moon occupies the 2nd house counted from the Sun.', meaning: 'A straightforward, plain-speaking nature and steady effort toward one\'s goals.', compute: vesiYoga },
-  { key: 'vasi', name: 'Vasi Yoga', polarity: 'good', howDerived: 'A planet other than the Moon occupies the 12th house counted from the Sun.', meaning: 'A charitable, virtuous disposition and freedom from excessive want.', compute: vasiYoga },
-  { key: 'ubhayachari', name: 'Ubhayachari Yoga', polarity: 'good', howDerived: 'Planets other than the Moon occupy BOTH the 2nd and 12th houses counted from the Sun (Vesi and Vasi together).', meaning: 'Balanced fortune and comfort flanking the Sun\'s own significations.', compute: ubhayachariYoga },
+  { key: 'vesi', name: 'Vesi Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Mars/Mercury/Jupiter/Venus/Saturn — Moon and the nodes excluded) occupies the 2nd house counted from the Sun.', meaning: 'A straightforward, plain-speaking nature and steady effort toward one\'s goals.', compute: vesiYoga },
+  { key: 'vasi', name: 'Vasi Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Mars/Mercury/Jupiter/Venus/Saturn — Moon and the nodes excluded) occupies the 12th house counted from the Sun.', meaning: 'A charitable, virtuous disposition and freedom from excessive want.', compute: vasiYoga },
+  { key: 'ubhayachari', name: 'Ubhayachari Yoga', polarity: 'good', howDerived: 'One of the 5 classical planets (Moon and the nodes excluded) occupies BOTH the 2nd and 12th houses counted from the Sun (Vesi and Vasi together).', meaning: 'Balanced fortune and comfort flanking the Sun\'s own significations.', compute: ubhayachariYoga },
   { key: 'kemadruma', name: 'Kemadruma Yoga', polarity: 'bad', howDerived: 'The Moon has no planet conjunct it and none in the houses immediately before or after it (isolated Moon).', meaning: 'A mind prone to isolation, self-doubt, or a sense of unsupported struggle, especially during Moon periods.', compute: kemadrumaYoga },
   { key: 'shakat', name: 'Shakat Yoga', polarity: 'bad', howDerived: 'The Moon falls in the 6th, 8th, or 12th house counted from Jupiter.', meaning: 'Fluctuating fortune, especially financial ups and downs.', compute: shakatYoga },
   { key: 'grahan_sun_rahu', name: 'Grahan Yoga (Sun-Rahu)', polarity: 'bad', howDerived: 'Sun is conjunct Rahu (same sign).', meaning: 'Clouds self-confidence, authority, or paternal relationships until worked through.', compute: grahanYoga('Sun', 'Rahu') },
@@ -387,9 +417,9 @@ const YOGA_DEFINITIONS = [
   { key: 'vish', name: 'Vish Yoga', polarity: 'bad', howDerived: 'Moon is conjunct Saturn (same sign).', meaning: 'Emotional heaviness, delay, or pessimism, though Saturn can also mature the Moon\'s significations over time.', compute: vishYoga },
   { key: 'angarak_rahu', name: 'Angarak Yoga (Mars-Rahu)', polarity: 'bad', howDerived: 'Mars is conjunct Rahu (same sign).', meaning: 'Impulsive aggression, accidents, or disputes, particularly during activated periods.', compute: angarakYoga('Rahu') },
   { key: 'angarak_ketu', name: 'Angarak Yoga (Mars-Ketu)', polarity: 'bad', howDerived: 'Mars is conjunct Ketu (same sign).', meaning: 'Impulsive aggression, accidents, or disputes, particularly during activated periods.', compute: angarakYoga('Ketu') },
-  { key: 'kaalsarpa', name: 'Kaal Sarpa Yoga', polarity: 'bad', howDerived: 'All 7 classical planets fall on one side of the Rahu-Ketu axis (the nodes "hem in" every other planet).', meaning: 'A life that can feel externally obstructed or delayed, but also linked to sudden, unconventional rises once worked through.', compute: kaalSarpaYoga },
+  { key: 'kaalsarpa', name: 'Kaal Sarpa Yoga', polarity: 'bad', howDerived: 'All 7 classical planets fall on one side of the Rahu-Ketu axis (the nodes "hem in" every other planet). Note: unlike most other entries here, this is a popular modern/folk-astrology combination — it does not appear in Brihat Parashara Hora Shastra itself — though it is very widely taught and used in contemporary practice.', meaning: 'A life that can feel externally obstructed or delayed, but also linked to sudden, unconventional rises once worked through.', compute: kaalSarpaYoga },
   { key: 'daridra', name: 'Daridra Yoga', polarity: 'bad', howDerived: 'The 11th lord (house of gains) is placed in a Dusthana (6th/8th/12th house), or is conjunct the lord of a Dusthana.', meaning: 'Difficulty retaining income/gains, or gains achieved only through struggle.', compute: daridraYoga },
-  { key: 'shrapit', name: 'Shrapit Yoga', polarity: 'bad', howDerived: 'Saturn is conjunct Rahu (same sign).', meaning: 'Classically read as a "cursed" combination bringing prolonged delay or a sense of being held back until its karmic lesson is resolved.', compute: shrapitYoga }
+  { key: 'shrapit', name: 'Shrapit Yoga', polarity: 'bad', howDerived: 'Saturn is conjunct Rahu (same sign). Note: like Kaal Sarpa Yoga, this specific "Saturn+Rahu" formulation is a widely taught modern convention rather than a term found in BPHS itself.', meaning: 'Read as a "cursed" combination bringing prolonged delay or a sense of being held back until its karmic lesson is resolved.', compute: shrapitYoga }
 ];
 
 if (typeof module !== 'undefined') {
