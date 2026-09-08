@@ -103,20 +103,6 @@
   .mangal-partner ul { margin: 4px 0; padding-left: 20px; font-size: 0.9em; }
   .mangal-partner li { margin: 3px 0; }
 
-  .location-selector { position: relative; max-width: 500px; margin: 6px 0 10px 0; }
-  .location-search-input { width: 260px; }
-  .location-dropdown { position: absolute; z-index: 50; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #bbb; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 260px; overflow-y: auto; }
-  .location-dropdown-row { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #eee; }
-  .location-dropdown-row:hover { background: #eef6ff; }
-  .location-dropdown-name { font-weight: bold; font-size: 0.95em; }
-  .location-dropdown-region { font-size: 0.82em; color: #555; }
-  .location-dropdown-coords { font-size: 0.78em; color: #888; }
-  .location-dropdown-empty, .location-dropdown-error { padding: 8px 10px; font-size: 0.85em; color: #888; }
-  .location-fields { margin-top: 4px; }
-  .location-fields input[readonly] { background: #f0f0f0; color: #555; }
-  .location-edit-manual-btn { background: none; border: none; color: #4c6fa8; text-decoration: underline; cursor: pointer; font-size: 0.82em; padding: 2px 0; }
-  .location-edit-manual-btn:hover { color: #2c4f88; background: none; }
-
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -152,17 +138,6 @@
 <fieldset>
   <label>Birth Date: <input type="date" id="birthLocalDate"></label>
   <label>Birth Time (local clock time at birth place): <input type="time" id="birthLocalTime" step="1"></label><br><br>
-
-  <div class="location-selector">
-    <label>Birth Place: <input type="text" id="birthPlaceSearch" class="location-search-input" placeholder="Start typing a place name... e.g. Toranagallu" autocomplete="off"></label>
-    <div id="birthPlaceDropdown" class="location-dropdown" hidden></div>
-    <div class="location-fields">
-      <label>State / District: <input type="text" id="birthPlaceState" readonly></label>
-      <label>Country: <input type="text" id="birthPlaceCountry" readonly></label>
-    </div>
-    <button id="birthPlaceEditManualBtn" type="button" class="location-edit-manual-btn">Can't find your location? Enter coordinates manually</button>
-  </div>
-
   <label>Birth Latitude: <input type="text" id="birthLat" placeholder="e.g. 28.6139"></label>
   <label>Birth Longitude: <input type="text" id="birthLon" placeholder="e.g. 77.2090"></label><br><br>
   <label>Timezone mode:
@@ -177,26 +152,6 @@
   <button id="resetBtn" type="button">Reset</button>
 </fieldset>
 <div id="ascendantOutput" class="output-box pastel-peach"></div>
-
-<h2>Astrologer's Location <span style="font-size:0.6em;font-weight:normal;color:#666;">(independent of Birth Place — for future query/horary features; never affects the birth chart above)</span></h2>
-<fieldset>
-  <div class="location-selector">
-    <label>Astrologer's Location: <input type="text" id="astroPlaceSearch" class="location-search-input" placeholder="Start typing a place name..." autocomplete="off"></label>
-    <div id="astroPlaceDropdown" class="location-dropdown" hidden></div>
-    <div class="location-fields">
-      <label>State / District: <input type="text" id="astroPlaceState" readonly></label>
-      <label>Country: <input type="text" id="astroPlaceCountry" readonly></label>
-    </div>
-    <div class="controls">
-      <button id="astroPlaceEditManualBtn" type="button" class="location-edit-manual-btn">Can't find your location? Enter coordinates manually</button>
-      <button id="astroUseCurrentLocationBtn" type="button">Use My Current Location</button>
-    </div>
-  </div>
-  <label>Latitude: <input type="text" id="astroLat" placeholder="e.g. 28.6139"></label>
-  <label>Longitude: <input type="text" id="astroLon" placeholder="e.g. 77.2090"></label><br><br>
-  <label>Timezone: <select id="astroTimezone"></select></label>
-</fieldset>
-<div id="astrologerLocationOutput" class="output-box pastel-lavender" style="font-size:0.85em;"></div>
 
 <h2>Planet Table</h2>
 <p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign.</p>
@@ -375,9 +330,6 @@
 <script src="js/matching/mangalDoshaRules.js"></script>
 <script src="js/matching/kundaliMatching.js"></script>
 <script src="js/timezone.js"></script>
-<script src="js/location/sql-wasm.js"></script>
-<script src="js/location/locationSearch.js"></script>
-<script src="js/location/locationSelector.js"></script>
 <script src="js/ui.js"></script>
 </body>
 </html>
