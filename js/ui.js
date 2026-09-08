@@ -666,31 +666,37 @@ function renderRuleEngineTab() {
   const r = computeRuleEngine(state.chart);
 
   const dignityExtraHtml = r.dignityExtra.filter(d => d.notes.length).length
-    ? r.dignityExtra.filter(d => d.notes.length).map(d => `<div class="rule-item"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
+    ? r.dignityExtra.filter(d => d.notes.length).map(d => `<div class="rule-item quality-good"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
     : '<div class="rule-item">No Vargottama or Dig Bala placements in this chart.</div>';
 
   const degreeHtml = r.degreeSensitive.length
-    ? r.degreeSensitive.map(d => `<div class="rule-item"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
+    ? r.degreeSensitive.map(d => `<div class="rule-item ${d.gandanta ? 'quality-bad' : 'quality-neutral'}"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
     : '<div class="rule-item">No planet is within 1° of a sign boundary in this chart.</div>';
 
+  const conjRelationQuality = { Friend: 'quality-good', Enemy: 'quality-bad', Neutral: 'quality-neutral' };
   const conjPairsHtml = r.conjunctions.pairTexts.length
-    ? r.conjunctions.pairTexts.map(c => `<div class="rule-item">${escapeHtml(c.text)}</div>`).join('')
+    ? r.conjunctions.pairTexts.map(c => `<div class="rule-item ${conjRelationQuality[c.relation] || ''}">${escapeHtml(c.text)}</div>`).join('')
     : '<div class="rule-item">No planet-to-planet conjunctions (same sign) in this chart.</div>';
-  const stelliumHtml = r.conjunctions.stelliums.map(s => `<div class="rule-item">${escapeHtml(s.text)}</div>`).join('');
-  const yuddhaHtml = r.conjunctions.yuddha.map(y => `<div class="rule-item">${escapeHtml(y.text)}</div>`).join('');
+  const stelliumHtml = r.conjunctions.stelliums.map(s => `<div class="rule-item quality-neutral">${escapeHtml(s.text)}</div>`).join('');
+  const yuddhaHtml = r.conjunctions.yuddha.map(y => `<div class="rule-item quality-neutral">${escapeHtml(y.text)}</div>`).join('');
 
   const aspectHtml = r.aspects.length
-    ? r.aspects.map(a => `<div class="rule-item">${escapeHtml(a.text)}</div>`).join('')
+    ? r.aspects.map(a => `<div class="rule-item ${a.natural === 'benefic' ? 'quality-good' : 'quality-bad'}">${escapeHtml(a.text)}</div>`).join('')
     : '<div class="rule-item">No aspects (graha drishti) land on any planet in this chart.</div>';
 
+  const functionalQuality = (label) => {
+    if (label === 'Yogakaraka' || label === 'Functional Benefic') return 'quality-good';
+    if (label === 'Functional Malefic' || label.indexOf('Natural Malefic') === 0) return 'quality-bad';
+    return 'quality-neutral';
+  };
   const functionalHtml = Object.entries(r.functional).map(([name, f]) =>
-    `<div class="rule-item"><span class="${classFor(f.label)}">${escapeHtml(f.label)}</span> — ${escapeHtml(f.text)}</div>`
+    `<div class="rule-item ${functionalQuality(f.label)}"><span class="${classFor(f.label)}">${escapeHtml(f.label)}</span> — ${escapeHtml(f.text)}</div>`
   ).join('');
 
   const nakshatraHtml = r.nakshatra.map(n => `<div class="rule-item">${escapeHtml(n.text)}</div>`).join('');
 
   const neechaHtml = r.neechaBhanga.length
-    ? r.neechaBhanga.map(n => `<div class="rule-item">${escapeHtml(n.text)}</div>`).join('')
+    ? r.neechaBhanga.map(n => `<div class="rule-item ${n.conditionsMet.length ? 'quality-good' : 'quality-bad'}">${escapeHtml(n.text)}</div>`).join('')
     : '<div class="rule-item">No debilitated planets in this chart, so no Neecha Bhanga check applies.</div>';
 
   el.innerHTML = `
@@ -891,6 +897,21 @@ function dignityClass(dignity) {
   return `dignity-${dignity.replace(' ', '-')}`;
 }
 
+// Good/bad/neutral row-highlight classes shared by the Interpretations and
+// Interpretation-2 tabs: light green = favorable, light red = unfavorable,
+// light yellow = neutral/mixed.
+function qualityFromDignity(tier) {
+  if (tier === 'Exalted' || tier === 'Moolatrikona' || tier === 'Own Sign') return 'quality-good';
+  if (tier === 'Debilitated') return 'quality-bad';
+  return 'quality-neutral';
+}
+function qualityFromHouseTypes(house) {
+  const types = HOUSE_TYPES[house] || [];
+  if (types.includes('Dusthana')) return 'quality-bad';
+  if (types.includes('Kendra') || types.includes('Trikona')) return 'quality-good';
+  return 'quality-neutral';
+}
+
 function renderLagnaInterpretation(ascendant) {
   const el = document.getElementById('lagnaInterpretationOutput');
   const text = interpretLagna(ascendant.sign);
@@ -905,7 +926,7 @@ function renderPlanetInSignInterpretation(planets) {
   const el = document.getElementById('planetInSignInterpretationOutput');
   const rows = planets.map(p => {
     const result = interpretPlanetInSign(p.name, p.sign, p.longitude);
-    return `<tr><td>${p.name}</td><td>${p.sign}</td><td class="${dignityClass(result.dignity)}">${result.dignity}</td><td>${result.text}</td></tr>`;
+    return `<tr class="${qualityFromDignity(result.dignity)}"><td>${p.name}</td><td>${p.sign}</td><td class="${dignityClass(result.dignity)}">${result.dignity}</td><td>${result.text}</td></tr>`;
   }).join('');
   el.innerHTML = `
     <table>
@@ -917,7 +938,7 @@ function renderPlanetInSignInterpretation(planets) {
 function renderPlanetInHouseInterpretation(planets) {
   const el = document.getElementById('planetInHouseInterpretationOutput');
   const rows = planets.map(p =>
-    `<tr><td>${p.name}</td><td>${p.house}</td><td>${interpretPlanetInHouse(p.name, p.house)}</td></tr>`
+    `<tr class="${qualityFromHouseTypes(p.house)}"><td>${p.name}</td><td>${p.house}</td><td>${interpretPlanetInHouse(p.name, p.house)}</td></tr>`
   ).join('');
   el.innerHTML = `
     <table>
@@ -934,8 +955,15 @@ function renderPlanetConditions(planets) {
   const el = document.getElementById('planetConditionsOutput');
   const rows = planets.map(p => {
     const result = interpretPlanetConditions(p);
+    // Combustion always drags the overall read down a notch; retrograde is
+    // left out of this quality call since classical opinion on it is
+    // genuinely split (see retrogradeInterpretations.js's own caveat).
+    const baseQuality = qualityFromDignity(result.dignityTier);
+    const quality = result.combust
+      ? (baseQuality === 'quality-good' ? 'quality-neutral' : 'quality-bad')
+      : baseQuality;
     return `
-      <tr>
+      <tr class="${quality}">
         <td>${p.name}</td>
         <td class="${dignityClass(result.dignityTier)}">${result.dignityTier}</td>
         <td>${flagCell(result.combust, 'Combust')}</td>

@@ -24,7 +24,7 @@ const NAKSHATRA_TRAITS = {
   Anuradha: { deity: 'Mitra', symbol: 'Lotus/triumphal archway', keynote: 'devoted, cooperative, builds deep and loyal friendships/alliances' },
   Jyeshtha: { deity: 'Indra', symbol: 'Circular amulet/umbrella', keynote: 'senior, protective, carries authority and can be domineering under pressure' },
   Mula: { deity: 'Nirriti', symbol: 'Bunch of roots', keynote: 'root-seeking, investigative, dismantles the old to reach the foundation' },
-  'Purva Ashadha': { deity: 'Apas (water)', symbol: 'Fan/tusk', keynote: 'invincible resolve, persuasive, early/unbeatable momentum' },
+  'Purva Ashadha': { deity: 'Apas (water)', symbol: 'Fan / winnowing basket', keynote: 'invincible resolve, persuasive, early/unbeatable momentum' },
   'Uttara Ashadha': { deity: 'Vishwadevas', symbol: 'Elephant tusk', keynote: 'enduring victory, principled, steady leadership that outlasts others' },
   Shravana: { deity: 'Vishnu', symbol: 'Ear / three footprints', keynote: 'listening, learning, connective — good at gathering and transmitting knowledge' },
   Dhanishta: { deity: 'Eight Vasus', symbol: 'Drum', keynote: 'rhythmic, ambitious, musical/material drive and group leadership' },

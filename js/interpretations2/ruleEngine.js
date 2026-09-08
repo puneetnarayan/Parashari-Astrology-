@@ -19,8 +19,8 @@ const RULE_ENGINE_LOGIC_TEXT = [
   ['3. Dig Bala (directional strength): Jupiter/Mercury are directionally strong in House 1, Moon/Venus in House 4, Saturn in House 7, Sun/Mars in House 10 — a simple house-number check, no degree-based partial strength.'],
   ['4. Degree-Sensitive Conditions: near-0 deg ("infant") and near-29 deg ("Vridha") use a 1 deg band; Gandanta additionally checks whether the 0 deg/29 deg point falls at a water-sign-to-fire-sign junction (Pisces-Aries, Cancer-Leo, Scorpio-Sagittarius).'],
   ['5. Conjunction narratives combine each pair\'s Naisargika Maitri relation (from planetaryStrength.js) with both planets\' significations; a 3-or-more-planet stellium and a within-1 deg Graha Yuddha (planetary war, among Mars/Mercury/Jupiter/Venus/Saturn only) are flagged separately.'],
-  ['6. Aspect narratives classify each aspecting planet as a natural benefic (Jupiter/Venus/unafflicted Mercury/waxing Moon) or malefic (Sun/Mars/Saturn/Rahu/Ketu) and note mutual (bidirectional) aspects.'],
-  ['7. Functional Benefic/Malefic Classification (the 7 classical planets only) follows the lordship rule: a planet ruling a Trikona (1st/5th/9th) AND a Kendra (1st/4th/7th/10th) house from this Lagna is a Yogakaraka; Trikona-only is a functional benefic; Kendra-only is functionally neutral; a planet ruling ONLY Dusthana houses (6th/8th/12th) is a functional malefic. Rahu/Ketu are not classical house lords and are treated by their natural-malefic tendency, tempered by dispositor, instead.'],
+  ['6. Aspect narratives classify each aspecting planet as a natural benefic (Jupiter/Venus/Mercury/Moon) or malefic (Sun/Mars/Saturn/Rahu/Ketu) and note mutual (bidirectional) aspects. Simplification: classically Mercury is only benefic when unafflicted (conjunct/aspected by malefics flips it malefic) and the Moon is only benefic when waxing (Shukla Paksha) — this app does not compute affliction state or lunar paksha, so both are always treated as benefic here; treat this as a first-order approximation, not the full classical rule.'],
+  ['7. Functional Benefic/Malefic Classification (the 7 classical planets only) follows the lordship rule: a planet ruling a Trikona (1st/5th/9th) AND a Kendra (1st/4th/7th/10th) house from this Lagna is a Yogakaraka; Trikona-only is a functional benefic; a planet ruling ONLY Dusthana houses (6th/8th/12th) is a functional malefic. Kendra-only lordship is split by the planet\'s NATURAL nature: a natural benefic (Moon/Mercury/Jupiter/Venus) ruling only a Kendra is classically afflicted by Kendradhipatya Dosha and reduced to neutral, while a natural malefic (Sun/Mars/Saturn) ruling only a Kendra is traditionally exempt from that dosha and can still act favorably. Rahu/Ketu are not classical house lords and are treated by their natural-malefic tendency, tempered by dispositor, instead.'],
   ['8. Neecha Bhanga (debilitation cancellation) here checks 4 commonly cited conditions, applied only to the 7 classical planets (Rahu/Ketu have no settled classical exaltation/debilitation, per this app\'s own caveat): (a) the dispositor of the debilitation sign is in a Kendra (1/4/7/10) from Lagna OR from the Moon; (b) the lord of the debilitated planet\'s OWN exaltation sign is in a Kendra from Lagna or Moon — distinct from (c); (c) the planet that is itself EXALTED IN the debilitated planet\'s current sign is conjunct with, or aspects, the debilitated planet; (d) the dispositor is itself exalted. Flagged as "possible cancellation, verify manually" rather than a final verdict, since sources also cite a 5th/6th condition (the debilitated planet being retrograde, or exalted in Navamsa) that this engine does not check.'],
   [''],
   ['Caveat: as the reference spec itself notes, several thresholds here (Gandanta orb, Graha Yuddha winner convention, functional-benefic edge cases) vary across classical sources; this engine picks one commonly used convention per rule and states it, rather than asserting false precision.']
@@ -110,7 +110,7 @@ function conjunctionNarratives(planets) {
       const diff = Math.abs(a.longitude - b.longitude);
       if (diff <= 1) {
         const winner = a.longitude > b.longitude ? a.name : b.name;
-        yuddha.push({ planets: [a.name, b.name], winner, text: `Graha Yuddha (planetary war): ${a.name} and ${b.name} are within ${diff.toFixed(2)}° of each other in ${a.sign}. By the common (higher-longitude) convention, ${winner} is considered the winner — its significations dominate, while the loser's are considered weakened for this placement. (The winner criterion is disputed across sources; treat this as one common convention, not settled doctrine.)` });
+        yuddha.push({ planets: [a.name, b.name], winner, text: `Graha Yuddha (planetary war): ${a.name} and ${b.name} are within ${diff.toFixed(2)}° of each other in ${a.sign}. Classical sources (e.g. BPHS) actually decide the winner by which planet is more SOUTHERLY in celestial latitude — data this app does not compute — so the higher-longitude planet, ${winner}, is used here only as a common software approximation, not the classical criterion itself. Whichever is deemed the loser is considered weakened for this placement.` });
       }
     }
   }
@@ -160,8 +160,22 @@ function functionalClassification(lagnaSign, planets) {
       label = 'Functional Malefic';
       text = `${planetName} rules only Dusthana house(s) ${houseDesc} from ${lagnaSign} Lagna — a functional malefic for this ascendant, however well-dignified it may be.`;
     } else if (isKendra) {
-      label = 'Functionally Neutral';
-      text = `${planetName} rules house(s) ${houseDesc} from ${lagnaSign} Lagna — a Kendra (1/4/7/10) placement with no Trikona lordship — functionally neutral for this ascendant (any co-owned Dusthana house tempers this further).`;
+      // Kendradhipatya Dosha ("blemish of ruling only a Kendra") is classically
+      // held to afflict NATURAL BENEFICS (Moon, Mercury, Jupiter, Venus) that
+      // rule only a Kendra, reducing them to neutral — but NATURAL MALEFICS
+      // (Sun, Mars, Saturn) are traditionally exempt from this dosha and can
+      // still act favorably as a kendra-only lord (this is the same logic
+      // that makes Mars/Saturn a Yogakaraka for some Lagnas when they ALSO
+      // hold a Trikona, but even Kendra-only they are not penalized the way
+      // a natural benefic would be).
+      const isNaturalMalefic = ['Sun', 'Mars', 'Saturn'].includes(planetName);
+      if (isNaturalMalefic) {
+        label = 'Functionally Neutral (malefic, exempt from Kendradhipatya Dosha)';
+        text = `${planetName} rules house(s) ${houseDesc} from ${lagnaSign} Lagna — a Kendra (1/4/7/10)-only placement. As a natural malefic, ${planetName} is classically held exempt from Kendradhipatya Dosha (the blemish that afflicts a natural BENEFIC ruling only a Kendra) and can still act favorably here, unlike a benefic in the same position.`;
+      } else {
+        label = 'Functionally Neutral (Kendradhipatya Dosha)';
+        text = `${planetName} rules house(s) ${houseDesc} from ${lagnaSign} Lagna — a Kendra (1/4/7/10)-only placement with no Trikona lordship. As a natural benefic, this is classically described as Kendradhipatya Dosha: ${planetName} loses some of its natural beneficence and acts more neutrally for this ascendant.`;
+      }
     } else {
       label = 'Mixed/Neutral';
       text = `${planetName} rules house(s) ${houseDesc} from ${lagnaSign} Lagna — a mixed classification not cleanly Trikona, Kendra-only, or Dusthana-only.`;
