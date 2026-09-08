@@ -143,6 +143,23 @@
   tr.quality-bad td, .rule-item.quality-bad { background-color: #ffdcdc !important; }
   tr.quality-neutral td, .rule-item.quality-neutral { background-color: #fff3d6 !important; }
 
+  /* Sade Sati / Mangal Dosha (extended) tabs */
+  .countdown-box { display: inline-block; min-width: 220px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 10px 16px; margin: 6px 10px 6px 0; text-align: center; }
+  .countdown-box .countdown-label { font-size: 0.8em; color: #666; margin-bottom: 4px; }
+  .countdown-box .countdown-value { font-size: 1.3em; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .countdown-box.countdown-ongoing { border-color: #ffb347; background: #fff8ec; }
+  .countdown-box.countdown-next { border-color: #7fb37f; background: #f3fbf3; }
+  .sadesati-episode-header { font-weight: bold; margin-top: 14px; }
+  .status-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+  .status-badge-Ongoing { background: #ffb347; color: #4a2c00; }
+  .status-badge-Upcoming { background: #d9ecff; color: #164a7a; }
+  .status-badge-Past { background: #e0e0e0; color: #555; }
+  .strength-badge { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
+  .strength-None { background: #d9f2d9; color: #1a5c1a; }
+  .strength-Mild { background: #fff3d6; color: #7a5c00; }
+  .strength-Moderate { background: #ffe0b3; color: #7a3c00; }
+  .strength-Strong { background: #ffdcdc; color: #8a1a1a; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -168,6 +185,8 @@
   <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
   <button class="tab-button" id="tabBtnYogas" data-tab="tabYogas">Yogas</button>
   <button class="tab-button" id="tabBtnDasha" data-tab="tabDasha">Dasha</button>
+  <button class="tab-button" id="tabBtnSadeSati" data-tab="tabSadeSati">Sade Sati</button>
+  <button class="tab-button" id="tabBtnMangalDosha2" data-tab="tabMangalDosha2">Mangal Dosha</button>
 </div>
 
 <div class="controls">
@@ -374,6 +393,18 @@
 <div id="dashaTableOutput" class="output-box pastel-mint"></div>
 </div>
 
+<div class="tab-panel" id="tabSadeSati">
+<h2>Sade Sati</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed by scanning transiting Saturn's real position across ~80 years from birth — every Sade Sati episode (Saturn transiting the 12th/1st/2nd sign from the natal Moon), with dates, ages, house effects, and a good/neutral/bad quality read per phase. This scan can take a few seconds the first time.</p>
+<div id="sadeSatiOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabMangalDosha2">
+<h2>Mangal Dosha (Kuja Dosha)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Single-chart Mangal Dosha analysis: how it's derived from 3 classical reference points (Lagna/Moon/Venus), a strength score in multiples of 5, possible neutralization factors, and commonly cited remedies. For a two-chart comparison, see the Kundali Matching tab.</p>
+<div id="mangalDosha2Output" class="output-box pastel-peach"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -404,6 +435,8 @@
 <script src="js/yogas/yogaRules.js"></script>
 <script src="js/yogas/yogaEngine.js"></script>
 <script src="js/dasha/vimshottariDasha.js"></script>
+<script src="js/sadesati/sadeSatiEngine.js"></script>
+<script src="js/mangaldosha2/mangalDoshaEngine2.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>

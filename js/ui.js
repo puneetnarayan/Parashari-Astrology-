@@ -40,6 +40,8 @@ function initTabs() {
       if (btn.dataset.tab === 'tabYogas') renderYogasTab();
       if (btn.dataset.tab === 'tabDasha') renderDashaTab();
       if (btn.dataset.tab === 'tabInterpretations2') renderRuleEngineTab();
+      if (btn.dataset.tab === 'tabSadeSati') renderSadeSatiTab();
+      if (btn.dataset.tab === 'tabMangalDosha2') renderMangalDosha2Tab();
     });
   });
 }
@@ -710,6 +712,195 @@ function renderRuleEngineTab() {
   `;
 }
 
+// --- Sade Sati ---
+
+let sadeSatiCountdownTimer = null;
+
+function formatCountdown(msRemaining) {
+  if (msRemaining <= 0) return '0d 0h 0m 0s';
+  const totalSeconds = Math.floor(msRemaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+function tickSadeSatiCountdowns() {
+  const now = new Date();
+  const ongoingEl = document.getElementById('sadeSatiCountdownOngoing');
+  const nextEl = document.getElementById('sadeSatiCountdownNext');
+  if (ongoingEl) {
+    const endTime = Number(ongoingEl.dataset.endTime);
+    ongoingEl.textContent = formatCountdown(endTime - now.getTime());
+  }
+  if (nextEl) {
+    const startTime = Number(nextEl.dataset.startTime);
+    nextEl.textContent = formatCountdown(startTime - now.getTime());
+  }
+}
+
+function renderSadeSatiPhaseTable(segments) {
+  const rows = segments.map(seg => {
+    const startAge = formatAge(ageAt(state.chart.birthUtc, seg.start));
+    const endAge = formatAge(ageAt(state.chart.birthUtc, seg.end));
+    const duration = durationBetweenSS(seg.start, seg.end);
+    const aspectText = seg.aspectingPlanets.length
+      ? seg.aspectingPlanets.map(a => `${a.name} (${a.natural})`).join(', ')
+      : 'None';
+    return `
+      <tr class="quality-${seg.quality}">
+        <td>${escapeHtml(seg.phaseLabel)}</td>
+        <td>${seg.sign}</td>
+        <td>${formatDashaDateTime(seg.start)}<br><span style="font-size:0.85em;color:#555;">age ${startAge}</span></td>
+        <td>${formatDashaDateTime(seg.end)}<br><span style="font-size:0.85em;color:#555;">age ${endAge}</span></td>
+        <td>${formatAge(duration)}</td>
+        <td>House ${seg.houseFromLagna} from Lagna — ${escapeHtml(seg.houseFromLagnaTheme.title)}: ${escapeHtml(seg.houseFromLagnaTheme.description)}</td>
+        <td>${aspectText}</td>
+        <td style="text-transform:capitalize;">${seg.quality} (${seg.qualityScore >= 0 ? '+' : ''}${seg.qualityScore})</td>
+      </tr>`;
+  }).join('');
+  return `
+    <table>
+      <thead><tr><th>Phase</th><th>Saturn Sign</th><th>Start (age)</th><th>End (age)</th><th>Duration</th><th>House-from-Lagna Affected</th><th>Aspecting Natal Planets</th><th>Quality</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderSadeSatiTab() {
+  const el = document.getElementById('sadeSatiOutput');
+  if (!el) return;
+  if (sadeSatiCountdownTimer) { clearInterval(sadeSatiCountdownTimer); sadeSatiCountdownTimer = null; }
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (state.sadeSati) {
+    renderSadeSatiContent(el, state.sadeSati);
+    return;
+  }
+  el.innerHTML = '<p>Computing Saturn\'s transit timeline (~80 years of scanning) — this takes a few seconds…</p>';
+  setTimeout(() => {
+    state.sadeSati = computeSadeSati(state.chart, 80);
+    renderSadeSatiContent(el, state.sadeSati);
+  }, 20);
+}
+
+function renderSadeSatiContent(el, result) {
+  const methodRows = SADE_SATI_METHOD_TABLE.slice(1).map(r => `<tr>${r.map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('');
+  const methodHeader = SADE_SATI_METHOD_TABLE[0].map(h => `<th>${escapeHtml(h)}</th>`).join('');
+
+  let countdownHtml = '';
+  if (result.ongoing) {
+    const endTime = result.ongoing.end.getTime();
+    countdownHtml += `
+      <div class="countdown-box countdown-ongoing">
+        <div class="countdown-label">Ongoing Sade Sati ends in</div>
+        <div class="countdown-value" id="sadeSatiCountdownOngoing" data-end-time="${endTime}">${formatCountdown(endTime - Date.now())}</div>
+      </div>`;
+  }
+  if (result.next) {
+    const startTime = result.next.start.getTime();
+    countdownHtml += `
+      <div class="countdown-box countdown-next">
+        <div class="countdown-label">${result.ongoing ? 'Next Sade Sati (after this one) starts in' : 'Next Sade Sati starts in'}</div>
+        <div class="countdown-value" id="sadeSatiCountdownNext" data-start-time="${startTime}">${formatCountdown(startTime - Date.now())}</div>
+      </div>`;
+  }
+  if (!result.ongoing && !result.next) {
+    countdownHtml = '<p>No ongoing or upcoming Sade Sati found within the computed ~80-year window.</p>';
+  }
+
+  const overviewRows = result.episodes.map(ep => `
+    <tr>
+      <td>${ep.index + 1}</td>
+      <td><span class="status-badge status-badge-${ep.status}">${ep.status}</span></td>
+      <td>${formatDashaDateTime(ep.start)}<br><span style="font-size:0.85em;color:#555;">age ${formatAge(ep.startAge)}</span></td>
+      <td>${formatDashaDateTime(ep.end)}<br><span style="font-size:0.85em;color:#555;">age ${formatAge(ep.endAge)}</span></td>
+      <td>${formatAge(ep.duration)}</td>
+    </tr>`).join('');
+
+  const episodeDetailHtml = result.episodes.map(ep => `
+    <div class="sadesati-episode-header">Episode ${ep.index + 1} — <span class="status-badge status-badge-${ep.status}">${ep.status}</span></div>
+    ${renderSadeSatiPhaseTable(ep.segments)}
+  `).join('');
+
+  el.innerHTML = `
+    <p><strong>Natal Moon sign:</strong> ${result.moonSign} — the 3 Sade Sati signs are ${SIGNS[(result.moonSignIndex + 11) % 12]} (Rising), ${SIGNS[result.moonSignIndex]} (Peak), ${SIGNS[(result.moonSignIndex + 1) % 12]} (Setting).</p>
+    <p style="font-size:0.85em;color:#555;">Good time is highlighted <span style="background:#d9f2d9;padding:1px 6px;">light green</span>, neutral <span style="background:#fff3d6;padding:1px 6px;">light yellow</span>, bad <span style="background:#ffdcdc;padding:1px 6px;">light red</span>.</p>
+
+    <h3>Countdown</h3>
+    ${countdownHtml}
+
+    <h3>Episode Overview</h3>
+    <table>
+      <thead><tr><th>#</th><th>Status</th><th>Start (age)</th><th>End (age)</th><th>Duration</th></tr></thead>
+      <tbody>${overviewRows || '<tr><td colspan="5">No Sade Sati episode found in the computed window.</td></tr>'}</tbody>
+    </table>
+
+    <h3>Phase Detail</h3>
+    ${episodeDetailHtml || '<p>No Sade Sati episode found in the computed window.</p>'}
+
+    <h3>How This Interpretation Was Arrived At</h3>
+    <table>
+      <thead><tr>${methodHeader}</tr></thead>
+      <tbody>${methodRows}</tbody>
+    </table>
+  `;
+
+  if (sadeSatiCountdownTimer) clearInterval(sadeSatiCountdownTimer);
+  sadeSatiCountdownTimer = setInterval(tickSadeSatiCountdowns, 1000);
+}
+
+// --- Mangal Dosha (Extended) ---
+
+function renderMangalDosha2Tab() {
+  const el = document.getElementById('mangalDosha2Output');
+  if (!el) return;
+  if (!state.chart || !state.mangalDosha2) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const r = state.mangalDosha2;
+
+  const refRows = r.references.map(ref => `
+    <tr class="${ref.hasDosha ? (ref.severityPercent >= 50 ? 'quality-bad' : 'quality-neutral') : 'quality-good'}">
+      <td>${escapeHtml(ref.referenceLabel)}</td>
+      <td>House ${ref.house} (${ref.marsSign})</td>
+      <td>${ref.hasDosha ? 'Yes' : 'No'}</td>
+      <td>${ref.severityPercent}%</td>
+      <td>${ref.factors.map(escapeHtml).join('<br>')}</td>
+    </tr>`).join('');
+
+  const neutralizationHtml = r.neutralizationNotes.map(n => `<div class="rule-item">${escapeHtml(n)}</div>`).join('');
+
+  const remedyRows = MANGAL_DOSHA2_REMEDIES.map(rem => `<tr><td><strong>${escapeHtml(rem.title)}</strong></td><td>${escapeHtml(rem.text)}</td></tr>`).join('');
+
+  el.innerHTML = `
+    <p><strong>Mars:</strong> ${r.mars.sign}, House ${r.mars.house} from Lagna.
+       <strong>Overall strength:</strong> <span class="strength-badge strength-${r.strengthLabel}">${r.strengthLabel}</span>
+       (${r.count} of 3 reference points show a dosha; combined severity ${r.combinedSeverity}%, in multiples of 5).</p>
+
+    <h3>1. How It Has Been Derived</h3>
+    <table>
+      <thead><tr><th>Reference Point</th><th>Mars's Placement</th><th>Dosha?</th><th>Severity</th><th>Factors</th></tr></thead>
+      <tbody>${refRows}</tbody>
+    </table>
+
+    <h3>2. Scoring of Strength (multiples of 5)</h3>
+    <p>Each reference point's severity is built from a base value per house (8th=100, 7th=90, 4th/12th=60, 2nd=50, 1st=40) — always a multiple of 5 — then reduced by fixed multiples of 5 for each mitigating factor present (see table above). The combined severity (${r.combinedSeverity}%) is the average of the severities from reference points showing a dosha, rounded to the nearest multiple of 5. Overall strength label: <strong>${r.strengthLabel}</strong> (None/Mild/Moderate/Strong, based on how many of the 3 reference points show a dosha).</p>
+
+    <h3>3. Neutralization</h3>
+    ${neutralizationHtml || '<div class="rule-item">No specific neutralization factors apply.</div>'}
+
+    <h3>4. Remedies (traditional, faith-based — not a substitute for professional or matrimonial counsel)</h3>
+    <table>
+      <thead><tr><th>Remedy</th><th>Description</th></tr></thead>
+      <tbody>${remedyRows}</tbody>
+    </table>
+  `;
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -1010,6 +1201,8 @@ function generateChart() {
     state.yogas = computeYogas(planets, ascendant);
     state.dasha = computeVimshottariDasha(planets.find(p => p.name === 'Moon').longitude, birthUtc);
     state.dashaSelection = {}; // clears any drill-down selection from a previous chart
+    state.sadeSati = null; // recomputed lazily (expensive) when the Sade Sati tab is opened
+    state.mangalDosha2 = computeMangalDosha2(state.chart);
     // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
     // re-rendered from this fresh state, so any change to the birth inputs
     // automatically propagates everywhere the next time this runs.
@@ -1024,10 +1217,14 @@ function generateChart() {
     renderYogasTab();
     renderDashaTab();
     renderRuleEngineTab();
+    renderMangalDosha2Tab();
+    document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
   } catch (err) {
     state.chart = null;
     state.yogas = null;
     state.dasha = null;
+    state.sadeSati = null;
+    state.mangalDosha2 = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
     document.getElementById('planetTableOutput').innerHTML = '';
     document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
@@ -1046,6 +1243,8 @@ function generateChart() {
     document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ruleEngineOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('sadeSatiOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('mangalDosha2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
