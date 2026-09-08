@@ -110,6 +110,10 @@
   span.yoga-row-bad    { background-color: #ffdcdc; }
   span.yoga-row-medium { background-color: #fff3d6; }
 
+  .dasha-maha-row td { background-color: #eef2ff; }
+  .dasha-antar-row td { font-size: 0.9em; color: #444; }
+  .dasha-current td { background-color: #fff3b0 !important; font-weight: bold; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -133,6 +137,7 @@
   <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
   <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
   <button class="tab-button" id="tabBtnYogas" data-tab="tabYogas">Yogas</button>
+  <button class="tab-button" id="tabBtnDasha" data-tab="tabDasha">Dasha</button>
 </div>
 
 <div class="controls">
@@ -324,6 +329,12 @@
 <div id="yogasTableOutput" class="output-box pastel-yellow"></div>
 </div>
 
+<div class="tab-panel" id="tabDasha">
+<h2>Vimshottari Dasha</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart from the Moon's nakshatra at birth — the classical 120-year Mahadasha/Antardasha cycle, with today's currently running period highlighted.</p>
+<div id="dashaTableOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -350,6 +361,7 @@
 <script src="js/matching/kundaliMatching.js"></script>
 <script src="js/yogas/yogaRules.js"></script>
 <script src="js/yogas/yogaEngine.js"></script>
+<script src="js/dasha/vimshottariDasha.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>

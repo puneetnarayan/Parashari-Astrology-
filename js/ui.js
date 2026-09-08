@@ -38,6 +38,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabInterpretations') renderInterpretationsTab();
       if (btn.dataset.tab === 'tabBhinnashtakavarga') renderBavAllTab();
       if (btn.dataset.tab === 'tabYogas') renderYogasTab();
+      if (btn.dataset.tab === 'tabDasha') renderDashaTab();
     });
   });
 }
@@ -125,6 +126,7 @@ function clearOutputs() {
   document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   document.getElementById('bavAllChartOutput').innerHTML = '';
   document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+  document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
 }
 
 function resetForm() {
@@ -464,6 +466,51 @@ function renderYogasTab() {
   renderYogasTable(yogaResult);
 }
 
+// --- Vimshottari Dasha ---
+
+function formatDashaDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function renderDashaTable(mahadashas) {
+  const el = document.getElementById('dashaTableOutput');
+  const { maha: currentMaha, antar: currentAntar } = findCurrentDasha(mahadashas);
+  const rows = mahadashas.map(maha => {
+    const isCurrentMaha = maha === currentMaha;
+    const mahaRow = `
+      <tr class="dasha-maha-row${isCurrentMaha ? ' dasha-current' : ''}">
+        <td><strong>${maha.lord} Mahadasha</strong></td>
+        <td>${formatDashaDate(maha.startDate)}</td>
+        <td>${formatDashaDate(maha.endDate)}</td>
+        <td>${maha.years.toFixed(2)} yrs</td>
+      </tr>`;
+    const antarRows = maha.antardashas.map(antar => `
+      <tr class="dasha-antar-row${antar === currentAntar ? ' dasha-current' : ''}">
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;${maha.lord} / ${antar.lord} Antardasha</td>
+        <td>${formatDashaDate(antar.startDate)}</td>
+        <td>${formatDashaDate(antar.endDate)}</td>
+        <td>${antar.years.toFixed(2)} yrs</td>
+      </tr>`).join('');
+    return mahaRow + antarRows;
+  }).join('');
+
+  el.innerHTML = `
+    <p style="font-size:0.85em;color:#555;">The currently running Mahadasha/Antardasha (as of today) is highlighted.</p>
+    <table>
+      <thead><tr><th>Period</th><th>Start</th><th>End</th><th>Duration</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderDashaTab() {
+  if (!state.chart) {
+    document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const mahadashas = state.dasha || computeVimshottariDasha(state.chart.planets.find(p => p.name === 'Moon').longitude, state.chart.birthUtc);
+  renderDashaTable(mahadashas);
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -734,8 +781,9 @@ function generateChart() {
     if (isNaN(lat) || isNaN(lon)) throw new Error('Enter valid birth latitude and longitude.');
 
     const { planets, ascendant } = generateBirthChart(birthUtc, lat, lon);
-    state.chart = { planets, ascendant };
+    state.chart = { planets, ascendant, birthUtc };
     state.yogas = computeYogas(planets, ascendant);
+    state.dasha = computeVimshottariDasha(planets.find(p => p.name === 'Moon').longitude, birthUtc);
     // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
     // re-rendered from this fresh state, so any change to the birth inputs
     // automatically propagates everywhere the next time this runs.
@@ -748,9 +796,11 @@ function generateChart() {
     renderInterpretationsTab();
     renderBavAllTab();
     renderYogasTab();
+    renderDashaTab();
   } catch (err) {
     state.chart = null;
     state.yogas = null;
+    state.dasha = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
     document.getElementById('planetTableOutput').innerHTML = '';
     document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
@@ -767,6 +817,7 @@ function generateChart() {
     document.getElementById('bavAllTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('bavAllChartOutput').innerHTML = '';
     document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
