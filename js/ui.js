@@ -39,6 +39,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabBhinnashtakavarga') renderBavAllTab();
       if (btn.dataset.tab === 'tabYogas') renderYogasTab();
       if (btn.dataset.tab === 'tabDasha') renderDashaTab();
+      if (btn.dataset.tab === 'tabInterpretations2') renderRuleEngineTab();
     });
   });
 }
@@ -648,6 +649,61 @@ function renderInterpretation2Tab() {
   `;
 }
 
+function classFor(label) {
+  if (label === 'Yogakaraka') return 'rule-flag-yogakaraka';
+  if (label === 'Functional Benefic') return 'rule-flag-benefic';
+  if (label === 'Functional Malefic' || label.indexOf('Natural Malefic') === 0) return 'rule-flag-malefic';
+  return 'rule-flag-neutral';
+}
+
+function renderRuleEngineTab() {
+  const el = document.getElementById('ruleEngineOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const r = computeRuleEngine(state.chart);
+
+  const dignityExtraHtml = r.dignityExtra.filter(d => d.notes.length).length
+    ? r.dignityExtra.filter(d => d.notes.length).map(d => `<div class="rule-item"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
+    : '<div class="rule-item">No Vargottama or Dig Bala placements in this chart.</div>';
+
+  const degreeHtml = r.degreeSensitive.length
+    ? r.degreeSensitive.map(d => `<div class="rule-item"><strong>${d.planet}</strong>: ${d.notes.join(' ')}</div>`).join('')
+    : '<div class="rule-item">No planet is within 1° of a sign boundary in this chart.</div>';
+
+  const conjPairsHtml = r.conjunctions.pairTexts.length
+    ? r.conjunctions.pairTexts.map(c => `<div class="rule-item">${escapeHtml(c.text)}</div>`).join('')
+    : '<div class="rule-item">No planet-to-planet conjunctions (same sign) in this chart.</div>';
+  const stelliumHtml = r.conjunctions.stelliums.map(s => `<div class="rule-item">${escapeHtml(s.text)}</div>`).join('');
+  const yuddhaHtml = r.conjunctions.yuddha.map(y => `<div class="rule-item">${escapeHtml(y.text)}</div>`).join('');
+
+  const aspectHtml = r.aspects.length
+    ? r.aspects.map(a => `<div class="rule-item">${escapeHtml(a.text)}</div>`).join('')
+    : '<div class="rule-item">No aspects (graha drishti) land on any planet in this chart.</div>';
+
+  const functionalHtml = Object.entries(r.functional).map(([name, f]) =>
+    `<div class="rule-item"><span class="${classFor(f.label)}">${escapeHtml(f.label)}</span> — ${escapeHtml(f.text)}</div>`
+  ).join('');
+
+  const nakshatraHtml = r.nakshatra.map(n => `<div class="rule-item">${escapeHtml(n.text)}</div>`).join('');
+
+  const neechaHtml = r.neechaBhanga.length
+    ? r.neechaBhanga.map(n => `<div class="rule-item">${escapeHtml(n.text)}</div>`).join('')
+    : '<div class="rule-item">No debilitated planets in this chart, so no Neecha Bhanga check applies.</div>';
+
+  el.innerHTML = `
+    <div class="rule-section"><h4>Vargottama &amp; Dig Bala</h4>${dignityExtraHtml}</div>
+    <div class="rule-section"><h4>Degree-Sensitive Conditions (0&deg;/29&deg;/Gandanta)</h4>${degreeHtml}</div>
+    <div class="rule-section"><h4>Conjunctions (Yuti)</h4>${conjPairsHtml}${stelliumHtml}${yuddhaHtml}</div>
+    <div class="rule-section"><h4>Aspects (Drishti)</h4>${aspectHtml}</div>
+    <div class="rule-section"><h4>Functional Benefic/Malefic Classification (by ${escapeHtml(state.chart.ascendant.sign)} Lagna)</h4>${functionalHtml}</div>
+    <div class="rule-section"><h4>Nakshatra Character</h4>${nakshatraHtml}</div>
+    <div class="rule-section"><h4>Neecha Bhanga (Debilitation Cancellation) Check</h4>${neechaHtml}</div>
+  `;
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -939,6 +995,7 @@ function generateChart() {
     renderBavAllTab();
     renderYogasTab();
     renderDashaTab();
+    renderRuleEngineTab();
   } catch (err) {
     state.chart = null;
     state.yogas = null;
@@ -960,6 +1017,7 @@ function generateChart() {
     document.getElementById('bavAllChartOutput').innerHTML = '';
     document.getElementById('yogasTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('dashaTableOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('ruleEngineOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 

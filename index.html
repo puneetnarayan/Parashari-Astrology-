@@ -127,6 +127,14 @@
   .interp2-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin: 10px 0; }
   .interp2-table th, .interp2-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; }
   .interp2-table th { background: #f0f0f0; }
+  .rule-section { margin-bottom: 18px; }
+  .rule-section h4 { margin: 0 0 6px 0; }
+  .rule-item { padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 0.92em; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-flag-yogakaraka { color: #0a7d2c; font-weight: bold; }
+  .rule-flag-malefic { color: #b30000; font-weight: bold; }
+  .rule-flag-benefic { color: #0a7d2c; }
+  .rule-flag-neutral { color: #555; }
 
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
@@ -268,7 +276,11 @@
 </div>
 
 <div class="tab-panel" id="tabInterpretations2">
-<h2>Interpretation-2 (Reference Spec)</h2>
+<h2>Interpretation-2</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Live rule-based analysis for THIS chart, computed per the rule taxonomy below: Vargottama/Dig Bala, Degree-Sensitive Conditions (0&deg;/29&deg;/Gandanta), Conjunction &amp; Aspect narratives, Functional Benefic/Malefic Classification, Nakshatra character, and Neecha Bhanga checks. (Lagna, Planet-in-Sign, Planet-in-House, Dignity, Combustion, and Retrograde are already covered on the "Interpretations" tab and are not repeated here.)</p>
+<div id="ruleEngineOutput" class="output-box pastel-mint"></div>
+
+<h2 style="margin-top:28px;">Reference Spec (source documents)</h2>
 <div id="interpretation2Output" class="output-box pastel-peach"></div>
 </div>
 
@@ -377,6 +389,8 @@
 <script src="js/interpretations/lagnaInterpretations.js"></script>
 <script src="js/interpretations/interpretationEngine.js"></script>
 <script src="js/interpretations2/promptReference.js"></script>
+<script src="js/interpretations2/nakshatraTraits.js"></script>
+<script src="js/interpretations2/ruleEngine.js"></script>
 <script src="js/matching/ashtakootRules.js"></script>
 <script src="js/matching/mangalDoshaRules.js"></script>
 <script src="js/matching/kundaliMatching.js"></script>
