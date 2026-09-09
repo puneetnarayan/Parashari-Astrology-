@@ -45,6 +45,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabShadbala') renderShadbalaTab();
       if (btn.dataset.tab === 'tabAshtakvargaPredictions') renderAshtakvargaPredictionsTab();
       if (btn.dataset.tab === 'tabKakshya') renderKakshyaTab();
+      if (btn.dataset.tab === 'tabKakshyaTimeline') renderKakshyaTimelineTab();
     });
   });
 }
@@ -1409,6 +1410,177 @@ function onFindKakshyaWindows() {
   }, 10);
 }
 
+// --- Kakshya Life-Area Timeline ---
+
+let ktLastMatrix = null; // { periods, matrix, dashaLordName, areas } — cached for CSV/print/detail lookup
+
+function ktAssessCellClass(assessment) {
+  return assessment === 'Insufficient Data' ? 'kt-insufficient' : `kt-assess-${assessment.replace(/ /g, '-')}`;
+}
+
+function renderKtLegend() {
+  const items = [
+    ['Excellent', 'var(--kt-excellent)', 'exceptionally supportive'],
+    ['Very Good', 'var(--kt-verygood)', 'strongly supportive'],
+    ['Good', 'var(--kt-good)', 'generally supportive'],
+    ['Neutral', 'var(--kt-neutral)', 'mixed or limited support'],
+    ['Bad', 'var(--kt-bad)', 'unfavourable'],
+    ['Worse', 'var(--kt-worse)', 'strongly unfavourable'],
+    ['Worst', 'var(--kt-worst)', 'exceptionally difficult'],
+    ['Insufficient Data', 'var(--kt-insufficient)', 'not enough evidence — NOT the same as Neutral']
+  ];
+  document.getElementById('ktLegend').innerHTML = items.map(([label, color, desc]) =>
+    `<span class="kt-legend-item"><span class="kt-swatch" style="background:${color};"></span><strong>${label}</strong> — ${desc}</span>`
+  ).join('');
+}
+
+function renderKtMethodology() {
+  document.getElementById('ktMethodology').innerHTML = `
+    <div class="kk-calc-chain">Life Area
+  -> Relevant Houses (primary houses weighted x1.5)
+  -> For each of the 7 planets, sampled Kakshya info across the period (reused from the Kakshya Analysis engine)
+  -> Filtered to samples whose activated natal house matches the life area
+  -> Each sample's Kakshya assessment -> score -2..+2
+  -> Averaged across all contributing samples in the period
+  -> +-0.5 Dasha-alignment bonus if the current Mahadasha lord occupies/rules a relevant house
+  -> Clamped to -3..+3
+  -> Classified into 7 levels via configurable thresholds (see TIMELINE_THRESHOLDS in js/kakshyaTimeline/timelineEngine.js)</div>
+    <table class="sb-component-table">
+      <thead><tr><th>Score range</th><th>Assessment</th></tr></thead>
+      <tbody>${TIMELINE_THRESHOLDS.map((t, i) => `<tr><td>${t.min === -Infinity ? '< ' + TIMELINE_THRESHOLDS[i - 1].min : '>= ' + t.min}</td><td>${t.label}</td></tr>`).join('')}</tbody>
+    </table>
+    <p style="font-size:0.85em;color:#555;">These thresholds are configuration defaults, not immutable astrological truth. Confidence: High (>=4 consistent-sign samples), Medium (2-3, or mixed sign), Low (1 sample), Insufficient Data (0 relevant samples in the period).</p>`;
+}
+
+function ktQuickRangeDates(months) {
+  const start = new Date();
+  const end = new Date(start.getTime() + months * 30.44 * 86400000);
+  return { start, end };
+}
+
+function onKtQuickRangeChange() {
+  const val = document.getElementById('ktQuickRange').value;
+  if (val === 'custom') return;
+  const { start, end } = ktQuickRangeDates(Number(val));
+  document.getElementById('ktStartDate').value = start.toISOString().slice(0, 10);
+  document.getElementById('ktEndDate').value = end.toISOString().slice(0, 10);
+}
+
+function renderKtMatrixTable(periods, matrix, areas) {
+  const header = `<tr><th class="kt-area-header">Life Area</th>${periods.map(p => `<th>${p.label}</th>`).join('')}</tr>`;
+  const rows = areas.map(area => {
+    const cells = matrix[area.id].map((cell, i) => {
+      const cls = ktAssessCellClass(cell.assessment);
+      const ariaLabel = `${area.name}, ${periods[i].label}, ${cell.assessment}${cell.score !== null ? `, score ${cell.score >= 0 ? '+' : ''}${cell.score.toFixed(2)}` : ''}, ${cell.confidence} confidence`;
+      const display = cell.score === null ? '—' : (cell.score >= 0 ? '+' : '') + cell.score.toFixed(1);
+      return `<td class="kt-cell ${cls}" tabindex="0" role="button" aria-label="${ariaLabel}" title="${ariaLabel}" data-area="${area.id}" data-period="${i}">${display}</td>`;
+    }).join('');
+    return `<tr><th class="kt-row-header" data-area="${area.id}">${area.name}</th>${cells}</tr>`;
+  }).join('');
+  return `<table class="kt-matrix"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKtCellDetail(area, period, cell) {
+  const el = document.getElementById('ktCellDetail');
+  if (cell.assessment === 'Insufficient Data') {
+    el.innerHTML = `<h3>${area.name} — ${period.label}</h3><p>Insufficient Data: no planet activated a house relevant to this life area during this period. This is NOT the same as a Neutral astrological reading — it simply means this engine found no relevant Kakshya sample here.</p>`;
+    return;
+  }
+  const rows = cell.contributions.map(c => `
+    <tr>
+      <td>${c.planet}</td><td>${c.sample.sign}</td><td>${sbNum(c.sample.degInSign, 2)}°</td><td>${c.sample.kakshyaNumber}</td><td>${c.sample.kakshyaLord}</td>
+      <td>${c.sample.bavTotal}</td><td>${c.sample.sav}</td><td>House ${c.house}</td><td>${c.sample.assessment}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <h3>${area.name} — ${period.label}</h3>
+    <p><strong>Assessment:</strong> <span class="assess-badge ${avpAssessClass(cell.assessment)}">${cell.assessment}</span> &nbsp; <strong>Score:</strong> ${cell.score >= 0 ? '+' : ''}${cell.score.toFixed(2)} &nbsp; <strong>Confidence:</strong> ${cell.confidence}${cell.dashaBonus ? ` &nbsp; <strong>Dasha bonus:</strong> +${cell.dashaBonus}` : ''}</p>
+    <h4>Kakshya Events Contributing to This Period</h4>
+    <table><thead><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>Kakshya</th><th>Lord</th><th>BAV</th><th>SAV</th><th>House</th><th>Effect</th></tr></thead><tbody>${rows}</tbody></table>
+    <p>Relevant houses for ${area.name}: ${area.houses.join(', ')} (primary: ${area.primary.join(', ')}). This is a Kakshya-based timing refinement, not a standalone prediction — always read alongside natal promise, house-lord condition, and dasha.</p>`;
+}
+
+function renderKtSummary(periods, matrix, areas) {
+  const bestWorst = findBestWorstPeriods(matrix, areas);
+  const bestWorstRows = bestWorst.map(r => r.best ? `
+    <tr><td>${r.area.name}</td><td>${r.best.period.label}</td><td>${r.worst.period.label}</td><td>${r.avg.toFixed(2)}</td><td>${r.strongCount}</td><td>${r.difficultCount}</td></tr>` : '').join('');
+
+  const multiAreaWindows = findMultiAreaWindows(matrix, areas, periods, Math.max(3, Math.floor(areas.length * 0.3)));
+  const multiAreaHtml = multiAreaWindows.slice(0, 5).map(w => `
+    <div class="rule-item quality-good">
+      <strong>${w.period.label}</strong> — ${w.supportedAreas.length} areas well-supported: ${w.supportedAreas.map(s => `${s.area.name} (${s.cell.assessment})`).join(', ')}
+    </div>`).join('') || '<p>No period found where several life areas are simultaneously well-supported in this range.</p>';
+
+  document.getElementById('ktSummary').innerHTML = `
+    <h3>Row-Level Summary</h3>
+    <table><thead><tr><th>Life Area</th><th>Best Period</th><th>Worst Period</th><th>Avg Score</th><th>Strong Periods</th><th>Difficult Periods</th></tr></thead><tbody>${bestWorstRows}</tbody></table>
+
+    <h3>Simultaneous Multi-Area Windows</h3>
+    ${multiAreaHtml}`;
+}
+
+function onKtCellActivate(e) {
+  const td = e.target.closest('.kt-cell');
+  if (!td || !ktLastMatrix) return;
+  const areaId = td.dataset.area;
+  const periodIdx = Number(td.dataset.period);
+  const area = ktLastMatrix.areas.find(a => a.id === areaId);
+  const cell = ktLastMatrix.matrix[areaId][periodIdx];
+  renderKtCellDetail(area, ktLastMatrix.periods[periodIdx], cell);
+}
+
+function onKtBuild() {
+  if (!state.chart || !state.ashtakvarga) return;
+  const startStr = document.getElementById('ktStartDate').value;
+  const endStr = document.getElementById('ktEndDate').value;
+  if (!startStr || !endStr) { document.getElementById('ktMatrixContainer').innerHTML = '<p>Choose a date range first.</p>'; return; }
+  const startDate = new Date(startStr + 'T00:00:00Z');
+  const endDate = new Date(endStr + 'T00:00:00Z');
+  if (endDate <= startDate) { document.getElementById('ktMatrixContainer').innerHTML = '<p>End date must be after start date.</p>'; return; }
+  const resolution = document.getElementById('ktResolution').value;
+  const groupName = document.getElementById('ktAreaGroup').value;
+  const areaIds = TIMELINE_LIFE_AREA_GROUPS[groupName] || TIMELINE_LIFE_AREA_GROUPS.All;
+  const areas = TIMELINE_LIFE_AREAS.filter(a => areaIds.includes(a.id));
+
+  document.getElementById('ktMatrixContainer').innerHTML = '<p>Building timeline (sampling transits across the range) — this can take a few seconds…</p>';
+  document.getElementById('ktSummary').innerHTML = '';
+  document.getElementById('ktCellDetail').innerHTML = '';
+  setTimeout(() => {
+    const { periods, matrix, dashaLordName } = buildTimelineMatrix(areas, startDate, endDate, resolution, state.chart, state.ashtakvarga);
+    ktLastMatrix = { periods, matrix, areas, dashaLordName };
+    const container = document.getElementById('ktMatrixContainer');
+    container.innerHTML = `<div class="kt-matrix-scroll">${renderKtMatrixTable(periods, matrix, areas)}</div>`;
+    container.querySelectorAll('.kt-cell').forEach(td => {
+      td.addEventListener('click', onKtCellActivate);
+      td.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onKtCellActivate(ev); } });
+    });
+    renderKtSummary(periods, matrix, areas);
+  }, 20);
+}
+
+function onKtExportCsv() {
+  if (!ktLastMatrix) { alert('Build the timeline first.'); return; }
+  const csv = exportMatrixToCsv(ktLastMatrix.matrix, ktLastMatrix.areas, ktLastMatrix.periods);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kakshya-life-area-timeline.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function renderKakshyaTimelineTab() {
+  const el = document.getElementById('ktMatrixContainer');
+  if (!el) return;
+  renderKtLegend();
+  renderKtMethodology();
+  if (!state.chart || !state.ashtakvarga) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (!document.getElementById('ktStartDate').value) onKtQuickRangeChange();
+  if (!ktLastMatrix) el.innerHTML = '<p>Choose a range and click "Build Timeline".</p>';
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -1735,6 +1907,8 @@ function generateChart() {
     try { renderShadbalaTab(); } catch (sbRenderErr) { console.error('Shadbala render failed:', sbRenderErr); document.getElementById('shadbalaOutput').innerHTML = '<p>Shadbala could not be rendered for this chart (see console for details).</p>'; }
     try { renderAshtakvargaPredictionsTab(); } catch (avpErr) { console.error('Ashtakvarga Predictions render failed:', avpErr); document.getElementById('avpOutput').innerHTML = '<p>Could not be rendered for this chart (see console for details).</p>'; }
     try { renderKakshyaTab(); } catch (kkErr) { console.error('Kakshya render failed:', kkErr); document.getElementById('kakshyaOutput').innerHTML = '<p>Could not be rendered for this chart (see console for details).</p>'; }
+    ktLastMatrix = null; // chart changed — any previously built timeline is stale
+    try { renderKakshyaTimelineTab(); } catch (ktErr) { console.error('Kakshya Timeline render failed:', ktErr); }
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
   } catch (err) {
     state.chart = null;
@@ -1766,6 +1940,10 @@ function generateChart() {
     document.getElementById('shadbalaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('avpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('kakshyaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    ktLastMatrix = null;
+    document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('ktSummary').innerHTML = '';
+    document.getElementById('ktCellDetail').innerHTML = '';
   }
 }
 
@@ -1820,6 +1998,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('avpLifeAreaSelect').addEventListener('change', renderAshtakvargaPredictionsTab);
   document.getElementById('kakshyaPlanetSelect').addEventListener('change', renderKakshyaTab);
   document.getElementById('kakshyaFindWindowsBtn').addEventListener('click', onFindKakshyaWindows);
+  document.getElementById('ktQuickRange').addEventListener('change', onKtQuickRangeChange);
+  document.getElementById('ktBuildBtn').addEventListener('click', onKtBuild);
+  document.getElementById('ktExportCsvBtn').addEventListener('click', onKtExportCsv);
+  document.getElementById('ktPrintBtn').addEventListener('click', () => window.print());
   initAutoRegenerate();
   renderInterpretation2Tab();
   generateChart();
