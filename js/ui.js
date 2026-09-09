@@ -1308,6 +1308,54 @@ function renderKakshyaMasterMatrix(planetName, chart, ashtakvarga) {
   return `<p>Current sign: <strong>${currentInfo.sign}</strong> (House ${currentInfo.house})</p><table><thead><tr><th>#</th><th>Degree Range</th><th>Kakshya Lord</th><th>Relevant BAV Contribution</th><th>Total BAV</th><th>SAV</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+// Hour-by-hour Kakshya for "today" (the current UTC calendar day) — useful
+// for same-day/muhurta-style timing, where the fastest-moving planets
+// (chiefly the Moon, ~1 Kakshya every ~7 hours) can change Kakshya more
+// than once within a single day; the Timeline tab's day/week/month
+// resolution is too coarse to show this. Not meaningful as a matrix
+// resolution (most planets barely move hour-to-hour) — see chat discussion.
+function renderKakshyaHourByHour(planetName, chart, ashtakvarga) {
+  const now = new Date();
+  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const rows = [];
+  for (let h = 0; h < 24; h++) {
+    const d = new Date(dayStart.getTime() + h * 3600000);
+    const info = computeKakshyaInfo(planetName, d, chart, ashtakvarga);
+    const isCurrentHour = now >= d && now < new Date(d.getTime() + 3600000);
+    rows.push({ hour: h, date: d, info, isCurrentHour });
+  }
+  // Merge consecutive hours with the same Kakshya into one row, so a slow
+  // planet (Saturn, Jupiter) shows one wide block instead of 24 identical rows.
+  const merged = [];
+  rows.forEach(r => {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.info.kakshyaNumber === r.info.kakshyaNumber && prev.info.sign === r.info.sign) {
+      prev.endHour = r.hour;
+      prev.containsCurrentHour = prev.containsCurrentHour || r.isCurrentHour;
+    } else {
+      merged.push({ startHour: r.hour, endHour: r.hour, info: r.info, containsCurrentHour: r.isCurrentHour });
+    }
+  });
+
+  const bodyRows = merged.map(m => {
+    const startLabel = `${String(m.startHour).padStart(2, '0')}:00`;
+    const endLabel = `${String((m.endHour + 1) % 24).padStart(2, '0')}:00`;
+    return `
+      <tr class="${kkAssessClass(m.info.assessment)} ${m.containsCurrentHour ? 'kk-current-hour' : ''}">
+        <td>${startLabel}–${endLabel} UTC${m.containsCurrentHour ? ' (now)' : ''}</td>
+        <td>${m.info.sign}</td><td>${sbNum(m.info.degInSign, 2)}°</td>
+        <td>${m.info.kakshyaNumber}</td><td>${m.info.kakshyaLord}</td>
+        <td>${m.info.contributes === null ? 'n/a' : (m.info.contributes ? 'Yes' : 'No')}</td>
+        <td>${m.info.bavTotal}</td><td>${m.info.sav}</td><td>${m.info.house}</td>
+        <td><span class="assess-badge ${kkAssessClass(m.info.assessment)}">${m.info.assessment}</span></td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <p style="font-size:0.85em;color:#555;">Today (${dayStart.toISOString().slice(0, 10)}, UTC hours), for ${planetName}. Consecutive hours in the same Kakshya are merged into one block — a slow planet (Saturn, Jupiter) may show only 1-2 blocks all day, while the Moon typically shows 3-4.</p>
+    <table><thead><tr><th>Hours</th><th>Sign</th><th>Degree</th><th>Kakshya</th><th>Lord</th><th>Contribution</th><th>BAV</th><th>SAV</th><th>House</th><th>Status</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
+}
+
 function renderKakshyaTimeline(planetName, chart, ashtakvarga) {
   const timeline = computeSignKakshyaTimeline(planetName, new Date(), chart, ashtakvarga);
   const rows = timeline.segments.map(seg => `
@@ -1364,6 +1412,9 @@ function renderKakshyaTab() {
 
     <h3>Eight-Kakshya Matrix — ${planetName}'s Current Sign</h3>
     ${renderKakshyaMasterMatrix(planetName, state.chart, state.ashtakvarga)}
+
+    <h3>Hour-by-Hour Today — ${planetName}</h3>
+    ${renderKakshyaHourByHour(planetName, state.chart, state.ashtakvarga)}
 
     <h3>Full Transit Timeline — ${planetName} Through Its Current Sign</h3>
     <div id="kakshyaTimelineOutput">Computing…</div>
