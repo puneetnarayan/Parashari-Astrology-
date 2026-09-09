@@ -42,6 +42,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabInterpretations2') renderRuleEngineTab();
       if (btn.dataset.tab === 'tabSadeSati') renderSadeSatiTab();
       if (btn.dataset.tab === 'tabMangalDosha2') renderMangalDosha2Tab();
+      if (btn.dataset.tab === 'tabShadbala') renderShadbalaTab();
     });
   });
 }
@@ -901,6 +902,223 @@ function renderMangalDosha2Tab() {
   `;
 }
 
+// --- Shadbala ---
+
+function sbNum(n, digits) { return Number(n).toFixed(digits === undefined ? 2 : digits); }
+
+function renderShadbalaOverviewTiles(shadbala) {
+  return `<div class="sb-overview-grid">${SHADBALA_PLANETS.map(name => {
+    const r = shadbala.planets[name];
+    const pct = Math.min(100, (r.ratio) * 100);
+    return `
+      <div class="sb-overview-tile">
+        <div class="sb-tile-planet">${name}</div>
+        <div style="font-size:0.85em;">${sbNum(r.totalRupa)} Rupa</div>
+        <div class="sb-bar-track"><div class="sb-bar-fill" style="width:${Math.min(100, pct)}%;"></div></div>
+        <div class="sb-strength-${r.strength.replace(/ /g, '-')}" style="font-size:0.85em;">${r.strength}</div>
+        <div style="font-size:0.75em;color:#777;">Rank ${r.rank}/7</div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+function renderShadbalaComparisonTable(shadbala, functional, sortBy) {
+  let rows = SHADBALA_PLANETS.map(name => {
+    const r = shadbala.planets[name];
+    return { name, r, natural: NATURAL_BENEFICS.includes(name) ? 'Benefic' : 'Malefic', functionalLabel: functional[name].label };
+  });
+  const sorters = {
+    rank: (a, b) => a.r.rank - b.r.rank,
+    ratio: (a, b) => b.r.ratio - a.r.ratio,
+    name: (a, b) => a.name.localeCompare(b.name),
+    natural: (a, b) => a.natural.localeCompare(b.natural) || a.r.rank - b.r.rank,
+    functional: (a, b) => a.functionalLabel.localeCompare(b.functionalLabel) || a.r.rank - b.r.rank
+  };
+  rows = rows.sort(sorters[sortBy] || sorters.rank);
+  const body = rows.map(({ name, r, natural, functionalLabel }) => `
+    <tr>
+      <td>${name}</td>
+      <td>${sbNum(r.totalRupa)}</td>
+      <td>${r.requiredRupa}</td>
+      <td>${sbNum(r.ratio)}</td>
+      <td>${r.rank}</td>
+      <td class="sb-strength-${r.strength.replace(/ /g, '-')}">${r.strength}</td>
+      <td>${natural}</td>
+      <td>${escapeHtml(functionalLabel)}</td>
+    </tr>`).join('');
+  return `
+    <table>
+      <thead><tr><th>Planet</th><th>Total (Rupa)</th><th>Required Min.</th><th>Ratio</th><th>Rank</th><th>Overall Strength</th><th>Natural</th><th>Functional</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>`;
+}
+
+function renderShadbalaComponentTable(r) {
+  const rows = [
+    ['Sthana Bala', r.sthana.total],
+    ['Dig Bala', r.dig.value],
+    ['Kala Bala', r.kala.total],
+    ['Cheshta Bala', r.cheshta.value],
+    ['Naisargika Bala', r.naisargika.value],
+    ['Drik Bala', r.drik.total]
+  ];
+  const body = rows.map(([label, value]) => `
+    <tr>
+      <td>${label}</td>
+      <td>${sbNum(value)}</td>
+      <td>${r.totalVirupa ? sbNum(value / r.totalVirupa * 100, 1) : '0'}%</td>
+      <td>${value >= r.totalVirupa * 0.25 ? 'Strong' : value >= r.totalVirupa * 0.12 ? 'Moderate' : 'Weak'}</td>
+    </tr>`).join('');
+  return `
+    <table class="sb-component-table">
+      <thead><tr><th>Component</th><th>Value (virupa)</th><th>% of Total</th><th>Assessment</th></tr></thead>
+      <tbody>${body}
+        <tr><td><strong>Total</strong></td><td><strong>${sbNum(r.totalVirupa)} v (${sbNum(r.totalRupa)} Rupa)</strong></td><td><strong>100%</strong></td><td><strong>${r.strength}</strong></td></tr>
+      </tbody>
+    </table>`;
+}
+
+function renderSthanaBalaDetail(sthana) {
+  return `
+    <table class="sb-component-table">
+      <thead><tr><th>Sub-Component</th><th>Value</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Uchcha Bala</td><td>${sbNum(sthana.uchcha.value)}</td><td>${escapeHtml(sthana.uchcha.note || '')}</td></tr>
+        <tr><td>Saptavargaja Bala</td><td>${sbNum(sthana.saptavargaja.value)}</td><td>${sthana.saptavargaja.perVarga.map(v => `${v.varga}:${v.sign}(${sbNum(v.points, 1)})`).join(', ')}</td></tr>
+        <tr><td>Oja-Yugma Bala</td><td>${sbNum(sthana.ojaYugma.value)}</td><td>Rasi ${sbNum(sthana.ojaYugma.rasiScore, 0)} + Navamsa ${sbNum(sthana.ojaYugma.navamsaScore, 0)}</td></tr>
+        <tr><td>Kendradi Bala</td><td>${sbNum(sthana.kendradi.value)}</td><td>${sthana.kendradi.tier}</td></tr>
+        <tr><td>Drekkana Bala</td><td>${sbNum(sthana.drekkana.value)}</td><td>Drekkana ${sthana.drekkana.drekkanaIndex} of 3</td></tr>
+        <tr><td><strong>Total Sthana Bala</strong></td><td colspan="2"><strong>${sbNum(sthana.total)}</strong></td></tr>
+      </tbody>
+    </table>`;
+}
+
+function renderKalaBalaDetail(kala) {
+  return `
+    <table class="sb-component-table">
+      <thead><tr><th>Sub-Component</th><th>Value</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Nathonnata Bala</td><td>${sbNum(kala.nathonnata.value)}</td><td>${escapeHtml(kala.nathonnata.note || '')}</td></tr>
+        <tr><td>Paksha Bala</td><td>${sbNum(kala.paksha.value)}</td><td>Elongation ${sbNum(kala.paksha.elongation, 1)}°</td></tr>
+        <tr><td>Tribhaga Bala</td><td>${sbNum(kala.tribhaga.value)}</td><td>${kala.tribhaga.lord ? `Tribhaga ${kala.tribhaga.third} lord: ${kala.tribhaga.lord}` : (kala.tribhaga.note || '')}</td></tr>
+        <tr><td>Dina-Hora Bala</td><td>${sbNum(kala.dinaHora.value)}</td><td>Dina lord ${kala.dinaHora.dinaLord}, Hora lord ${kala.dinaHora.horaLord || 'n/a'}</td></tr>
+        <tr><td>Ayana Bala</td><td>${sbNum(kala.ayana.value)}</td><td>Declination ${sbNum(kala.ayana.declination, 2)}°${kala.ayana.note ? ' — ' + kala.ayana.note : ''}</td></tr>
+        <tr><td>Yuddha Bala</td><td>${sbNum(kala.yuddha.value)}</td><td>${escapeHtml(kala.yuddha.note || 'No planetary war.')}</td></tr>
+        <tr><td><strong>Total Kala Bala</strong></td><td colspan="2"><strong>${sbNum(kala.total)}</strong></td></tr>
+      </tbody>
+    </table>`;
+}
+
+function renderDrikBalaDetail(drik) {
+  if (!drik.contributions.length) return '<p>No planets aspect this placement — Drik Bala is 0.</p>';
+  const rows = drik.contributions.map(c => `<tr><td>${c.from}</td><td>${c.natural}</td><td>${c.value > 0 ? '+' : ''}${c.value}</td></tr>`).join('');
+  return `
+    <table class="sb-component-table">
+      <thead><tr><th>Aspecting Planet</th><th>Influence</th><th>Contribution</th></tr></thead>
+      <tbody>${rows}<tr><td colspan="2"><strong>Net Drik Bala</strong></td><td><strong>${drik.total > 0 ? '+' : ''}${drik.total}</strong></td></tr></tbody>
+    </table>`;
+}
+
+function renderShadbalaPlanetCard(name, shadbala, chart, functional, dashaStrengthLabel, detailed) {
+  const r = shadbala.planets[name];
+  const planet = chart.planets.find(p => p.name === name);
+  const degreeInSign = normalizeDegrees(planet.longitude) % 30;
+  const dignityDetail = detailedDignity(name, planet.sign, degreeInSign);
+  const dispositorName = SIGN_LORD[planet.sign];
+  const dispositorResult = shadbala.planets[dispositorName];
+  const interp = buildPlanetInterpretation(r, planet, dignityDetail, functional[name], dispositorName, dispositorResult);
+
+  const nakInfo = planet.nakshatra ? NAKSHATRA_TRAITS[planet.nakshatra] : null;
+  const nakLord = planet.nakshatra ? NAKSHATRA_TABLE.find(n => n.name === planet.nakshatra).starLord : null;
+
+  const detailBlock = detailed ? `
+    <h4>Detailed Calculation</h4>
+    ${renderShadbalaComponentTable(r)}
+    <h4>Sthana Bala Breakdown</h4>
+    ${renderSthanaBalaDetail(r.sthana)}
+    <h4>Dig Bala Detail</h4>
+    <p>Strong house: ${r.dig.strongHouse}. Distance from its weakest point: ${sbNum(r.dig.distanceFromWeakPoint, 1)}° → ${sbNum(r.dig.value)} virupas.</p>
+    <h4>Kala Bala Breakdown</h4>
+    ${renderKalaBalaDetail(r.kala)}
+    <h4>Cheshta Bala Detail</h4>
+    <p>${escapeHtml(r.cheshta.note || '')}</p>
+    <h4>Drik Bala Breakdown</h4>
+    ${renderDrikBalaDetail(r.drik)}
+  ` : `
+    <h4>Component Strength</h4>
+    ${renderShadbalaComponentTable(r)}
+  `;
+
+  return `
+    <div class="sb-planet-card" data-planet="${name}">
+      <div class="sb-planet-header" onclick="this.parentElement.classList.toggle('expanded')">
+        <div><span class="sb-rank-badge">${r.rank}</span><strong>${name}</strong> — ${sbNum(r.totalRupa)} Rupa (req. ${r.requiredRupa}) — <span class="sb-strength-${r.strength.replace(/ /g, '-')}">${r.strength}</span></div>
+        <div style="font-size:0.85em;color:#666;">${planet.sign}, House ${planet.house} · Dasha strength: ${dashaStrengthLabel}</div>
+      </div>
+      <div class="sb-planet-body">
+        <p>${interp.summary}</p>
+        ${detailBlock}
+        <h4>Sign, House &amp; Context</h4>
+        <table class="sb-component-table">
+          <tbody>
+            <tr><td>Sign</td><td>${planet.sign} (lord ${SIGN_LORD[planet.sign]})</td></tr>
+            <tr><td>Dignity</td><td>${dignityDetail.tier}</td></tr>
+            <tr><td>House</td><td>${planet.house} — ${HOUSE_THEMES[Number(planet.house)].title}</td></tr>
+            <tr><td>Nakshatra</td><td>${planet.nakshatra || 'n/a'} (pada ${planet.pada || '-'}, lord ${nakLord || '-'})${nakInfo ? ' — ' + escapeHtml(nakInfo.keynote) : ''}</td></tr>
+            <tr><td>Dispositor</td><td>${dispositorName} — ${dispositorResult ? `${sbNum(dispositorResult.totalRupa)} Rupa (${dispositorResult.strength})` : 'n/a'}</td></tr>
+            <tr><td>Conjunct With</td><td>${(planet.conjunctWith || []).join(', ') || 'None'}</td></tr>
+            <tr><td>Aspected By</td><td>${(planet.aspectedBy || []).join(', ') || 'None'}</td></tr>
+            <tr><td>Combust</td><td>${planet.combust ? 'Yes' : 'No'}</td></tr>
+            <tr><td>Retrograde</td><td>${planet.retrograde ? 'Yes' : 'No'}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function shadbalaDashaStrengthLabel(shadbala) {
+  if (!state.dasha) return 'n/a';
+  const currentIdx = findCurrentIndex(state.dasha);
+  if (currentIdx < 0) return 'n/a';
+  const maha = state.dasha[currentIdx];
+  const antarIdx = findCurrentIndex(maha.antardashas);
+  const antar = antarIdx >= 0 ? maha.antardashas[antarIdx] : null;
+  const mahaResult = shadbala.planets[maha.lord];
+  const antarResult = antar ? shadbala.planets[antar.lord] : null;
+  const mahaText = mahaResult ? `MD ${maha.lord}: ${mahaResult.strength}` : `MD ${maha.lord}: n/a`;
+  const antarText = antarResult ? `, AD ${antar.lord}: ${antarResult.strength}` : (antar ? `, AD ${antar.lord}: n/a` : '');
+  return mahaText + antarText;
+}
+
+function renderShadbalaTab() {
+  const el = document.getElementById('shadbalaOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (!state.shadbala) {
+    el.innerHTML = '<p>Shadbala could not be computed for this chart (see console for details).</p>';
+    return;
+  }
+  const detailed = document.getElementById('shadbalaDetailedToggle').checked;
+  const sortBy = document.getElementById('shadbalaSortBy').value;
+  const functional = functionalClassification(state.chart.ascendant.sign, state.chart.planets);
+  const dashaLabel = shadbalaDashaStrengthLabel(state.shadbala);
+
+  const cards = SHADBALA_PLANETS.map(name => renderShadbalaPlanetCard(name, state.shadbala, state.chart, functional, dashaLabel, detailed)).join('');
+
+  el.innerHTML = `
+    <h3>Shadbala Overview</h3>
+    ${renderShadbalaOverviewTiles(state.shadbala)}
+
+    <h3>Cross-Planet Comparison</h3>
+    ${renderShadbalaComparisonTable(state.shadbala, functional, sortBy)}
+
+    <h3>Per-Planet Detail (click a row to expand)</h3>
+    ${cards}
+  `;
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -1203,6 +1421,12 @@ function generateChart() {
     state.dashaSelection = {}; // clears any drill-down selection from a previous chart
     state.sadeSati = null; // recomputed lazily (expensive) when the Sade Sati tab is opened
     state.mangalDosha2 = computeMangalDosha2(state.chart);
+    try {
+      state.shadbala = computeShadbala(state.chart, lat, lon);
+    } catch (sbErr) {
+      state.shadbala = null;
+      console.error('Shadbala computation failed:', sbErr);
+    }
     // Every downstream view (Planet Table, Charts, Ashtakvarga) is fully
     // re-rendered from this fresh state, so any change to the birth inputs
     // automatically propagates everywhere the next time this runs.
@@ -1218,6 +1442,7 @@ function generateChart() {
     renderDashaTab();
     renderRuleEngineTab();
     renderMangalDosha2Tab();
+    try { renderShadbalaTab(); } catch (sbRenderErr) { console.error('Shadbala render failed:', sbRenderErr); document.getElementById('shadbalaOutput').innerHTML = '<p>Shadbala could not be rendered for this chart (see console for details).</p>'; }
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
   } catch (err) {
     state.chart = null;
@@ -1225,6 +1450,7 @@ function generateChart() {
     state.dasha = null;
     state.sadeSati = null;
     state.mangalDosha2 = null;
+    state.shadbala = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
     document.getElementById('planetTableOutput').innerHTML = '';
     document.getElementById('chartsOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
@@ -1245,6 +1471,7 @@ function generateChart() {
     document.getElementById('ruleEngineOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('mangalDosha2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('shadbalaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
@@ -1294,6 +1521,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     renderDivisionalTab();
   });
+  document.getElementById('shadbalaDetailedToggle').addEventListener('change', renderShadbalaTab);
+  document.getElementById('shadbalaSortBy').addEventListener('change', renderShadbalaTab);
   initAutoRegenerate();
   renderInterpretation2Tab();
   generateChart();

@@ -160,6 +160,25 @@
   .strength-Moderate { background: #ffe0b3; color: #7a3c00; }
   .strength-Strong { background: #ffdcdc; color: #8a1a1a; }
 
+  /* Shadbala tab */
+  .sb-planet-card { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; background: #fff; }
+  .sb-planet-header { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .sb-planet-header:hover { background: #f7f7f7; }
+  .sb-planet-body { padding: 0 14px 14px 14px; display: none; }
+  .sb-planet-card.expanded .sb-planet-body { display: block; }
+  .sb-rank-badge { display: inline-block; min-width: 22px; text-align: center; background: #333; color: #fff; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-right: 8px; }
+  .sb-strength-Very-Strong, .sb-strength-Strong { color: #1a5c1a; font-weight: bold; }
+  .sb-strength-Above-Average { color: #3d7a3d; }
+  .sb-strength-Moderate { color: #7a6a00; }
+  .sb-strength-Below-Average { color: #a35c00; }
+  .sb-strength-Weak, .sb-strength-Very-Weak { color: #a31a1a; font-weight: bold; }
+  .sb-bar-track { background: #eee; border-radius: 4px; height: 10px; width: 100%; overflow: hidden; }
+  .sb-bar-fill { height: 10px; background: linear-gradient(90deg,#7fb37f,#3d7a3d); }
+  .sb-component-table td, .sb-component-table th { padding: 3px 8px; }
+  .sb-overview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .sb-overview-tile { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; min-width: 130px; background: #fff; text-align: center; }
+  .sb-overview-tile .sb-tile-planet { font-weight: bold; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -187,6 +206,7 @@
   <button class="tab-button" id="tabBtnDasha" data-tab="tabDasha">Dasha</button>
   <button class="tab-button" id="tabBtnSadeSati" data-tab="tabSadeSati">Sade Sati</button>
   <button class="tab-button" id="tabBtnMangalDosha2" data-tab="tabMangalDosha2">Mangal Dosha</button>
+  <button class="tab-button" id="tabBtnShadbala" data-tab="tabShadbala">Shadbala</button>
 </div>
 
 <div class="controls">
@@ -405,6 +425,22 @@
 <div id="mangalDosha2Output" class="output-box pastel-peach"></div>
 </div>
 
+<div class="tab-panel" id="tabShadbala">
+<h2>Shadbala</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Six-fold classical planetary strength (Sthana/Dig/Kala/Cheshta/Naisargika/Drik Bala) for the 7 classical planets, in Rupa/Virupa units, with a dynamic interpretation of why each planet is strong or weak and what that means — strength is capacity to act, not a verdict on whether the outcome is favorable.</p>
+<div class="controls">
+  <label><input type="checkbox" id="shadbalaDetailedToggle"> Detailed Calculation View (off = Beginner View)</label>
+  <select id="shadbalaSortBy">
+    <option value="rank">Sort by Total Shadbala</option>
+    <option value="ratio">Sort by Strength Ratio</option>
+    <option value="name">Sort by Planet Name</option>
+    <option value="natural">Sort by Natural Benefic/Malefic</option>
+    <option value="functional">Sort by Functional Role</option>
+  </select>
+</div>
+<div id="shadbalaOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -437,6 +473,9 @@
 <script src="js/dasha/vimshottariDasha.js"></script>
 <script src="js/sadesati/sadeSatiEngine.js"></script>
 <script src="js/mangaldosha2/mangalDoshaEngine2.js"></script>
+<script src="js/shadbala/sunTimes.js"></script>
+<script src="js/shadbala/shadbalaEngine.js"></script>
+<script src="js/shadbala/shadbalaInterpretation.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
