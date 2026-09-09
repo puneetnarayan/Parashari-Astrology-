@@ -179,6 +179,18 @@
   .sb-overview-tile { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; min-width: 130px; background: #fff; text-align: center; }
   .sb-overview-tile .sb-tile-planet { font-weight: bold; }
 
+  /* Ashtakvarga Predictions / Kakshya Analysis */
+  .assess-badge { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
+  .assess-Strongly-Supportive, .assess-Strong { background: #c9edc9; color: #1a5c1a; }
+  .assess-Supportive, .assess-Moderate { background: #d9f2d9; color: #1a5c1a; }
+  .assess-Mixed { background: #fff3d6; color: #7a6a00; }
+  .assess-Neutral---Limited-Evidence, .assess-Insufficient-Evidence { background: #eee; color: #555; }
+  .assess-Challenging, .assess-Weak { background: #ffe0d9; color: #8a3c1a; }
+  .assess-Strongly-Challenging { background: #ffdcdc; color: #8a1a1a; }
+  .kk-calc-chain { font-family: Consolas, Monaco, monospace; font-size: 0.85em; background: #fffefa; border: 1px solid #ddd; padding: 8px 10px; white-space: pre-wrap; }
+  details.avp-calc { margin-top: 4px; }
+  details.avp-calc summary { cursor: pointer; color: #1a5cb0; font-size: 0.9em; }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -207,6 +219,8 @@
   <button class="tab-button" id="tabBtnSadeSati" data-tab="tabSadeSati">Sade Sati</button>
   <button class="tab-button" id="tabBtnMangalDosha2" data-tab="tabMangalDosha2">Mangal Dosha</button>
   <button class="tab-button" id="tabBtnShadbala" data-tab="tabShadbala">Shadbala</button>
+  <button class="tab-button" id="tabBtnAshtakvargaPredictions" data-tab="tabAshtakvargaPredictions">Ashtakvarga Predictions</button>
+  <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
 </div>
 
 <div class="controls">
@@ -441,6 +455,43 @@
 <div id="shadbalaOutput" class="output-box pastel-mint"></div>
 </div>
 
+<div class="tab-panel" id="tabAshtakvargaPredictions">
+<h2>Ashtakvarga Predictions</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Reuses this chart's existing BAV/SAV data (Ashtakvarga tab) — nothing here recomputes bindus. Notation: this app uses the BINDU convention (0-8 per sign), never Rekha. Predictions are background-support indications, not guaranteed events — always read alongside natal promise, dasha and transit.</p>
+<div class="controls">
+  <select id="avpLifeAreaSelect">
+    <option value="Wealth">Wealth &amp; Savings</option>
+    <option value="Career">Career &amp; Status</option>
+    <option value="Health">Health &amp; Longevity</option>
+    <option value="Marriage">Marriage</option>
+    <option value="Children">Children</option>
+    <option value="Property">Property &amp; Assets</option>
+    <option value="Education">Education</option>
+  </select>
+</div>
+<div id="avpOutput" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabKakshya">
+<h2>Kakshya Analysis</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. A micro-timing refinement layered on the existing Ashtakavarga data: each sign is divided into 8 Kakshyas of 3&deg;45' each (Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon, Lagna). This never overrides natal promise, dasha, or the larger transit — it only refines when, within an already-indicated transit, the effect is more or less likely to express.</p>
+<div class="controls">
+  <label>Timeline/Window planet: <select id="kakshyaPlanetSelect">
+    <option>Saturn</option><option>Jupiter</option><option>Mars</option><option>Sun</option><option>Venus</option><option>Mercury</option><option>Moon</option>
+  </select></label>
+  <label>Find windows — Life area: <select id="kakshyaLifeAreaSelect">
+    <option value="">(any / by house below)</option>
+    <option value="Wealth">Wealth</option><option value="Career">Career</option><option value="Health">Health</option>
+    <option value="Marriage">Marriage</option><option value="Children">Children</option><option value="Property">Property</option><option value="Education">Education</option>
+  </select></label>
+  <label>House: <input type="number" id="kakshyaHouseFilter" min="1" max="12" style="width:50px;" placeholder="1-12"></label>
+  <label>From: <input type="date" id="kakshyaWindowStart"></label>
+  <label>To: <input type="date" id="kakshyaWindowEnd"></label>
+  <button id="kakshyaFindWindowsBtn">Find Kakshya Windows</button>
+</div>
+<div id="kakshyaOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -476,6 +527,9 @@
 <script src="js/shadbala/sunTimes.js"></script>
 <script src="js/shadbala/shadbalaEngine.js"></script>
 <script src="js/shadbala/shadbalaInterpretation.js"></script>
+<script src="js/ashtakvargaPredictions/ashtakvargaRuleDatabase.js"></script>
+<script src="js/ashtakvargaPredictions/ashtakvargaPredictionEngine.js"></script>
+<script src="js/kakshya/kakshyaEngine.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>

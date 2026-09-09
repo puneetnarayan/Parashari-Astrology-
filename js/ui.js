@@ -43,6 +43,8 @@ function initTabs() {
       if (btn.dataset.tab === 'tabSadeSati') renderSadeSatiTab();
       if (btn.dataset.tab === 'tabMangalDosha2') renderMangalDosha2Tab();
       if (btn.dataset.tab === 'tabShadbala') renderShadbalaTab();
+      if (btn.dataset.tab === 'tabAshtakvargaPredictions') renderAshtakvargaPredictionsTab();
+      if (btn.dataset.tab === 'tabKakshya') renderKakshyaTab();
     });
   });
 }
@@ -1123,6 +1125,290 @@ function renderShadbalaTab() {
   `;
 }
 
+// --- Ashtakvarga Predictions ---
+
+function avpAssessClass(label) { return `assess-${label.replace(/\//g, '-').replace(/ /g, '-')}`; }
+
+function renderAvpDashboard(ashtakvarga) {
+  const bavSummary = computePlanetaryBavSummary(ashtakvarga.bav);
+  const savSummary = computeSavSummary(ashtakvarga.sav, ashtakvarga.ascendantSignIndex);
+  const strongestHouses = [...savSummary.byHouse].sort((a, b) => b.sav - a.sav).slice(0, 3);
+  const weakestHouses = [...savSummary.byHouse].sort((a, b) => a.sav - b.sav).slice(0, 3);
+  return `
+    <table>
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Total SAV (all 12 signs)</td><td>${savSummary.total}</td></tr>
+        <tr><td>Average SAV per house</td><td>${savSummary.average.toFixed(2)}</td></tr>
+        <tr><td>Highest SAV</td><td>${savSummary.highest}</td></tr>
+        <tr><td>Lowest SAV</td><td>${savSummary.lowest}</td></tr>
+        <tr><td>Houses above average</td><td>${savSummary.aboveAverage.map(h => `${h.house} (${h.sign})`).join(', ') || 'None'}</td></tr>
+        <tr><td>Houses below average</td><td>${savSummary.belowAverage.map(h => `${h.house} (${h.sign})`).join(', ') || 'None'}</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Strongest houses:</strong> ${strongestHouses.map(h => `House ${h.house} (${h.sign}, SAV ${h.sav})`).join('; ')}. <strong>Weakest houses:</strong> ${weakestHouses.map(h => `House ${h.house} (${h.sign}, SAV ${h.sav})`).join('; ')}. This indicates comparative Ashtakavarga background support — it does not, by itself, guarantee or rule out any life event; the house lord, occupying planets, yogas, dasha and transit must always be assessed alongside it.</p>
+    <table>
+      <thead><tr><th>Planet</th><th>Strongest Sign(s)</th><th>Weakest Sign(s)</th><th>Own Average</th></tr></thead>
+      <tbody>${bavSummary.map(b => `<tr><td>${b.planet}</td><td>${b.strongSigns.map(s => `${s.sign} (${s.value})`).join(', ')}</td><td>${b.weakSigns.map(s => `${s.sign} (${s.value})`).join(', ')}</td><td>${b.average.toFixed(2)}</td></tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderAvpHousePredictions(housePredictions) {
+  const rows = housePredictions.map(h => `
+    <tr class="${h.comparison === 'above' ? 'quality-good' : h.comparison === 'below' ? 'quality-bad' : 'quality-neutral'}">
+      <td>${h.house}</td><td>${h.sign}</td><td>${h.sav}</td><td>${h.comparison}</td><td>${h.houseLordName}</td><td>${h.occupants.join(', ') || 'None'}</td>
+      <td>${h.text}<details class="avp-calc"><summary>Show Calculation &amp; Rule</summary><div class="kk-calc-chain">${escapeHtml(h.evidence)}\nRule: AV_RULE_006 (SAV vs. chart average) — Practitioner Technique.</div></details></td>
+    </tr>`).join('');
+  return `
+    <table>
+      <thead><tr><th>House</th><th>Sign</th><th>SAV</th><th>vs. Avg</th><th>Lord</th><th>Occupants</th><th>Interpretation</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderAvpShodhana(trails) {
+  return trails.map(t => `
+    <details class="avp-calc">
+      <summary>${t.planet} — Shodhya Pinda ${t.shodhyaPinda} (click to see Trikona + Ekadhipatya Shodhana)</summary>
+      <table class="sb-component-table">
+        <thead><tr><th>Sign</th>${SIGNS.map(s => `<th>${s.slice(0, 3)}</th>`).join('')}</tr></thead>
+        <tbody>
+          <tr><td>Original BAV</td>${t.original.map(v => `<td>${v}</td>`).join('')}</tr>
+          <tr><td>After Trikona Shodhana</td>${t.afterTrikona.map(v => `<td>${v}</td>`).join('')}</tr>
+          <tr><td>After Ekadhipatya Shodhana</td>${t.afterEkadhipatya.map(v => `<td>${v}</td>`).join('')}</tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.85em;color:#555;">Rules: AV_RULE_002 (Trikona Shodhana) and AV_RULE_003 (Ekadhipatya Shodhana) — Classical/Textually Supported. Shodhya Pinda (AV_RULE_004) = sum of the fully-reduced row = ${t.shodhyaPinda}. The additional Rasi-Pinda/Graha-Pinda multiplier some texts add on top of this sum is NOT implemented (AV_RULE_005, labeled Unverified / Do Not Use — see Rule Details tab section below).</p>
+    </details>`).join('');
+}
+
+function renderAvpLifeArea(synthesis) {
+  return `
+    <table>
+      <tbody>
+        <tr><td>Finding</td><td>${escapeHtml(synthesis.finding)}</td></tr>
+        <tr><td>Primary Houses</td><td>${synthesis.primaryHouses.join(', ')}</td></tr>
+        <tr><td>Supporting Factors</td><td>${synthesis.supporting.join('; ') || 'None'}</td></tr>
+        <tr><td>Contradicting Factors</td><td>${synthesis.contradicting.join('; ') || 'None'}</td></tr>
+        <tr><td>Interpretation</td><td>${escapeHtml(synthesis.interpretation)}</td></tr>
+        <tr><td>Final Assessment</td><td><span class="assess-badge ${avpAssessClass(synthesis.finalAssessment)}">${synthesis.finalAssessment}</span></td></tr>
+      </tbody>
+    </table>`;
+}
+
+function renderAvpTransits(transits) {
+  const rows = transits.map(t => `
+    <tr class="${t.savComparison === 'above' && t.bav >= 4 ? 'quality-good' : t.savComparison === 'below' && t.bav < 4 ? 'quality-bad' : 'quality-neutral'}">
+      <td>${t.planet}</td><td>${t.sign}</td><td>${t.house}</td><td>${t.bav}/8</td><td>${t.sav}</td><td>${t.quadrant}</td>
+    </tr>`).join('');
+  return `
+    <table>
+      <thead><tr><th>Planet</th><th>Transit Sign</th><th>House</th><th>Own BAV</th><th>Sign SAV</th><th>BAV+SAV Interaction (AV_RULE_007)</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderAvpRuleDatabase() {
+  const rows = ASHTAKVARGA_RULE_DATABASE.map(r => `
+    <tr><td>${r.id}</td><td>${r.name}</td><td>${r.category}</td><td>${escapeHtml(r.source)}</td><td><strong>${r.reliability}</strong></td><td>${escapeHtml(r.rule)}</td></tr>`).join('');
+  return `<table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Source</th><th>Reliability</th><th>Rule</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderAshtakvargaPredictionsTab() {
+  const el = document.getElementById('avpOutput');
+  if (!el) return;
+  if (!state.chart || !state.ashtakvarga) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const av = state.ashtakvarga;
+  const housePredictions = computeHousePredictions(av, state.chart);
+  const trails = computeAllShodhanaTrails(av.bav);
+  const lifeArea = document.getElementById('avpLifeAreaSelect').value;
+  const synthesis = computeLifeAreaSynthesis(lifeArea, av, state.chart, housePredictions);
+  const transits = computeTransitPredictions(av, state.chart, new Date());
+
+  el.innerHTML = `
+    <h3>1. Ashtakvarga Dashboard</h3>
+    ${renderAvpDashboard(av)}
+
+    <h3>2. House Predictions</h3>
+    ${renderAvpHousePredictions(housePredictions)}
+
+    <h3>3. Mathematical Techniques (Trikona &amp; Ekadhipatya Shodhana, Shodhya Pinda)</h3>
+    ${renderAvpShodhana(trails)}
+
+    <h3>4. Life-Area Synthesis: ${lifeArea}</h3>
+    ${renderAvpLifeArea(synthesis)}
+
+    <h3>5. Current Transit Predictions</h3>
+    <p style="font-size:0.85em;color:#555;">Computed for right now (${formatDashaDateTime(new Date())}); reflects only Ashtakavarga support for the transit, not a full transit reading.</p>
+    ${renderAvpTransits(transits)}
+
+    <h3>6. Rule Database / Sources</h3>
+    ${renderAvpRuleDatabase()}
+  `;
+}
+
+// --- Kakshya Analysis ---
+
+function kkAssessClass(label) { return `assess-${label.replace(/\//g, '-').replace(/ /g, '-')}`; }
+
+function renderKakshyaGlance(info) {
+  return `
+    <div class="rule-item ${info.contributes ? 'quality-good' : 'quality-bad'}" style="padding:10px;">
+      <strong>WHAT IS HAPPENING NOW? — ${info.planet}</strong><br>
+      Transit sign: ${info.sign} &nbsp; Degree: ${sbNum(info.degInSign, 2)}° &nbsp; Current Kakshya: ${info.kakshyaNumber} (${info.kakshyaRange})<br>
+      Kakshya lord: ${info.kakshyaLord} &nbsp; Contribution to this sign: ${info.contributes === null ? 'n/a' : (info.contributes ? 'Yes' : 'No')}<br>
+      Activated natal house: ${info.house} (${info.houseTheme.title})<br>
+      <span class="assess-badge ${kkAssessClass(info.assessment)}">${info.assessment}</span><br>
+      <span style="font-size:0.9em;">Simple interpretation: this is a relatively ${info.assessment.toLowerCase().includes('challeng') ? 'challenging' : info.assessment === 'Mixed' ? 'mixed' : 'supportive'} micro-period for matters connected with House ${info.house} (${info.houseTheme.description}), subject to the natal chart, dasha, and the larger transit.</span>
+      <details class="avp-calc"><summary>Show Calculation &amp; Rule</summary>
+        <div class="kk-calc-chain">Longitude ${sbNum(info.longitude, 4)}°
+→ Sign ${info.sign}
+→ Degree in sign ${sbNum(info.degInSign, 4)}°
+→ Kakshya ${info.kakshyaNumber} (${info.kakshyaRange})
+→ Kakshya lord ${info.kakshyaLord}
+→ ${info.kakshyaLord}'s natal position used as BAV contributor reference
+→ Contribution to ${info.sign} in ${info.planet}'s own Bhinnashtakavarga: ${info.contributes === null ? 'n/a' : info.contributes}
+→ ${info.planet}'s total BAV in ${info.sign}: ${info.bavTotal}/8 (own avg ${sbNum(info.bavAverage, 2)})
+→ SAV of ${info.sign}: ${info.sav} (chart avg ${sbNum(info.savAverage, 2)})
+→ Natal house activated: ${info.house}
+→ Rule: AV_RULE_007-style synthesis (Practitioner Technique) — see Ashtakvarga Predictions tab's Rule Database
+→ Final synthesis: ${info.assessment}</div>
+      </details>
+    </div>`;
+}
+
+function renderKakshyaCurrentMatrix(chart, ashtakvarga) {
+  const now = new Date();
+  const rows = SHADBALA_PLANETS.map(name => {
+    const info = computeKakshyaInfo(name, now, chart, ashtakvarga);
+    return `<tr class="${kkAssessClass(info.assessment)}"><td>${name}</td><td>${info.sign}</td><td>${sbNum(info.degInSign, 2)}°</td><td>${info.kakshyaNumber}</td><td>${info.kakshyaLord}</td><td>${info.bavTotal}</td><td>${info.sav}</td><td>${info.house}</td><td><span class="assess-badge ${kkAssessClass(info.assessment)}">${info.assessment}</span></td></tr>`;
+  }).join('');
+  return `<table><thead><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>Kakshya</th><th>Lord</th><th>BAV</th><th>SAV</th><th>House</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKakshyaMasterMatrix(planetName, chart, ashtakvarga) {
+  const now = new Date();
+  const currentInfo = computeKakshyaInfo(planetName, now, chart, ashtakvarga);
+  const signIndex = currentInfo.signIndex;
+  const rows = KAKSHYA_RANGES.map(k => {
+    const contributorNatalSignIndex = k.lord === 'Lagna' ? ashtakvarga.ascendantSignIndex : (chart.planets.find(p => p.name === k.lord) ? SIGNS.indexOf(chart.planets.find(p => p.name === k.lord).sign) : null);
+    const table = ASHTAKVARGA_TABLES[planetName];
+    let contributes = null;
+    if (table && contributorNatalSignIndex !== null) {
+      const count = ((signIndex - contributorNatalSignIndex + 12) % 12) + 1;
+      contributes = table[k.lord].includes(count);
+    }
+    const isCurrent = k.number === currentInfo.kakshyaNumber;
+    return `<tr class="${isCurrent ? 'quality-neutral' : ''}"><td>${k.number}${isCurrent ? ' (current)' : ''}</td><td>${k.rangeText}</td><td>${k.lord}</td><td>${contributes === null ? 'n/a' : (contributes ? 'Yes' : 'No')}</td><td>${currentInfo.bavTotal}</td><td>${currentInfo.sav}</td><td>${contributes ? 'Supported' : 'Not supported'}</td></tr>`;
+  }).join('');
+  return `<p>Current sign: <strong>${currentInfo.sign}</strong> (House ${currentInfo.house})</p><table><thead><tr><th>#</th><th>Degree Range</th><th>Kakshya Lord</th><th>Relevant BAV Contribution</th><th>Total BAV</th><th>SAV</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKakshyaTimeline(planetName, chart, ashtakvarga) {
+  const timeline = computeSignKakshyaTimeline(planetName, new Date(), chart, ashtakvarga);
+  const rows = timeline.segments.map(seg => `
+    <tr>
+      <td>${seg.kakshyaNumber}</td><td>${seg.lord}</td>
+      <td>${formatDashaDateTime(seg.start)}</td><td>${formatDashaDateTime(seg.end)}</td>
+      <td>${formatAge(durationBetweenSS(seg.start, seg.end))}</td>
+    </tr>`).join('');
+  return `<p>Full passage of ${planetName} through ${timeline.sign} (entry ${formatDashaDateTime(timeline.signEntry)}, exit ${formatDashaDateTime(timeline.signExit)}):</p>
+    <table><thead><tr><th>Kakshya</th><th>Lord</th><th>Entry</th><th>Exit</th><th>Duration</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKakshyaDictionary() {
+  const dict = [
+    ['BAV', 'Planet-specific Ashtakavarga support'],
+    ['SAV', 'Overall Ashtakavarga support'],
+    ['Kakshya', 'One of eight smaller sections of a sign'],
+    ['Kakshya Lord', 'Planet/source associated with that section'],
+    ['Bindu', 'A positive contribution (this app uses Bindu, never the alternate Rekha convention)'],
+    ['Transit', 'A planet currently moving through a sign'],
+    ['Natal House', 'Life area represented by that sign in the birth chart']
+  ];
+  return `<table><thead><tr><th>Technical Term</th><th>Simple Meaning</th></tr></thead><tbody>${dict.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderKakshyaWindowsResults(windows, lifeAreaLabel) {
+  if (!windows.length) return '<p>No windows found in the given range (try widening the date range or removing the house filter).</p>';
+  const rows = windows.map(w => `
+    <tr class="${kkAssessClass(w.assessment)}">
+      <td>${formatDashaDateTime(w.start)}</td><td>${formatDashaDateTime(w.end)}</td><td>${w.sign}</td><td>${w.kakshyaLord}</td><td>${w.house}</td>
+      <td><span class="assess-badge ${kkAssessClass(w.assessment)}">${w.assessment}</span></td>
+    </tr>`).join('');
+  return `
+    <p>${lifeAreaLabel ? `Filtered to houses relevant to ${lifeAreaLabel}. ` : ''}Ashtakavarga indicates stronger or weaker support during these windows. Actual event realization must be confirmed through natal promise, dasha and relevant transits — a window here is never a guarantee.</p>
+    <table><thead><tr><th>Start</th><th>End</th><th>Sign</th><th>Kakshya Lord</th><th>House</th><th>Assessment</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderKakshyaTab() {
+  const el = document.getElementById('kakshyaOutput');
+  if (!el) return;
+  if (!state.chart || !state.ashtakvarga) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const planetName = document.getElementById('kakshyaPlanetSelect').value;
+  const now = new Date();
+  const currentInfo = computeKakshyaInfo(planetName, now, state.chart, state.ashtakvarga);
+
+  el.innerHTML = `
+    ${renderKakshyaGlance(currentInfo)}
+
+    <h3>Current Transit Matrix (all 7 planets)</h3>
+    ${renderKakshyaCurrentMatrix(state.chart, state.ashtakvarga)}
+
+    <h3>Eight-Kakshya Matrix — ${planetName}'s Current Sign</h3>
+    ${renderKakshyaMasterMatrix(planetName, state.chart, state.ashtakvarga)}
+
+    <h3>Full Transit Timeline — ${planetName} Through Its Current Sign</h3>
+    <div id="kakshyaTimelineOutput">Computing…</div>
+
+    <h3 id="kakshyaWindowsHeading">Find Kakshya Windows</h3>
+    <div id="kakshyaWindowsOutput"><p>Set a date range above and click "Find Kakshya Windows".</p></div>
+
+    <h3>Simple Language Dictionary</h3>
+    ${renderKakshyaDictionary()}
+  `;
+  setTimeout(() => {
+    const timelineEl = document.getElementById('kakshyaTimelineOutput');
+    if (timelineEl) timelineEl.innerHTML = renderKakshyaTimeline(planetName, state.chart, state.ashtakvarga);
+  }, 10);
+}
+
+function onFindKakshyaWindows() {
+  const el = document.getElementById('kakshyaWindowsOutput');
+  if (!state.chart || !state.ashtakvarga) return;
+  const planetName = document.getElementById('kakshyaPlanetSelect').value;
+  const startStr = document.getElementById('kakshyaWindowStart').value;
+  const endStr = document.getElementById('kakshyaWindowEnd').value;
+  const houseFilterRaw = document.getElementById('kakshyaHouseFilter').value;
+  const lifeArea = document.getElementById('kakshyaLifeAreaSelect').value;
+  if (!startStr || !endStr) { el.innerHTML = '<p>Enter both a start and end date.</p>'; return; }
+  const startDate = new Date(startStr + 'T00:00:00Z');
+  const endDate = new Date(endStr + 'T00:00:00Z');
+  if (endDate <= startDate) { el.innerHTML = '<p>End date must be after start date.</p>'; return; }
+
+  el.innerHTML = '<p>Scanning…</p>';
+  setTimeout(() => {
+    let houseFilter = houseFilterRaw ? Number(houseFilterRaw) : null;
+    let label = '';
+    if (!houseFilter && lifeArea) {
+      label = lifeArea;
+    }
+    let windows = findKakshyaWindows(planetName, startDate, endDate, state.chart, state.ashtakvarga, houseFilter || null);
+    if (!houseFilter && lifeArea) {
+      const relevantHouses = LIFE_AREAS[lifeArea].houses;
+      windows = windows.filter(w => relevantHouses.includes(w.house));
+    }
+    windows.sort((a, b) => (a.assessment.includes('Challenging') ? 1 : 0) - (b.assessment.includes('Challenging') ? 1 : 0));
+    el.innerHTML = renderKakshyaWindowsResults(windows, label);
+  }, 10);
+}
+
 // --- Kundali Matching ---
 
 function matchingBirthDateUtc(prefix) {
@@ -1447,6 +1733,8 @@ function generateChart() {
     renderRuleEngineTab();
     renderMangalDosha2Tab();
     try { renderShadbalaTab(); } catch (sbRenderErr) { console.error('Shadbala render failed:', sbRenderErr); document.getElementById('shadbalaOutput').innerHTML = '<p>Shadbala could not be rendered for this chart (see console for details).</p>'; }
+    try { renderAshtakvargaPredictionsTab(); } catch (avpErr) { console.error('Ashtakvarga Predictions render failed:', avpErr); document.getElementById('avpOutput').innerHTML = '<p>Could not be rendered for this chart (see console for details).</p>'; }
+    try { renderKakshyaTab(); } catch (kkErr) { console.error('Kakshya render failed:', kkErr); document.getElementById('kakshyaOutput').innerHTML = '<p>Could not be rendered for this chart (see console for details).</p>'; }
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
   } catch (err) {
     state.chart = null;
@@ -1476,6 +1764,8 @@ function generateChart() {
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('mangalDosha2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('shadbalaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('avpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('kakshyaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
   }
 }
 
@@ -1527,6 +1817,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('shadbalaDetailedToggle').addEventListener('change', renderShadbalaTab);
   document.getElementById('shadbalaSortBy').addEventListener('change', renderShadbalaTab);
+  document.getElementById('avpLifeAreaSelect').addEventListener('change', renderAshtakvargaPredictionsTab);
+  document.getElementById('kakshyaPlanetSelect').addEventListener('change', renderKakshyaTab);
+  document.getElementById('kakshyaFindWindowsBtn').addEventListener('click', onFindKakshyaWindows);
   initAutoRegenerate();
   renderInterpretation2Tab();
   generateChart();
