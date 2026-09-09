@@ -67,6 +67,108 @@ function buildManifestationText(planet, functionalInfo, conjunctions, aspectsRec
   return parts.join(' ');
 }
 
+// --- Net effect on the native: combines strength (capacity) with dignity,
+// house placement, and functional/natural role into one concrete verdict.
+// This is the piece Shadbala alone cannot answer: e.g. a STRONG Saturn that
+// is ALSO debilitated in a Dusthana house delivers its difficult
+// significations forcefully, not mildly — strength amplifies whatever
+// direction the other three factors already point in, it does not create
+// a favorable direction on its own.
+
+function capacityTier(ratio) {
+  if (ratio >= 1.15) return 'high';
+  if (ratio >= 0.85) return 'moderate';
+  return 'low';
+}
+
+function dignityTier(tier) {
+  if (tier === 'Exalted' || tier === 'Moolatrikona' || tier === 'Own Sign') return 'favorable';
+  if (tier === 'Debilitated') return 'unfavorable';
+  return 'neutral';
+}
+
+function houseTier(house) {
+  const types = HOUSE_TYPES[Number(house)] || [];
+  if (types.includes('Dusthana')) return 'unfavorable';
+  if (types.includes('Kendra') || types.includes('Trikona')) return 'favorable';
+  return 'neutral';
+}
+
+function roleTier(planetName, functionalLabel) {
+  const isNaturalBenefic = NATURAL_BENEFICS.includes(planetName);
+  const favorableLabels = ['Yogakaraka', 'Functional Benefic'];
+  const unfavorableLabels = ['Functional Malefic'];
+  if (favorableLabels.includes(functionalLabel)) return 'favorable';
+  if (unfavorableLabels.includes(functionalLabel) || functionalLabel.indexOf('Natural Malefic') === 0) return 'unfavorable';
+  // Kendra-only lordship: natural malefics are exempt from Kendradhipatya
+  // Dosha (mildly favorable-leaning); natural benefics are dosha-reduced
+  // toward neutral.
+  if (functionalLabel.indexOf('exempt from Kendradhipatya') !== -1) return 'neutral-favorable';
+  if (functionalLabel.indexOf('Kendradhipatya Dosha') !== -1) return 'neutral';
+  return isNaturalBenefic ? 'neutral-favorable' : 'neutral-unfavorable';
+}
+
+const CAPACITY_PHRASE = {
+  high: 'a strong, forceful capacity to act',
+  moderate: 'a moderate, ordinary capacity to act',
+  low: 'a limited, subdued capacity to act'
+};
+const DIGNITY_PHRASE = {
+  favorable: 'well-supported by its sign dignity',
+  neutral: 'only ordinarily supported by its sign dignity',
+  unfavorable: 'undermined by its debilitated sign dignity'
+};
+const HOUSE_PHRASE = {
+  favorable: 'placed in a supportive house that lets its results reach the native\'s central life areas cleanly',
+  neutral: 'placed in a house of steady, effort-built results rather than ready-made ones',
+  unfavorable: 'placed in a house of obstacles, loss, or hidden complication, so even capable results arrive entangled with difficulty'
+};
+const ROLE_PHRASE = {
+  favorable: 'a functionally favorable role for this Ascendant',
+  'neutral-favorable': 'a mildly favorable-leaning functional role for this Ascendant',
+  neutral: 'a functionally neutral role for this Ascendant',
+  'neutral-unfavorable': 'a mildly unfavorable-leaning functional role for this Ascendant',
+  unfavorable: 'a functionally unfavorable role for this Ascendant'
+};
+
+// Direction score: favorable=+1, neutral*=+/-0.5 or 0, unfavorable=-1 for dignity/house/role.
+const DIRECTION_SCORE = { favorable: 1, 'neutral-favorable': 0.5, neutral: 0, 'neutral-unfavorable': -0.5, unfavorable: -1 };
+
+function buildNativeImpactSynthesis(planetName, planetResult, dignityDetail, planet, functionalInfo) {
+  const capacity = capacityTier(planetResult.ratio);
+  const dignity = dignityTier(dignityDetail.tier);
+  const house = houseTier(planet.house);
+  const role = roleTier(planetName, functionalInfo.label);
+
+  const directionScore = DIRECTION_SCORE[dignity] + DIRECTION_SCORE[house] + DIRECTION_SCORE[role];
+  const direction = directionScore >= 1 ? 'favorable' : directionScore <= -1 ? 'unfavorable' : 'mixed';
+
+  const capacityPhrase = CAPACITY_PHRASE[capacity];
+  const dignityPhrase = DIGNITY_PHRASE[dignity];
+  const housePhrase = HOUSE_PHRASE[house];
+  const rolePhrase = ROLE_PHRASE[role];
+
+  let verdict;
+  if (capacity === 'high' && direction === 'unfavorable') {
+    verdict = `NET EFFECT — DIFFICULT AND FORCEFUL: ${planetName}'s high Shadbala does NOT mean a good outcome here. Combined with its unfavorable dignity/house/role, the native should expect the difficult matters tied to ${planetName} (its house lordship, its occupied house, and its natural significations) to manifest strongly and hard to avoid, particularly when ${planetName}'s dasha/antardasha or a matching transit activates it. Strength here amplifies the difficulty, it does not soften it.`;
+  } else if (capacity === 'high' && direction === 'favorable') {
+    verdict = `NET EFFECT — STRONG AND FAVORABLE: ${planetName} has both the capacity and the supportive placement to deliver its promised significations substantially. This is one of this chart's more reliable sources of good results, especially during ${planetName}'s dasha/antardasha or a matching transit.`;
+  } else if (capacity === 'low' && direction === 'unfavorable') {
+    verdict = `NET EFFECT — DIFFICULT BUT MUTED: ${planetName}'s placement/role points toward difficulty, but its low Shadbala limits how forcefully that difficulty can express — expect the associated troubles to be less frequent, less intense, or slower to surface than the placement alone would suggest, though ${planetName} also has limited capacity to help the native overcome them when they do occur.`;
+  } else if (capacity === 'low' && direction === 'favorable') {
+    verdict = `NET EFFECT — GOOD INTENT, LIMITED DELIVERY: ${planetName}'s placement/role is favorable, but its low Shadbala means that promise may stay partly unrealized — expect the benefits to be present in potential, requiring more time, effort, or external support to fully manifest, rather than arriving readily.`;
+  } else if (direction === 'mixed') {
+    verdict = `NET EFFECT — MIXED: ${planetName}'s dignity, house, and functional role do not all point the same way, so its ${capacity} Shadbala mainly determines HOW MUCH gets expressed, while the specific matter (favorable or difficult) depends on which factor is dominant at the time (dasha lord, transit, or the specific life area in question) — read this planet case-by-case rather than as uniformly good or bad.`;
+  } else {
+    verdict = `NET EFFECT — MODERATE: with moderate Shadbala and a ${direction} overall placement, ${planetName} delivers its significations at an ordinary pace and intensity — neither a standout strength nor a standout weakness in this chart.`;
+  }
+
+  return {
+    capacity, dignity, house, role, direction,
+    text: `${planetName} has ${capacityPhrase}, ${dignityPhrase}, ${housePhrase}, and carries ${rolePhrase}. ${verdict}`
+  };
+}
+
 // planetResult: one entry from computeShadbala().planets. planet: the birth-chart
 // planet record. functionalInfo: from ruleEngine.js's functionalClassification().
 // dispositorResult: the OTHER planet's Shadbala result (the sign lord).
@@ -104,5 +206,5 @@ function buildPlanetInterpretation(planetResult, planet, dignityDetail, function
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { SHADBALA_INTERPRETATION_LOGIC_TEXT, buildPlanetInterpretation, ratioText };
+  module.exports = { SHADBALA_INTERPRETATION_LOGIC_TEXT, buildPlanetInterpretation, buildNativeImpactSynthesis, ratioText };
 }

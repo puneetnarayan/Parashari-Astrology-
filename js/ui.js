@@ -1026,6 +1026,8 @@ function renderShadbalaPlanetCard(name, shadbala, chart, functional, dashaStreng
   const dispositorName = SIGN_LORD[planet.sign];
   const dispositorResult = shadbala.planets[dispositorName];
   const interp = buildPlanetInterpretation(r, planet, dignityDetail, functional[name], dispositorName, dispositorResult);
+  const impact = buildNativeImpactSynthesis(name, r, dignityDetail, planet, functional[name]);
+  const impactClass = impact.direction === 'favorable' ? 'quality-good' : impact.direction === 'unfavorable' ? 'quality-bad' : 'quality-neutral';
 
   const nakInfo = planet.nakshatra ? NAKSHATRA_TRAITS[planet.nakshatra] : null;
   const nakLord = planet.nakshatra ? NAKSHATRA_TABLE.find(n => n.name === planet.nakshatra).starLord : null;
@@ -1056,6 +1058,8 @@ function renderShadbalaPlanetCard(name, shadbala, chart, functional, dashaStreng
       </div>
       <div class="sb-planet-body">
         <p>${interp.summary}</p>
+        <h4>How This Affects the Native (Strength + Dignity + House + Role)</h4>
+        <div class="rule-item ${impactClass}" style="padding:8px 10px;">${escapeHtml(impact.text)}</div>
         ${detailBlock}
         <h4>Sign, House &amp; Context</h4>
         <table class="sb-component-table">

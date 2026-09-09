@@ -28,7 +28,7 @@ const SHADBALA_LOGIC_TEXT = [
   ['3. SIX COMPONENTS: Sthana Bala (positional, 5 sub-parts: Uchcha/Saptavargaja/Oja-Yugma/Kendradi/Drekkana), Dig Bala (directional), Kala Bala (temporal, 6 sub-parts: Nathonnata/Paksha/Tribhaga/Dina-Hora/Ayana/Yuddha), Cheshta Bala (motion-based, for the 5 non-luminaries; Sun/Moon use documented substitute conventions), Naisargika Bala (fixed natural strength, a constant table), and Drik Bala (aspectual, this app\'s own simplified reuse of its existing whole-sign graha drishti rather than the classical exact-degree virupa table).'],
   ['4. STRENGTH ≠ GOODNESS: Shadbala measures a planet\'s CAPACITY to deliver results, not whether those results are favorable — a strong functional malefic delivers difficult results strongly; a weak benefic has good intent but limited capacity to manifest it. This distinction is carried through explicitly in the interpretation layer (shadbalaInterpretation.js), never collapsed into a single "strong = good" reading.'],
   [''],
-  ['Caveat — known simplifications from the full classical methodology (documented rather than silently approximated): Varsha Bala and Masa Bala (year/month lord) are NOT computed — they require Hindu luni-solar calendar/Sankranti determination this app does not implement; only Dina (weekday) and Hora (planetary-hour) lord matching are used for that Kala Bala sub-part. Ayana Bala uses a linear declination-based approximation rather than the classical Rsine/dyujya trigonometric table. Nathonnata Bala uses a linear 12-hour model from the nearest true noon/midnight rather than ghati-based day/night-length-proportional arithmetic. Cheshta Bala uses a continuous speed-ratio approximation rather than the classical discrete named motion-states (Vakra/Anuvakra/Manda/Sama/Chara/Ati-chara), since exact virupa values for each named state vary across secondary sources. Drik Bala reuses this app\'s existing whole-sign graha drishti with a fixed per-aspect virupa magnitude, rather than the classical exact-degree-graded virupa table. Yuddha Bala uses a fixed app-defined transfer magnitude. Every one of these is a deliberate, labeled choice — not a hidden shortcut — and each is called out again at the point it is used.']
+  ['Caveat — known simplifications from the full classical methodology (documented rather than silently approximated): Dig Bala uses this app\'s whole-sign house boundaries (Ascendant longitude + 30° per house) as a stand-in for the classical quadrant angle cusps (Lagna/7th/10th/4th from a full house system), since this app is whole-sign-only throughout. Varsha Bala and Masa Bala (year/month lord) are NOT computed — they require Hindu luni-solar calendar/Sankranti determination this app does not implement; only Dina (weekday, using the birth location\'s LOCAL calendar day) and Hora (planetary-hour) lord matching are used for that Kala Bala sub-part. Ayana Bala uses a linear declination-based approximation (applied uniformly to all 7 planets) rather than the classical Rsine/dyujya trigonometric table. Nathonnata Bala uses a linear 12-hour model from the nearest true noon/midnight rather than ghati-based day/night-length-proportional arithmetic. Cheshta Bala uses a continuous speed-ratio approximation rather than the classical discrete named motion-states (Vakra/Anuvakra/Manda/Sama/Chara/Ati-chara), since exact virupa values for each named state vary across secondary sources. Drik Bala reuses this app\'s existing whole-sign graha drishti with a fixed per-aspect virupa magnitude, rather than the classical exact-degree-graded virupa table. Yuddha Bala uses a fixed app-defined transfer magnitude. Every one of these is a deliberate, labeled choice — not a hidden shortcut — and each is called out again at the point it is used.']
 ];
 
 // ---------- Constants ----------
@@ -67,8 +67,15 @@ const APOKLIMA_HOUSES_SB = [3, 6, 9, 12];
 // The 7 vargas classically used for Saptavargaja Bala.
 const SAPTAVARGA_KEYS = ['D1', 'D2', 'D3', 'D7', 'D9', 'D12', 'D30'];
 
+// Standard classical Saptavargaja Bala per-varga dignity points (BPHS):
+// 45/30/22.5/15/10/7.5/3.75, halving-ish from Moolatrikona down to Great
+// Enemy. This app's relationBetween() only distinguishes plain Friend/
+// Neutral/Enemy (Naisargika Maitri), not the full 5-tier Panchadha Maitri
+// (great friend/great enemy), so "great friend" and "great enemy" are never
+// actually assigned by saptavargaDignityPoints() below — documented as a
+// simplification rather than silently rounding those two tiers away.
 const DIGNITY_POINTS_VIRUPA = {
-  moolatrikona: 45, own: 30, greatFriend: 22.5, friend: 15, neutral: 10, enemy: 4, greatEnemy: 2
+  moolatrikona: 45, own: 30, greatFriend: 22.5, friend: 15, neutral: 10, enemy: 7.5, greatEnemy: 3.75
 };
 
 const OBLIQUITY_DEG = 23.4394;
@@ -225,14 +232,33 @@ function computeTribhagaBala(planetName, birthUtc, dayNight) {
   return { value: lord === planetName ? 60 : 0, third: third + 1, lord };
 }
 
-const WEEKDAY_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // JS getUTCDay(): 0=Sun..6=Sat
+const WEEKDAY_LORDS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // 0=Sun..6=Sat
 const HORA_SEQUENCE = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon']; // Chaldean order
 
-function computeDinaHoraBala(planetName, birthUtc, dayNight) {
+// Weekday index (0=Sun..6=Sat) in the birth location's LOCAL civil calendar,
+// not UTC — a birth late at night or just after midnight local time can
+// fall on a different UTC calendar date, which would otherwise assign the
+// wrong Dina (weekday) lord.
+function localWeekdayIndex(date, tzInfo) {
+  if (tzInfo && tzInfo.mode === 'iana') {
+    try {
+      const weekdayAbbr = new Intl.DateTimeFormat('en-US', { timeZone: tzInfo.zone, weekday: 'short' }).format(date);
+      const map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      if (weekdayAbbr in map) return map[weekdayAbbr];
+    } catch (e) { /* fall through to offset/UTC below */ }
+  }
+  if (tzInfo && tzInfo.mode === 'offset' && typeof tzInfo.offsetMinutes === 'number') {
+    return new Date(date.getTime() + tzInfo.offsetMinutes * 60000).getUTCDay();
+  }
+  return date.getUTCDay();
+}
+
+function computeDinaHoraBala(planetName, birthUtc, dayNight, tzInfo) {
   // Weekday is determined at the LOCAL sunrise of the current day/night
-  // period, the classical start-of-day convention, not UTC midnight.
+  // period, the classical start-of-day convention, not UTC midnight — and
+  // now in the birth location's own local calendar day, not UTC's.
   const referenceForWeekday = dayNight.isDaytime ? dayNight.periodStart : (dayNight.events.prevSunrise || birthUtc);
-  const weekdayIndex = (referenceForWeekday || birthUtc).getUTCDay();
+  const weekdayIndex = localWeekdayIndex(referenceForWeekday || birthUtc, tzInfo);
   const dinaLord = WEEKDAY_LORDS[weekdayIndex];
   const dinaMatch = dinaLord === planetName;
 
@@ -255,8 +281,11 @@ function computeDinaHoraBala(planetName, birthUtc, dayNight) {
 }
 
 function computeAyanaBala(declinationDeg, planetName) {
+  // Unlike Nathonnata Bala, Mercury does NOT get an automatic maximum here —
+  // that "always strong" convention is specific to Nathonnata (and Jupiter's
+  // to Tribhaga); Ayana Bala applies the same declination formula to all 7
+  // planets, with Mercury grouped among the Uttarayana(north)-favoring set.
   const normalized = Math.max(-1, Math.min(1, declinationDeg / OBLIQUITY_DEG));
-  if (planetName === 'Mercury') return { value: 60, declination: declinationDeg, note: 'Mercury is classically treated as always strong in Ayana Bala.' };
   if (AYANA_SOUTH_FAVORED.includes(planetName)) {
     return { value: 30 - normalized * 30, declination: declinationDeg };
   }
@@ -291,7 +320,7 @@ function computeKalaBala(planet, chart, dayNight, yuddhaResult) {
   const nathonnata = computeNathonnataBala(planet.name, chart.birthUtc, dayNight);
   const paksha = computePakshaBala(moon.longitude, sun.longitude, planet.name);
   const tribhaga = computeTribhagaBala(planet.name, chart.birthUtc, dayNight);
-  const dinaHora = computeDinaHoraBala(planet.name, chart.birthUtc, dayNight);
+  const dinaHora = computeDinaHoraBala(planet.name, chart.birthUtc, dayNight, chart.birthTimeZoneInfo);
   const declination = Astronomy.Equator(planet.name, chart.birthUtc, new Astronomy.Observer(0, 0, 0), true, true).dec;
   const ayana = computeAyanaBala(declination, planet.name);
   const yuddha = yuddhaResult[planet.name] || { value: 0 };
