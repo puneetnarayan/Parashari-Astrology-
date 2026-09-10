@@ -2019,6 +2019,277 @@ function initAutoRegenerate() {
   });
 }
 
+// --- Saved Natives (shared CSV file, interchangeable with the sibling KP app) ---
+
+const snState = {
+  headers: SAVED_NATIVES_REQUIRED_HEADERS.slice(),
+  records: [],
+  fileHandle: null,       // FileSystemFileHandle when the File System Access API is available and a file is connected
+  fallbackFileName: null, // filename to reuse for downloads in the fallback (non-FS-Access) path
+  supportsFsApi: typeof window !== 'undefined' && 'showOpenFilePicker' in window
+};
+
+function snSetFileStatus(text) { document.getElementById('snFileStatus').textContent = text; }
+function snSetSaveStatus(text) { document.getElementById('snSaveStatus').textContent = text; }
+
+function snFindRecordIndexByName(name) {
+  const target = name.trim().toLowerCase();
+  return snState.records.findIndex(r => (r.Name || '').trim().toLowerCase() === target);
+}
+
+function snRecordMatchesSearch(record, term) {
+  if (!term) return true;
+  const t = term.toLowerCase();
+  return Object.values(record).some(v => String(v || '').toLowerCase().includes(t));
+}
+
+function snRenderTable() {
+  const term = document.getElementById('snSearchBox').value.trim();
+  const rows = snState.records
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => snRecordMatchesSearch(r, term));
+
+  const body = rows.map(({ r, i }) => `
+    <tr>
+      <td>${escapeHtml(r.Name)}</td><td>${escapeHtml(r.Sex)}</td><td>${escapeHtml(r.City)}</td><td>${escapeHtml(r.State)}</td><td>${escapeHtml(r.Country)}</td>
+      <td>${escapeHtml(r.BirthDate)}</td><td>${escapeHtml(r.BirthTime)}</td><td>${escapeHtml(r.Latitude)}</td><td>${escapeHtml(r.Longitude)}</td>
+      <td>${escapeHtml(r.TimezoneMode)}</td><td>${escapeHtml(r.UTCOffset)}</td><td>${escapeHtml(r.Notes)}</td>
+      <td><button type="button" data-sn-load="${i}">Load</button> <button type="button" data-sn-delete="${i}">Delete</button></td>
+    </tr>`).join('');
+
+  document.getElementById('snTableOutput').innerHTML = `
+    <table>
+      <thead><tr><th>Name</th><th>Sex</th><th>City</th><th>State</th><th>Country</th><th>Birth Date</th><th>Birth Time</th><th>Latitude</th><th>Longitude</th><th>Timezone Mode</th><th>UTC Offset</th><th>Notes</th><th>Actions</th></tr></thead>
+      <tbody>${body || '<tr><td colspan="13">No records yet — connect or start a CSV file, then add a native above.</td></tr>'}</tbody>
+    </table>`;
+
+  document.querySelectorAll('#snTableOutput [data-sn-load]').forEach(btn => btn.addEventListener('click', () => snLoadRecord(Number(btn.dataset.snLoad))));
+  document.querySelectorAll('#snTableOutput [data-sn-delete]').forEach(btn => btn.addEventListener('click', () => snDeleteRecord(Number(btn.dataset.snDelete))));
+}
+
+function snApplyLoadedData(headers, rows) {
+  snState.headers = headers;
+  snState.records = rows;
+  snRenderTable();
+}
+
+async function snConnectFile() {
+  if (snState.supportsFsApi) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }]
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const { headers, rows } = parseCsv(text);
+      snState.fileHandle = handle;
+      snApplyLoadedData(headers, rows);
+      snSetFileStatus(`Connected: ${file.name} (${rows.length} record${rows.length === 1 ? '' : 's'}) — reads and saves write directly to this file.`);
+    } catch (e) {
+      if (e.name !== 'AbortError') snSetFileStatus(`Could not open file: ${e.message}`);
+    }
+    return;
+  }
+  document.getElementById('snFileInputFallback').click();
+}
+
+function snHandleFallbackFileChosen(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const { headers, rows } = parseCsv(reader.result);
+    snState.fileHandle = null;
+    snState.fallbackFileName = file.name;
+    snApplyLoadedData(headers, rows);
+    snSetFileStatus(`Loaded ${file.name} (${rows.length} record${rows.length === 1 ? '' : 's'}) — this browser can't write directly back to disk; "Save" will download a replacement file instead.`);
+  };
+  reader.readAsText(file);
+}
+
+async function snStartNewFile() {
+  if (snState.supportsFsApi) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'saved-natives.csv',
+        types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }]
+      });
+      snState.fileHandle = handle;
+      snState.headers = SAVED_NATIVES_REQUIRED_HEADERS.slice();
+      snState.records = [];
+      const writable = await handle.createWritable();
+      await writable.write(serializeCsv(snState.headers, snState.records));
+      await writable.close();
+      snRenderTable();
+      snSetFileStatus('New CSV file created — reads and saves write directly to this file.');
+    } catch (e) {
+      if (e.name !== 'AbortError') snSetFileStatus(`Could not create file: ${e.message}`);
+    }
+    return;
+  }
+  snState.fileHandle = null;
+  snState.fallbackFileName = 'saved-natives.csv';
+  snState.headers = SAVED_NATIVES_REQUIRED_HEADERS.slice();
+  snState.records = [];
+  snRenderTable();
+  snSetFileStatus('New in-memory list started — this browser can\'t write directly to disk; click "Save" to download a CSV file.');
+}
+
+async function snSaveFile() {
+  const csvText = serializeCsv(snState.headers, snState.records);
+  if (snState.fileHandle) {
+    try {
+      const writable = await snState.fileHandle.createWritable();
+      await writable.write(csvText);
+      await writable.close();
+      snSetFileStatus(`Saved (${snState.records.length} record${snState.records.length === 1 ? '' : 's'}).`);
+    } catch (e) {
+      snSetFileStatus(`Could not save: ${e.message}`);
+    }
+    return;
+  }
+  const blob = new Blob([csvText], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = snState.fallbackFileName || 'saved-natives.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  snSetFileStatus(`Downloaded ${a.download} (${snState.records.length} record${snState.records.length === 1 ? '' : 's'}) — this browser can't write directly back to disk.`);
+}
+
+function snReadFormRecord() {
+  return {
+    Name: document.getElementById('snName').value.trim(),
+    Sex: document.getElementById('snSex').value,
+    Location: document.getElementById('snLocation').value.trim(),
+    City: document.getElementById('snCity').value.trim(),
+    State: document.getElementById('snState').value.trim(),
+    Country: document.getElementById('snCountry').value.trim(),
+    BirthDate: normalizeBirthDateToIso(document.getElementById('snBirthDate').value.trim()),
+    BirthTime: document.getElementById('snBirthTime').value.trim(),
+    Latitude: document.getElementById('snLat').value.trim(),
+    Longitude: document.getElementById('snLon').value.trim(),
+    TimezoneMode: document.getElementById('snTimezoneMode').value,
+    UTCOffset: document.getElementById('snTimezoneMode').value === 'iana'
+      ? document.getElementById('snIanaZone').value
+      : document.getElementById('snUtcOffset').value.trim(),
+    Notes: document.getElementById('snNotes').value
+  };
+}
+
+function snSaveNative() {
+  const form = snReadFormRecord();
+  if (!form.Name) { snSetSaveStatus('Enter a Name before saving.'); return; }
+  const existingIndex = snFindRecordIndexByName(form.Name);
+  const verb = existingIndex >= 0 ? 'Updated' : 'Added';
+  if (existingIndex >= 0) {
+    // Preserve any unrecognized/extra columns already on this record.
+    snState.records[existingIndex] = { ...snState.records[existingIndex], ...form };
+  } else {
+    const blank = {};
+    snState.headers.forEach(h => { blank[h] = ''; });
+    snState.records.push({ ...blank, ...form });
+  }
+  snRenderTable();
+  if (snState.fileHandle) snSaveFile();
+  else snSetSaveStatus(`${verb} "${form.Name}" in the in-memory list — click "Save" above to write it to a file.`);
+}
+
+function snClearForm() {
+  ['snName', 'snLocation', 'snCity', 'snState', 'snCountry', 'snBirthDate', 'snBirthTime', 'snLat', 'snLon', 'snUtcOffset', 'snNotes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('snSex').value = '';
+  document.getElementById('snTimezoneMode').value = 'iana';
+  document.getElementById('snIanaZoneLabel').hidden = false;
+  document.getElementById('snUtcOffsetLabel').hidden = true;
+  snSetSaveStatus('');
+}
+
+function snCopyFromChart() {
+  document.getElementById('snBirthDate').value = document.getElementById('birthLocalDate').value;
+  document.getElementById('snBirthTime').value = document.getElementById('birthLocalTime').value;
+  document.getElementById('snLat').value = document.getElementById('birthLat').value;
+  document.getElementById('snLon').value = document.getElementById('birthLon').value;
+  const mode = document.getElementById('timezoneMode').value;
+  document.getElementById('snTimezoneMode').value = mode;
+  document.getElementById('snIanaZoneLabel').hidden = mode !== 'iana';
+  document.getElementById('snUtcOffsetLabel').hidden = mode === 'iana';
+  if (mode === 'iana') document.getElementById('snIanaZone').value = document.getElementById('ianaZone').value;
+  else document.getElementById('snUtcOffset').value = document.getElementById('utcOffset').value;
+  snSetSaveStatus('Copied birth details from the Chart & Analysis tab.');
+}
+
+function snPopulateFormFromRecord(record) {
+  document.getElementById('snName').value = record.Name || '';
+  document.getElementById('snSex').value = record.Sex || '';
+  document.getElementById('snLocation').value = record.Location || '';
+  document.getElementById('snCity').value = record.City || '';
+  document.getElementById('snState').value = record.State || '';
+  document.getElementById('snCountry').value = record.Country || '';
+  document.getElementById('snBirthDate').value = record.BirthDate || '';
+  document.getElementById('snBirthTime').value = record.BirthTime || '';
+  document.getElementById('snLat').value = record.Latitude || '';
+  document.getElementById('snLon').value = record.Longitude || '';
+  document.getElementById('snNotes').value = record.Notes || '';
+  const mode = record.TimezoneMode === 'offset' ? 'offset' : 'iana';
+  document.getElementById('snTimezoneMode').value = mode;
+  document.getElementById('snIanaZoneLabel').hidden = mode !== 'iana';
+  document.getElementById('snUtcOffsetLabel').hidden = mode === 'iana';
+  if (mode === 'iana') document.getElementById('snIanaZone').value = record.UTCOffset || '';
+  else document.getElementById('snUtcOffset').value = record.UTCOffset || '';
+}
+
+function snLoadRecord(index) {
+  const record = snState.records[index];
+  if (!record) return;
+  // Populate this tab's own fields too, so both stay in sync.
+  snPopulateFormFromRecord(record);
+
+  // Populate the main Chart & Analysis tab and regenerate.
+  document.getElementById('birthLocalDate').value = record.BirthDate || '';
+  document.getElementById('birthLocalTime').value = record.BirthTime || '';
+  document.getElementById('birthLat').value = record.Latitude || '';
+  document.getElementById('birthLon').value = record.Longitude || '';
+  const mode = record.TimezoneMode === 'offset' ? 'offset' : 'iana';
+  document.getElementById('timezoneMode').value = mode;
+  document.getElementById('ianaZoneLabel').hidden = mode !== 'iana';
+  document.getElementById('utcOffsetLabel').hidden = mode === 'iana';
+  if (mode === 'iana') document.getElementById('ianaZone').value = record.UTCOffset || '';
+  else document.getElementById('utcOffset').value = record.UTCOffset || '';
+
+  document.getElementById('tabBtnMain').click(); // switch to the main chart tab
+  generateChart();
+}
+
+function snDeleteRecord(index) {
+  const record = snState.records[index];
+  if (!record) return;
+  if (!confirm(`Delete "${record.Name}" from the loaded Saved Natives list?`)) return;
+  snState.records.splice(index, 1);
+  snRenderTable();
+  if (snState.fileHandle) snSaveFile();
+  else snSetSaveStatus(`Deleted "${record.Name}" from the in-memory list — click "Save" above to write this change to a file.`);
+}
+
+function initSavedNatives() {
+  populateIanaZoneSelect('snIanaZone');
+  document.getElementById('snTimezoneMode').addEventListener('change', () => {
+    const isIana = document.getElementById('snTimezoneMode').value === 'iana';
+    document.getElementById('snIanaZoneLabel').hidden = !isIana;
+    document.getElementById('snUtcOffsetLabel').hidden = isIana;
+  });
+  document.getElementById('snConnectBtn').addEventListener('click', snConnectFile);
+  document.getElementById('snStartNewBtn').addEventListener('click', snStartNewFile);
+  document.getElementById('snSaveFileBtn').addEventListener('click', snSaveFile);
+  document.getElementById('snFileInputFallback').addEventListener('change', snHandleFallbackFileChosen);
+  document.getElementById('snCopyFromChartBtn').addEventListener('click', snCopyFromChart);
+  document.getElementById('snSaveNativeBtn').addEventListener('click', snSaveNative);
+  document.getElementById('snClearFormBtn').addEventListener('click', snClearForm);
+  document.getElementById('snSearchBox').addEventListener('input', snRenderTable);
+  snRenderTable();
+  if (!snState.supportsFsApi) snSetFileStatus('This browser doesn\'t support direct file read/write — "Connect" opens a file for reading, and "Save" downloads a replacement file instead of writing back to disk.');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initEngineStatusBadge();
@@ -2053,6 +2324,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ktBuildBtn').addEventListener('click', onKtBuild);
   document.getElementById('ktExportCsvBtn').addEventListener('click', onKtExportCsv);
   document.getElementById('ktPrintBtn').addEventListener('click', () => window.print());
+  initSavedNatives();
   initAutoRegenerate();
   renderInterpretation2Tab();
   generateChart();

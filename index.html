@@ -254,6 +254,7 @@
   <button class="tab-button" id="tabBtnAshtakvargaPredictions" data-tab="tabAshtakvargaPredictions">Ashtakvarga Predictions</button>
   <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
   <button class="tab-button" id="tabBtnKakshyaTimeline" data-tab="tabKakshyaTimeline">Kakshya Life-Area Timeline</button>
+  <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Saved Natives</button>
 </div>
 
 <div class="controls">
@@ -563,6 +564,51 @@
 <details class="avp-calc"><summary>How is the colour calculated? (Methodology)</summary><div id="ktMethodology"></div></details>
 </div>
 
+<div class="tab-panel" id="tabSavedNatives">
+<h2>Saved Natives</h2>
+<p>Store and reload native records in a shared CSV file (Name,Sex,Location,City,State,Country,BirthDate,BirthTime,Latitude,Longitude,TimezoneMode,UTCOffset,Notes) — compatible with the sibling KP app's Saved Natives file. No changes here affect existing chart/calculation logic.</p>
+
+<h3>CSV File</h3>
+<div class="controls">
+  <button id="snConnectBtn" type="button">Connect (Open CSV)</button>
+  <button id="snStartNewBtn" type="button">Start New CSV</button>
+  <button id="snSaveFileBtn" type="button">Save</button>
+  <span id="snFileStatus" style="font-size:0.9em;color:#555;"></span>
+</div>
+<input type="file" id="snFileInputFallback" accept=".csv,text/csv" style="display:none;">
+
+<h3>Save / Add Native</h3>
+<fieldset>
+  <label>Name: <input type="text" id="snName"></label>
+  <label>Sex: <select id="snSex"><option value=""></option><option>Male</option><option>Female</option><option>Other</option></select></label>
+  <label>Location: <input type="text" id="snLocation" placeholder="free-text summary, optional"></label><br><br>
+  <label>City: <input type="text" id="snCity"></label>
+  <label>State: <input type="text" id="snState"></label>
+  <label>Country: <input type="text" id="snCountry"></label><br><br>
+  <label>Birth Date: <input type="date" id="snBirthDate"></label>
+  <label>Birth Time: <input type="time" id="snBirthTime" step="1"></label>
+  <label>Latitude: <input type="text" id="snLat" placeholder="e.g. 28.6139"></label>
+  <label>Longitude: <input type="text" id="snLon" placeholder="e.g. 77.2090"></label><br><br>
+  <label>Timezone Mode:
+    <select id="snTimezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="snIanaZoneLabel">Time zone: <select id="snIanaZone"></select></label>
+  <label id="snUtcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="snUtcOffset" placeholder="+5:30"></label><br><br>
+  <label>Notes:<br><textarea id="snNotes" rows="2" style="width:100%;max-width:500px;"></textarea></label><br><br>
+  <button id="snCopyFromChartBtn" type="button">Copy from Chart &amp; Analysis tab</button>
+  <button id="snSaveNativeBtn" type="button">Save / Add Native</button>
+  <button id="snClearFormBtn" type="button">Clear Form</button>
+</fieldset>
+<div id="snSaveStatus" style="font-size:0.9em;color:#555;"></div>
+
+<h3>Search &amp; Load</h3>
+<input type="text" id="snSearchBox" placeholder="Search all fields…" style="width:100%;max-width:400px;">
+<div id="snTableOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -603,6 +649,7 @@
 <script src="js/kakshya/kakshyaEngine.js"></script>
 <script src="js/kakshyaTimeline/timelineLifeAreas.js"></script>
 <script src="js/kakshyaTimeline/timelineEngine.js"></script>
+<script src="js/savedNatives/csvUtil.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
