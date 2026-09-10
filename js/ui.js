@@ -46,6 +46,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabAshtakvargaPredictions') renderAshtakvargaPredictionsTab();
       if (btn.dataset.tab === 'tabKakshya') renderKakshyaTab();
       if (btn.dataset.tab === 'tabKakshyaTimeline') renderKakshyaTimelineTab();
+      if (btn.dataset.tab === 'tabRemedies') renderRemediesTab();
     });
   });
 }
@@ -1933,6 +1934,7 @@ function generateChart() {
     state.dasha = computeVimshottariDasha(planets.find(p => p.name === 'Moon').longitude, birthUtc);
     state.dashaSelection = {}; // clears any drill-down selection from a previous chart
     state.sadeSati = null; // recomputed lazily (expensive) when the Sade Sati tab is opened
+    state.remedies = null; // recomputed lazily when the Remedies tab is opened
     state.mangalDosha2 = computeMangalDosha2(state.chart);
     try {
       state.shadbala = computeShadbala(state.chart, lat, lon);
@@ -1961,11 +1963,13 @@ function generateChart() {
     ktLastMatrix = null; // chart changed — any previously built timeline is stale
     try { renderKakshyaTimelineTab(); } catch (ktErr) { console.error('Kakshya Timeline render failed:', ktErr); }
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
+    document.getElementById('remediesOutput').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
   } catch (err) {
     state.chart = null;
     state.yogas = null;
     state.dasha = null;
     state.sadeSati = null;
+    state.remedies = null;
     state.mangalDosha2 = null;
     state.shadbala = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -1991,6 +1995,7 @@ function generateChart() {
     document.getElementById('shadbalaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('avpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('kakshyaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('remediesOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2290,6 +2295,95 @@ function initSavedNatives() {
   if (!snState.supportsFsApi) snSetFileStatus('This browser doesn\'t support direct file read/write — "Connect" opens a file for reading, and "Save" downloads a replacement file instead of writing back to disk.');
 }
 
+// --- Remedies ---
+
+function remSevClass(label) { return `rem-sev-${label.replace(/ /g, '-')}`; }
+
+function remSourceLine(c) {
+  return `Source: ${c.sourceType}${c.sourceTitle ? ' — ' + escapeHtml(c.sourceTitle) : ''}${c.sourceAuthor ? ' (' + escapeHtml(c.sourceAuthor) + ')' : ''}. Confidence: ${c.confidence}.${c.sourceReference ? ' ' + escapeHtml(c.sourceReference) : ''}`;
+}
+
+function remCardHtml(c) {
+  const typeLine = c.category === 'chant'
+    ? `${c.sanskrit ? `<div style="font-size:1.1em;">${c.sanskrit}</div>` : ''}${c.transliteration ? `<div><em>${escapeHtml(c.transliteration)}</em></div>` : ''}${c.meaning ? `<div>${escapeHtml(c.meaning)}</div>` : ''}`
+    : c.category === 'gemstone'
+      ? `<div><span class="rem-gem-status-${c.gemstoneStatus}">${c.gemstoneStatus.replace(/_/g, ' ')}</span>${c.substitute ? ` — Substitute: ${escapeHtml(c.substitute)}` : ''}</div><div>${escapeHtml(c.description)}</div>`
+      : `<div>${escapeHtml(c.description)}</div>`;
+
+  return `
+    <div class="rem-card">
+      <div><span class="rem-sev-badge ${remSevClass(c.severityLabel)}">${c.severityLabel}</span> <strong>${c.planet} — ${escapeHtml(c.modeLabel)}</strong> <span class="rem-type-badge">${c.category.toUpperCase()}</span>${c.dashaRelevant ? ' <span class="rem-type-badge" style="background:#fff3d6;">CURRENT DASHA</span>' : ''}</div>
+      <h4 style="margin:6px 0 2px;">${escapeHtml(c.name)}</h4>
+      ${typeLine}
+      ${c.procedure ? `<p><strong>How to perform:</strong> ${escapeHtml(c.procedure)}</p>` : ''}
+      <p style="font-size:0.9em;">
+        ${c.frequency ? `<strong>Frequency:</strong> ${escapeHtml(c.frequency)}<br>` : ''}
+        ${c.duration ? `<strong>Duration:</strong> ${escapeHtml(c.duration)}<br>` : ''}
+        <strong>Affected life areas:</strong> ${c.affectedLifeAreas.join(' • ')}
+      </p>
+      ${c.contraindications && c.contraindications.length ? `<p style="color:#a35c00;"><strong>Contraindications:</strong> ${c.contraindications.map(escapeHtml).join(' ')}</p>` : ''}
+      <details class="avp-calc"><summary>Why this remedy? (evidence &amp; source)</summary>
+        <div class="kk-calc-chain">${c.reasons.map(escapeHtml).join('\n\n')}</div>
+        <p style="font-size:0.85em;color:#555;">${remSourceLine(c)}</p>
+      </details>
+    </div>`;
+}
+
+function remApplyFilters(cards) {
+  const category = document.getElementById('remCategoryFilter').value;
+  const classicalOnly = document.getElementById('remClassicalOnly').checked;
+  const highConfOnly = document.getElementById('remHighConfidenceOnly').checked;
+  const dashaOnly = document.getElementById('remDashaOnly').checked;
+  return cards.filter(c =>
+    (category === 'all' || c.category === category) &&
+    (!classicalOnly || c.sourceType === 'Classical' || c.sourceType === 'Traditional') &&
+    (!highConfOnly || c.confidence === 'High') &&
+    (!dashaOnly || c.dashaRelevant)
+  );
+}
+
+function renderRemediesTab() {
+  const el = document.getElementById('remediesOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (!state.remedies) {
+    try { state.remedies = computeRemedies(state.chart); }
+    catch (e) { console.error('Remedies computation failed:', e); el.innerHTML = '<p>Remedies could not be computed for this chart (see console).</p>'; return; }
+  }
+  const r = state.remedies;
+  const mahaLabel = r.dashaLords.maha || 'n/a';
+  const antarLabel = r.dashaLords.antar || 'n/a';
+
+  const primary = remApplyFilters(r.primary);
+  const secondary = remApplyFilters(r.secondary);
+  const supportive = remApplyFilters(r.supportive);
+  const gemstones = remApplyFilters(r.gemstoneCards);
+
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;">
+      <strong>Remedial Analysis</strong><br>
+      Lagna: ${state.chart.ascendant.sign} &nbsp; Current Mahadasha: ${mahaLabel} &nbsp; Current Antardasha: ${antarLabel}<br>
+      Overall remedial priority: <span class="rem-sev-badge ${remSevClass(r.overallPriority)}">${r.overallPriority}</span>
+    </div>
+
+    <div class="rem-gem-warning">
+      <strong>About gemstones:</strong> gemstones are traditionally considered strengthening/amplifying remedies. A gemstone is never recommended solely because a planet is afflicted — it is evaluated for functional role (favorable vs. unfavorable for this Lagna) and the overall horoscope first. This app does not claim gemstones scientifically alter planetary forces.
+    </div>
+
+    <h3>Section 1 — Highest Priority</h3>
+    ${primary.length ? primary.map(remCardHtml).join('') : '<p>No high-priority remedies matched the current filters.</p>'}
+
+    <h3>Section 2 — Gemstones</h3>
+    ${gemstones.length ? gemstones.map(remCardHtml).join('') : '<p>No gemstone recommendations matched the current filters (most planets are NOT gemstone-eligible by design — see the warning above).</p>'}
+
+    <h3>Section 3 — Other Remedies</h3>
+    ${secondary.concat(supportive).length ? secondary.concat(supportive).map(remCardHtml).join('') : '<p>No further remedies matched the current filters.</p>'}
+  `;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initEngineStatusBadge();
@@ -2324,6 +2418,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ktBuildBtn').addEventListener('click', onKtBuild);
   document.getElementById('ktExportCsvBtn').addEventListener('click', onKtExportCsv);
   document.getElementById('ktPrintBtn').addEventListener('click', () => window.print());
+  document.getElementById('remCategoryFilter').addEventListener('change', renderRemediesTab);
+  document.getElementById('remClassicalOnly').addEventListener('change', renderRemediesTab);
+  document.getElementById('remHighConfidenceOnly').addEventListener('change', renderRemediesTab);
+  document.getElementById('remDashaOnly').addEventListener('change', renderRemediesTab);
   initSavedNatives();
   initAutoRegenerate();
   renderInterpretation2Tab();

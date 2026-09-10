@@ -160,6 +160,23 @@
   .strength-Moderate { background: #ffe0b3; color: #7a3c00; }
   .strength-Strong { background: #ffdcdc; color: #8a1a1a; }
 
+  /* Remedies tab */
+  .rem-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
+  .rem-sev-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
+  .rem-sev-EXTREME { background: #7a0000; }
+  .rem-sev-VERY-SEVERE { background: #c1121f; }
+  .rem-sev-SEVERE { background: #e76f51; }
+  .rem-sev-MODERATE { background: #e0a800; color: #3a2a00; }
+  .rem-sev-MILD { background: #a8d9a8; color: #1a3a1a; }
+  .rem-sev-SUPPORTIVE { background: #cfe8cf; color: #1a3a1a; }
+  .rem-type-badge { display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 0.75em; background: #eee; color: #333; margin-left: 6px; }
+  .rem-gem-warning { background: #fff3cd; border-left: 4px solid #e0a800; padding: 10px 14px; margin-bottom: 12px; font-size: 0.9em; }
+  .rem-gem-status-RECOMMENDED { color: #1a5c1a; font-weight: bold; }
+  .rem-gem-status-CONDITIONALLY_RECOMMENDED { color: #7a6a00; font-weight: bold; }
+  .rem-gem-status-NOT_RECOMMENDED { color: #666; font-weight: bold; }
+  .rem-gem-status-AVOID { color: #8a1a1a; font-weight: bold; }
+  .rem-gem-status-PROFESSIONAL_REVIEW_REQUIRED { color: #a35c00; font-weight: bold; }
+
   /* Shadbala tab */
   .sb-planet-card { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; background: #fff; }
   .sb-planet-header { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -255,6 +272,7 @@
   <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
   <button class="tab-button" id="tabBtnKakshyaTimeline" data-tab="tabKakshyaTimeline">Kakshya Life-Area Timeline</button>
   <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Saved Natives</button>
+  <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies</button>
 </div>
 
 <div class="controls">
@@ -609,6 +627,24 @@
 <div id="snTableOutput" class="output-box pastel-mint"></div>
 </div>
 
+<div class="tab-panel" id="tabRemedies">
+<h2>Remedies</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Chart-specific remedies (Chant, Donation, Action, Gemstone) drawn from a fixed, curated database — never improvised at runtime. Every remedy shows why it was chosen, from which chart factors, with its source and confidence level. <strong>No remedy here is a guarantee of any outcome</strong> — this is a traditional astrological practice guide, not medical, legal, or financial advice.</p>
+<div class="controls">
+  <select id="remCategoryFilter">
+    <option value="all">All categories</option>
+    <option value="chant">Chant only</option>
+    <option value="donation">Donation only</option>
+    <option value="action">Action only</option>
+    <option value="gemstone">Gemstone only</option>
+  </select>
+  <label><input type="checkbox" id="remClassicalOnly"> Classical/Traditional sources only</label>
+  <label><input type="checkbox" id="remHighConfidenceOnly"> High confidence only</label>
+  <label><input type="checkbox" id="remDashaOnly"> Current dasha-relevant only</label>
+</div>
+<div id="remediesOutput" class="output-box pastel-peach"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -650,6 +686,8 @@
 <script src="js/kakshyaTimeline/timelineLifeAreas.js"></script>
 <script src="js/kakshyaTimeline/timelineEngine.js"></script>
 <script src="js/savedNatives/csvUtil.js"></script>
+<script src="js/remedies/remedyData.js"></script>
+<script src="js/remedies/remedyEngine.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
