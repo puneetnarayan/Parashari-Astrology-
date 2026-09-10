@@ -59,7 +59,8 @@ by `assessPlanet()`:
 - **Affliction factors** (raise remedial priority): debilitation, severe
   combustion, malefic conjunctions, Dusthana placement, functional-malefic
   role, Lagna/Lagna-lord affliction, Moon affliction, presence in a bad
-  yoga, enemy-sign placement, weak Shadbala, current dasha activation.
+  yoga, enemy-sign placement, weak Shadbala, current dasha activation, and
+  upcoming dasha activation (see below).
 - **Protective/mitigating factors** (lower it): exaltation, own sign or
   Moolatrikona, Vargottama, Neecha Bhanga applicability.
 - The engine tracks an `afflictionSubscore` (external affliction) separately
@@ -72,6 +73,39 @@ by `assessPlanet()`:
 - `remedyMode` (`PACIFY_PLANET` / `STRENGTHEN_PLANET` / `PACIFY_AFFLICTION`
   / `GENERAL_PROPITIATION`) is derived from which subscore dominates and
   the planet's functional favorability, not from Shadbala alone.
+
+## Dasha lead time — starting remedies before a period begins
+
+Remedies change with the dasha, and classical/mainstream remedial practice
+generally recommends starting a planet's remedies before its Mahadasha or
+Antardasha actually begins, not after. `computeDashaTiming()` (in
+`remedyEngine.js`) reuses the existing `state.dasha` timeline (already
+computed by `computeVimshottariDasha()` — no new dasha math) to detect:
+
+- The **current** Mahadasha and Antardasha lords (as before).
+- The **next** Mahadasha lord, if its start date falls within a configurable
+  lead-time window — default **12 months**.
+- The **next** Antardasha lord (within the current Mahadasha, or the first
+  Antardasha of the next Mahadasha if the current one is ending), if its
+  start date falls within a configurable lead-time window — default
+  **3 months**.
+
+These lead-time windows (`REMEDY_ENGINE_CONFIG.dashaLeadTimeMonths`) are a
+practical/traditional convention for "start early," not a fixed classical
+rule with a citable source — labeled as such rather than presented as
+scripture. An upcoming dasha lord gets a smaller priority boost than an
+already-active one (`upcomingDashaActivation: 5` vs. `currentDashaActivation:
+10`), and its remedy cards carry an explicit "Upcoming Mahadasha/Antardasha
+lord (starts in ~N months)" explanation plus an "UPCOMING DASHA" badge,
+distinct from "CURRENT DASHA."
+
+The Remedies tab also now opens with a **Dasha Timeline & Remedy Timing**
+table (current Mahadasha, the next two Mahadashas, and every Antardasha
+within the current Mahadasha, with start/end dates and a "Start remedies
+now" flag on any row inside its lead-time window) and a **Remedy Summary**
+table (Planet | Category | Remedy | Severity | Dasha Status | Tier) above
+the existing detail cards, so the full remedy list can be scanned at a
+glance before reading the individual explainable cards.
 
 ## Gemstone safety logic
 
@@ -120,8 +154,21 @@ checks against a live-generated chart:
 - Verified for a real test chart that no functionally-malefic planet ever
   receives `gemstoneStatus: 'RECOMMENDED'`.
 - Verified the category filter (e.g. "Gemstone only") actually removes
-  other categories from the rendered output, and the "current dasha only"
-  filter actually narrows to dasha-relevant cards.
+  other categories from the rendered output, and the "current or upcoming
+  dasha only" filter actually narrows to dasha-relevant cards.
+- Verified the Leo-lagna case in detail: house-lordship and functional
+  classification match classical results (Mars and Sun both correctly
+  identified as Yogakaraka-tier for Leo), and confirmed the
+  weakness-vs-affliction gate behaves correctly (a strong/unafflicted
+  favorable planet does not get a gemstone; a genuinely weak favorable
+  planet does).
+- Verified the dasha lead-time logic directly: injected a synthetic dasha
+  timeline where the next Mahadasha starts in ~2 months (inside the
+  12-month window) and confirmed `computeDashaTiming()` flags that lord as
+  "upcoming," the affected planet's assessment gets the smaller upcoming
+  boost (5, vs. 10 for an active dasha) and the correct "starts in ~N
+  months" explanation, and the Dasha Timeline table marks that row "Start
+  remedies now."
 
 ## Areas requiring manual astrological review
 

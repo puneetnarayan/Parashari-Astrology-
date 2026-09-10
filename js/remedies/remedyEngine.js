@@ -15,7 +15,7 @@ const REMEDIES_LOGIC_TEXT = [
   ['2. STRENGTH vs GOODNESS, AGAIN: the engine never recommends strengthening a planet merely because it is weak, and never recommends pacifying a planet merely because it is a natural malefic. The functional role for THIS Lagna (already computed) decides the direction; the score only decides how urgently.'],
   ['3. GEMSTONES are the most conservative category: eligible ONLY when the planet\'s functional role is favorable (or mildly so) AND its weakness (not affliction by outside malefics) is the dominant driver of its score. A functionally unfavorable planet is NEVER gemstone-eligible, however weak or strong. Rahu/Ketu gemstones are capped at CONDITIONALLY_RECOMMENDED at most.'],
   ['4. SOURCE LABELING: every remedy record carries sourceType (Classical/Traditional/Modern/Folk-Regional) and a confidence level — see remedyData.js and docs/remedies/research-notes.md for what was actually researched vs. widely-repeated mainstream convention. Nothing here is presented as scientifically proven, and no remedy promises a guaranteed outcome.'],
-  ['5. RANKING: remedies are grouped per planet (merging all the reasons that point to the same remedy, rather than showing duplicate cards), scored by natal severity plus a current-dasha-relevance boost, and split into Primary (top 5), Secondary (next 7), and Supportive/Optional tiers.'],
+  ['5. RANKING: remedies are grouped per planet (merging all the reasons that point to the same remedy, rather than showing duplicate cards), scored by natal severity plus a dasha-relevance boost (current dasha lord gets the largest boost; a lord whose Mahadasha/Antardasha is about to START within a lead-time window — 12 months for Mahadasha, 3 months for Antardasha — gets a smaller boost, so remedies for an approaching period can be started in advance), and split into Primary (top 5), Secondary (next 7), and Supportive/Optional tiers.'],
   ['']
 ];
 
@@ -28,7 +28,7 @@ const REMEDY_ENGINE_CONFIG = {
     lagnaOrLagnaLordAffliction: 20, moonAffliction: 15,
     presentBadYogaEach: 10, presentBadYogaCap: 20, grahaYuddhaLoser: 15,
     enemySignRelation: 8, weakShadbala: 10, lackOfBeneficSupport: 5,
-    currentDashaActivation: 10,
+    currentDashaActivation: 10, upcomingDashaActivation: 5,
     exalted: -30, ownOrMoolatrikona: -20, vargottama: -10, neechaBhangaApplies: -25,
     conjunctBeneficEach: -8, conjunctBeneficCap: -16,
     aspectedByBeneficEach: -6, aspectedByBeneficCap: -12,
@@ -38,6 +38,11 @@ const REMEDY_ENGINE_CONFIG = {
     { min: 80, label: 'EXTREME' }, { min: 65, label: 'VERY SEVERE' }, { min: 50, label: 'SEVERE' },
     { min: 30, label: 'MODERATE' }, { min: 15, label: 'MILD' }, { min: -Infinity, label: 'SUPPORTIVE' }
   ],
+  // How far in advance of a dasha's onset a planet's remedies start being
+  // flagged as "upcoming" (practical/traditional convention for starting
+  // remedial practice before a period begins — not a fixed classical rule;
+  // see docs/remedies/research-notes.md).
+  dashaLeadTimeMonths: { mahadasha: 12, antardasha: 3 },
   maxPrimaryRemedies: 5, maxSecondaryRemedies: 7,
   gemstonePolicy: 'CONSERVATIVE', sourcePolicy: 'CLASSICAL_FIRST'
 };
@@ -47,13 +52,72 @@ function severityLabelFor(score) {
   return 'SUPPORTIVE';
 }
 
-function currentDashaLords() {
-  if (!state.dasha) return { maha: null, antar: null };
+const MS_PER_MONTH = 30.436875 * 24 * 3600 * 1000; // average Gregorian month
+
+// Builds not just the currently-active Mahadasha/Antardasha lords, but also
+// which lord's dasha is about to START within the configured lead-time
+// window (dashaLeadTimeMonths) — so remedies for that upcoming lord can be
+// flagged and started in advance, and a timeline table can be shown in the
+// UI. Nothing here recomputes the dasha timeline itself; it only reads the
+// dates already computed by computeVimshottariDasha() on state.dasha.
+function computeDashaTiming() {
+  const empty = { maha: null, antar: null, upcomingMaha: null, upcomingAntar: null, mahaTimeline: [], antarTimeline: [] };
+  if (!state.dasha || !state.dasha.length) return empty;
+
+  const now = new Date();
+  const monthsUntil = d => (d - now) / MS_PER_MONTH;
+  const lead = REMEDY_ENGINE_CONFIG.dashaLeadTimeMonths;
+
   const idx = findCurrentIndex(state.dasha);
-  if (idx < 0) return { maha: null, antar: null };
-  const maha = state.dasha[idx];
-  const aIdx = findCurrentIndex(maha.antardashas);
-  return { maha: maha.lord, antar: aIdx >= 0 ? maha.antardashas[aIdx].lord : null };
+  if (idx < 0) return empty;
+
+  const currentMahaPeriod = state.dasha[idx];
+  const maha = currentMahaPeriod.lord;
+  const aIdx = findCurrentIndex(currentMahaPeriod.antardashas);
+  const currentAntarPeriod = aIdx >= 0 ? currentMahaPeriod.antardashas[aIdx] : null;
+  const antar = currentAntarPeriod ? currentAntarPeriod.lord : null;
+
+  let upcomingMaha = null;
+  const nextMahaPeriod = state.dasha[idx + 1];
+  if (nextMahaPeriod) {
+    const mu = monthsUntil(nextMahaPeriod.startDate);
+    if (mu >= 0 && mu <= lead.mahadasha) upcomingMaha = { lord: nextMahaPeriod.lord, monthsUntil: mu, startDate: nextMahaPeriod.startDate };
+  }
+
+  let upcomingAntar = null;
+  if (currentAntarPeriod) {
+    // The antardasha after this one — or, if this is the last antardasha of
+    // the current Mahadasha, the first antardasha of the next Mahadasha
+    // (which starts the instant the next Mahadasha begins).
+    let nextAntarPeriod = currentMahaPeriod.antardashas[aIdx + 1];
+    if (!nextAntarPeriod && nextMahaPeriod) nextAntarPeriod = nextMahaPeriod.antardashas[0];
+    if (nextAntarPeriod) {
+      const mu = monthsUntil(nextAntarPeriod.startDate);
+      if (mu >= 0 && mu <= lead.antardasha) upcomingAntar = { lord: nextAntarPeriod.lord, monthsUntil: mu, startDate: nextAntarPeriod.startDate };
+    }
+  }
+
+  // Timeline rows for the UI table.
+  const mahaTimeline = [];
+  for (let k = idx; k < Math.min(state.dasha.length, idx + 3); k++) {
+    const md = state.dasha[k];
+    const status = k === idx ? 'Current' : 'Upcoming';
+    const mu = monthsUntil(md.startDate);
+    mahaTimeline.push({
+      level: 'Mahadasha', lord: md.lord, startDate: md.startDate, endDate: md.endDate, status,
+      flagStart: status === 'Upcoming' && mu <= lead.mahadasha
+    });
+  }
+  const antarTimeline = currentMahaPeriod.antardashas.map(ad => {
+    const status = ad === currentAntarPeriod ? 'Current' : (ad.startDate > now ? 'Upcoming' : 'Past');
+    const mu = monthsUntil(ad.startDate);
+    return {
+      level: 'Antardasha', lord: ad.lord, startDate: ad.startDate, endDate: ad.endDate, status,
+      flagStart: status === 'Upcoming' && mu <= lead.antardasha
+    };
+  });
+
+  return { maha, antar, upcomingMaha, upcomingAntar, mahaTimeline, antarTimeline };
 }
 
 // --- Assessment for one planet ---
@@ -129,7 +193,25 @@ function assessPlanet(planetName, chart, functional, dashaLords) {
   if (!hasBeneficConjOrAspect) { score += W.lackOfBeneficSupport; weaknessSubscore += W.lackOfBeneficSupport; }
 
   const isDashaActive = dashaLords.maha === planetName || dashaLords.antar === planetName;
-  if (isDashaActive) score += W.currentDashaActivation; // tracked separately as dasha relevance too
+  const upcomingMahaHit = dashaLords.upcomingMaha && dashaLords.upcomingMaha.lord === planetName;
+  const upcomingAntarHit = dashaLords.upcomingAntar && dashaLords.upcomingAntar.lord === planetName;
+  const isUpcomingDasha = !isDashaActive && (upcomingMahaHit || upcomingAntarHit);
+
+  let dashaStatus = 'none', dashaRelevance = 'Low', dashaPriorityBoost = 0;
+  if (isDashaActive) {
+    score += W.currentDashaActivation; // tracked separately as dasha relevance too
+    dashaStatus = 'current';
+    dashaRelevance = dashaLords.maha === planetName ? 'High (current Mahadasha lord)' : 'High (current Antardasha lord)';
+    dashaPriorityBoost = W.currentDashaActivation;
+  } else if (isUpcomingDasha) {
+    score += W.upcomingDashaActivation;
+    dashaStatus = 'upcoming';
+    const info = upcomingMahaHit ? dashaLords.upcomingMaha : dashaLords.upcomingAntar;
+    const level = upcomingMahaHit ? 'Mahadasha' : 'Antardasha';
+    const months = Math.max(1, Math.round(info.monthsUntil));
+    dashaRelevance = `Upcoming ${level} lord (starts in ~${months} month${months === 1 ? '' : 's'})`;
+    dashaPriorityBoost = W.upcomingDashaActivation;
+  }
 
   // Protective factors
   if (dignity.tier === 'Exalted') { score += W.exalted; beneficSupport.push('Exalted.'); }
@@ -197,7 +279,7 @@ function assessPlanet(planetName, chart, functional, dashaLords) {
     strength: sbResult ? sbResult.strength : null, shadbalaRatio: sbResult ? sbResult.ratio : null,
     afflictions, beneficSupport, affectedHouses, affectedSignifications,
     afflictionScore: score, severity, remedyMode, gemstoneEligible, gemstoneStatus,
-    isDashaActive, dashaRelevance: isDashaActive ? (dashaLords.maha === planetName ? 'High (current Mahadasha lord)' : 'High (current Antardasha lord)') : 'Low'
+    isDashaActive, isUpcomingDasha, dashaStatus, dashaRelevance, dashaPriorityBoost
   };
 }
 
@@ -209,7 +291,8 @@ function reasonSentenceFor(assessment) {
   parts.push(`placed in ${assessment.sign} (${assessment.dignity}) in House ${assessment.placementHouse}`);
   if (assessment.afflictions.length) parts.push(`Afflictions: ${assessment.afflictions.join(' ')}`);
   if (assessment.beneficSupport.length) parts.push(`Mitigating factors: ${assessment.beneficSupport.join(' ')}`);
-  if (assessment.isDashaActive) parts.push(`Currently activated by dasha (relevance: ${assessment.dashaRelevance}).`);
+  if (assessment.dashaStatus === 'current') parts.push(`Currently activated by dasha (relevance: ${assessment.dashaRelevance}).`);
+  else if (assessment.dashaStatus === 'upcoming') parts.push(`${assessment.dashaRelevance} — starting this remedy now allows the practice to be established before the period begins.`);
   return parts.join('. ') + '.';
 }
 
@@ -240,7 +323,7 @@ function buildRemedyCardsForPlanet(assessment) {
       remedyMode: assessment.remedyMode, modeLabel: MODE_LABEL[assessment.remedyMode],
       affectedLifeAreas: assessment.affectedSignifications,
       reasons: [reasonSentenceFor(assessment)],
-      dashaRelevant: assessment.isDashaActive
+      dashaRelevant: assessment.dashaStatus !== 'none', dashaStatus: assessment.dashaStatus, dashaPriorityBoost: assessment.dashaPriorityBoost
     });
   });
   if (assessment.gemstoneStatus === 'RECOMMENDED' || assessment.gemstoneStatus === 'CONDITIONALLY_RECOMMENDED' || assessment.gemstoneStatus === 'PROFESSIONAL_REVIEW_REQUIRED') {
@@ -252,7 +335,7 @@ function buildRemedyCardsForPlanet(assessment) {
         remedyMode: 'STRENGTHEN_PLANET', modeLabel: 'Gemstone (Strengthening)',
         affectedLifeAreas: assessment.affectedSignifications,
         reasons: [`${assessment.planet} is being considered for strengthening because its functional role is favorable for this Lagna and its weakness (not outside affliction) is the dominant factor in its assessment. ${reasonSentenceFor(assessment)}`],
-        dashaRelevant: assessment.isDashaActive
+        dashaRelevant: assessment.dashaStatus !== 'none', dashaStatus: assessment.dashaStatus, dashaPriorityBoost: assessment.dashaPriorityBoost
       });
     }
   } else if (assessment.gemstoneStatus === 'AVOID' && assessment.functionalNature) {
@@ -263,7 +346,8 @@ function buildRemedyCardsForPlanet(assessment) {
       severityScore: assessment.afflictionScore, severityLabel: assessment.severity,
       remedyMode: assessment.remedyMode, modeLabel: 'Gemstone — Not Advised',
       affectedLifeAreas: assessment.affectedSignifications,
-      reasons: [reasonSentenceFor(assessment)], dashaRelevant: assessment.isDashaActive,
+      reasons: [reasonSentenceFor(assessment)],
+      dashaRelevant: assessment.dashaStatus !== 'none', dashaStatus: assessment.dashaStatus, dashaPriorityBoost: assessment.dashaPriorityBoost,
       sourceType: 'Modern', sourceTitle: 'This app\'s own gemstone safety policy', sourceAuthor: null, sourceReference: 'See REMEDY_ENGINE_CONFIG.gemstonePolicy = CONSERVATIVE.', confidence: 'High'
     });
   }
@@ -286,7 +370,7 @@ function attachDoshaReasons(cardsByPlanet, presentBadYogas) {
 
 function computeRemedies(chart) {
   const functional = functionalClassification(chart.ascendant.sign, chart.planets);
-  const dashaLords = currentDashaLords();
+  const dashaLords = computeDashaTiming();
   const planetNames = SHADBALA_PLANETS.concat(['Rahu', 'Ketu']);
 
   const assessments = {};
@@ -301,7 +385,7 @@ function computeRemedies(chart) {
 
   let allCards = Object.values(cardsByPlanet).flat();
   // Rank: dasha-active planets get a priority boost independent of natal score.
-  allCards.forEach(c => { c.priorityScore = c.severityScore + (c.dashaRelevant ? REMEDY_ENGINE_CONFIG.scoringWeights.currentDashaActivation : 0); });
+  allCards.forEach(c => { c.priorityScore = c.severityScore + (c.dashaPriorityBoost || 0); });
   allCards.sort((a, b) => b.priorityScore - a.priorityScore);
 
   const gemstoneCards = allCards.filter(c => c.category === 'gemstone');
@@ -318,7 +402,7 @@ function computeRemedies(chart) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    REMEDIES_LOGIC_TEXT, REMEDY_ENGINE_CONFIG, severityLabelFor, currentDashaLords, assessPlanet,
+    REMEDIES_LOGIC_TEXT, REMEDY_ENGINE_CONFIG, severityLabelFor, computeDashaTiming, assessPlanet,
     buildRemedyCardsForPlanet, attachDoshaReasons, computeRemedies
   };
 }

@@ -2303,6 +2303,12 @@ function remSourceLine(c) {
   return `Source: ${c.sourceType}${c.sourceTitle ? ' — ' + escapeHtml(c.sourceTitle) : ''}${c.sourceAuthor ? ' (' + escapeHtml(c.sourceAuthor) + ')' : ''}. Confidence: ${c.confidence}.${c.sourceReference ? ' ' + escapeHtml(c.sourceReference) : ''}`;
 }
 
+function remDashaBadge(c) {
+  if (c.dashaStatus === 'current') return ' <span class="rem-type-badge" style="background:#fff3d6;">CURRENT DASHA</span>';
+  if (c.dashaStatus === 'upcoming') return ' <span class="rem-type-badge" style="background:#e3f0ff;">UPCOMING DASHA</span>';
+  return '';
+}
+
 function remCardHtml(c) {
   const typeLine = c.category === 'chant'
     ? `${c.sanskrit ? `<div style="font-size:1.1em;">${c.sanskrit}</div>` : ''}${c.transliteration ? `<div><em>${escapeHtml(c.transliteration)}</em></div>` : ''}${c.meaning ? `<div>${escapeHtml(c.meaning)}</div>` : ''}`
@@ -2312,7 +2318,7 @@ function remCardHtml(c) {
 
   return `
     <div class="rem-card">
-      <div><span class="rem-sev-badge ${remSevClass(c.severityLabel)}">${c.severityLabel}</span> <strong>${c.planet} — ${escapeHtml(c.modeLabel)}</strong> <span class="rem-type-badge">${c.category.toUpperCase()}</span>${c.dashaRelevant ? ' <span class="rem-type-badge" style="background:#fff3d6;">CURRENT DASHA</span>' : ''}</div>
+      <div><span class="rem-sev-badge ${remSevClass(c.severityLabel)}">${c.severityLabel}</span> <strong>${c.planet} — ${escapeHtml(c.modeLabel)}</strong> <span class="rem-type-badge">${c.category.toUpperCase()}</span>${remDashaBadge(c)}</div>
       <h4 style="margin:6px 0 2px;">${escapeHtml(c.name)}</h4>
       ${typeLine}
       ${c.procedure ? `<p><strong>How to perform:</strong> ${escapeHtml(c.procedure)}</p>` : ''}
@@ -2342,6 +2348,52 @@ function remApplyFilters(cards) {
   );
 }
 
+function remFmtDate(d) {
+  return d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'n/a';
+}
+
+function remDashaTimelineTableHtml(dashaLords) {
+  const rowHtml = (row) => `
+    <tr${row.status === 'Current' ? ' style="background:#eaf7ea;"' : row.flagStart ? ' style="background:#fff3d6;"' : ''}>
+      <td>${row.level}</td>
+      <td>${row.lord}</td>
+      <td>${remFmtDate(row.startDate)}</td>
+      <td>${remFmtDate(row.endDate)}</td>
+      <td>${row.status}</td>
+      <td>${row.flagStart ? '<strong>Start remedies now</strong>' : (row.status === 'Current' ? 'In progress' : '')}</td>
+    </tr>`;
+
+  if (!dashaLords.mahaTimeline.length) return '<p>Dasha timeline unavailable for this chart.</p>';
+
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Level</th><th>Lord</th><th>Start</th><th>End</th><th>Status</th><th>Remedy Timing</th></tr></thead>
+      <tbody>
+        ${dashaLords.mahaTimeline.map(rowHtml).join('')}
+        ${dashaLords.antarTimeline.map(rowHtml).join('')}
+      </tbody>
+    </table>
+    <p style="font-size:0.85em;color:#555;">"Start remedies now" flags a lord whose Mahadasha begins within ~12 months, or whose Antardasha begins within ~3 months — a practical convention for beginning remedial practice before a period starts, not a fixed classical rule.</p>`;
+}
+
+function remSummaryTableHtml(cards) {
+  if (!cards.length) return '<p>No remedies matched the current filters.</p>';
+  const rowHtml = (c) => `
+    <tr>
+      <td>${c.planet}</td>
+      <td>${c.category.toUpperCase()}</td>
+      <td>${escapeHtml(c.name)}</td>
+      <td><span class="rem-sev-badge ${remSevClass(c.severityLabel)}">${c.severityLabel}</span></td>
+      <td>${c.dashaStatus === 'current' ? 'Current' : c.dashaStatus === 'upcoming' ? 'Upcoming' : '—'}</td>
+      <td>${c.tier}</td>
+    </tr>`;
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Planet</th><th>Category</th><th>Remedy</th><th>Severity</th><th>Dasha Status</th><th>Tier</th></tr></thead>
+      <tbody>${cards.map(rowHtml).join('')}</tbody>
+    </table>`;
+}
+
 function renderRemediesTab() {
   const el = document.getElementById('remediesOutput');
   if (!el) return;
@@ -2357,10 +2409,16 @@ function renderRemediesTab() {
   const mahaLabel = r.dashaLords.maha || 'n/a';
   const antarLabel = r.dashaLords.antar || 'n/a';
 
+  r.primary.forEach(c => { c.tier = 'Primary'; });
+  r.secondary.forEach(c => { c.tier = 'Secondary'; });
+  r.supportive.forEach(c => { c.tier = 'Supportive'; });
+  r.gemstoneCards.forEach(c => { c.tier = 'Gemstone'; });
+
   const primary = remApplyFilters(r.primary);
   const secondary = remApplyFilters(r.secondary);
   const supportive = remApplyFilters(r.supportive);
   const gemstones = remApplyFilters(r.gemstoneCards);
+  const allFiltered = primary.concat(gemstones, secondary, supportive);
 
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;">
@@ -2368,6 +2426,12 @@ function renderRemediesTab() {
       Lagna: ${state.chart.ascendant.sign} &nbsp; Current Mahadasha: ${mahaLabel} &nbsp; Current Antardasha: ${antarLabel}<br>
       Overall remedial priority: <span class="rem-sev-badge ${remSevClass(r.overallPriority)}">${r.overallPriority}</span>
     </div>
+
+    <h3>Dasha Timeline &amp; Remedy Timing</h3>
+    ${remDashaTimelineTableHtml(r.dashaLords)}
+
+    <h3>Remedy Summary</h3>
+    ${remSummaryTableHtml(allFiltered)}
 
     <div class="rem-gem-warning">
       <strong>About gemstones:</strong> gemstones are traditionally considered strengthening/amplifying remedies. A gemstone is never recommended solely because a planet is afflicted — it is evaluated for functional role (favorable vs. unfavorable for this Lagna) and the overall horoscope first. This app does not claim gemstones scientifically alter planetary forces.
