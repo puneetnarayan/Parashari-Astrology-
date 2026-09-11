@@ -26,6 +26,26 @@
 // Ordinal words for padas, used only for readable text.
 const PADA_ORDINAL = { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth' };
 
+// The classical Purushartha (fourfold life-goal) assigned to each pada
+// NUMBER, independent of which nakshatra it falls in — a real, additional
+// classical layer distinct from (and not covered by) the Navamsa-sign
+// flavor alone. Because the 12 zodiac signs' elements repeat in a fixed
+// Fire-Earth-Air-Water cycle every 4 signs (Aries=Fire, Taurus=Earth,
+// Gemini=Air, Cancer=Water, Leo=Fire, ...), ANY 4 consecutive Navamsa
+// signs — i.e. any nakshatra's 4 padas — always land on Fire, Earth, Air,
+// Water in that exact order. So pada 1 is always the Agni/Fire/Dharma
+// pada, pada 2 Prithvi/Earth/Artha, pada 3 Vayu/Air/Kama, pada 4
+// Jala/Water/Moksha, for every one of the 27 nakshatras without
+// exception — confirmed both by this app's own D9 calculation and by
+// external research on the standard convention (see
+// docs/nakshatra/research-notes.md).
+const PADA_PURUSHARTHA = {
+  1: { name: 'Dharma', element: 'Fire (Agni)', focus: 'purpose, ethics, and right action — what this placement is here to DO' },
+  2: { name: 'Artha', element: 'Earth (Prithvi)', focus: 'resources, livelihood, and tangible stability — what this placement is here to BUILD or ACQUIRE' },
+  3: { name: 'Kama', element: 'Air (Vayu)', focus: 'desire, relationship, and exchange — what this placement is here to WANT or CONNECT WITH' },
+  4: { name: 'Moksha', element: 'Water (Jala)', focus: 'release, dissolution, and inward/spiritual transformation — what this placement is here to LET GO OF' }
+};
+
 // Builds the pada's Navamsa-sign "flavor" using the app's own D9
 // divisional-chart calculation (no separate pada->sign table needed: a
 // pada IS one Navamsa division by definition).
@@ -43,18 +63,21 @@ function nakInterpForPlanet(planetName, longitude) {
   const traits = NAKSHATRA_TRAITS[nak.name];
   const coreSignification = PARASHARI_KB.planetCoreSignifications[planetName];
   const padaFlavor = nakInterpPadaFlavor(longitude);
+  const purushartha = PADA_PURUSHARTHA[pada];
 
   const paragraph = [
     `${planetName} occupies ${nak.name} nakshatra (ruled by ${nak.starLord}, presided over by ${traits.deity}, symbolized by the ${traits.symbol.toLowerCase()}).`,
     `${nak.name}'s classical keynote — ${traits.keynote} — colors how ${planetName}'s own significations${coreSignification ? ` (${coreSignification})` : ''} tend to express here.`,
     `Because this nakshatra's Vimshottari star lord is ${nak.starLord}, ${nak.starLord}'s own condition and dasha periods add an extra layer of relevance to ${planetName}'s results.`,
-    `This is the ${PADA_ORDINAL[pada]} pada, which carries the added Navamsa flavor of ${padaFlavor.sign}${padaFlavor.traits ? ` — ${padaFlavor.traits.description}` : ''}, subtly shading the manner (rather than the core theme) in which ${planetName} operates through this nakshatra.`
+    `This is the ${PADA_ORDINAL[pada]} pada, which carries the added Navamsa flavor of ${padaFlavor.sign}${padaFlavor.traits ? ` — ${padaFlavor.traits.description}` : ''}, subtly shading the manner (rather than the core theme) in which ${planetName} operates through this nakshatra.`,
+    `Every ${PADA_ORDINAL[pada]} pada, in any nakshatra, is additionally classified as the ${purushartha.name} pada (${purushartha.element} element) — meaning ${planetName}'s results through this nakshatra carry an added emphasis on ${purushartha.focus}.`
   ].join(' ');
 
   return {
     planet: planetName, nakshatra: nak.name, pada, starLord: nak.starLord,
     deity: traits.deity, symbol: traits.symbol, keynote: traits.keynote,
     padaSign: padaFlavor.sign, padaSignTraits: padaFlavor.traits,
+    purushartha,
     paragraph
   };
 }
@@ -71,5 +94,5 @@ function nakInterpAllNakshatras() {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { PADA_ORDINAL, nakInterpPadaFlavor, nakInterpForPlanet, nakInterpAllNakshatras };
+  module.exports = { PADA_ORDINAL, PADA_PURUSHARTHA, nakInterpPadaFlavor, nakInterpForPlanet, nakInterpAllNakshatras };
 }

@@ -25,6 +25,26 @@ technique used for pada-level interpretation (rather than assume it):
   confirmed the general framework (planet's own significations, colored
   by the occupied nakshatra's character, with the nakshatra's star lord
   adding dasha-relevance) used for the synthesized paragraph.
+- Follow-up research (prompted by a direct question: "has pada-specific
+  interpretation actually been researched, beyond just the nakshatra
+  interpretation?"): the first version of this tab only gave the pada a
+  generic Navamsa-sign "flavor" (one of 12 possible textures, reused from
+  the sign-trait data), which is real but not a distinctly pada-specific
+  layer. A follow-up search — "nakshatra pada 1 2 3 4 meaning dharma
+  artha kama moksha purushartha significance" — surfaced a genuine,
+  additional, well-established classical layer: each pada NUMBER (1st
+  through 4th, in every nakshatra without exception) is classically
+  assigned one of the four Purusharthas (life-goals) — Dharma (1st,
+  Fire), Artha (2nd, Earth), Kama (3rd, Air), Moksha (4th, Water). This
+  was cross-validated, not just asserted: because the 12 zodiac signs'
+  elements repeat Fire-Earth-Air-Water every 4 signs in fixed zodiacal
+  order, any 4 consecutive Navamsa signs — i.e. any nakshatra's 4 padas —
+  always land on Fire, Earth, Air, Water in exactly that order, which
+  matches the Purushartha-element pairing above exactly. This is now
+  included as `PADA_PURUSHARTHA` in
+  `nakshatraInterpretationEngine.js`, shown both as an always-visible
+  Pada→Purushartha reference table and folded into each planet's
+  synthesized paragraph and pada badge.
 
 ## What is reused vs. newly written
 

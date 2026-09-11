@@ -2850,7 +2850,7 @@ function renderNakshatraInterpTab() {
     if (!r) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — could not determine nakshatra/pada.</div>`;
     return `
       <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
-        <strong>${name}</strong> — ${r.nakshatra}, Pada ${r.pada} <span style="font-size:0.8em;color:#555;">(star lord: ${r.starLord}; deity: ${r.deity}; symbol: ${r.symbol})</span>
+        <strong>${name}</strong> — ${r.nakshatra}, Pada ${r.pada} <span class="rem-type-badge" style="background:#f1e6ff;">${r.purushartha.name} pada (${r.purushartha.element})</span> <span style="font-size:0.8em;color:#555;">(star lord: ${r.starLord}; deity: ${r.deity}; symbol: ${r.symbol})</span>
         <p>${escapeHtml(r.paragraph)}</p>
         <details class="avp-calc"><summary>All 27 nakshatras — reference (deity, symbol, keynote, star lord)</summary>
           ${nakInterpAllNakshatraTableHtml(r.nakshatra)}
@@ -2858,9 +2858,22 @@ function renderNakshatraInterpTab() {
       </div>`;
   }).join('');
 
+  const purusharthaRefHtml = `
+    <table class="rem-table">
+      <thead><tr><th>Pada</th><th>Element</th><th>Purushartha</th><th>Focus</th></tr></thead>
+      <tbody>
+        ${[1, 2, 3, 4].map(n => {
+          const pu = PADA_PURUSHARTHA[n];
+          return `<tr><td>${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}</td><td>${pu.element}</td><td>${pu.name}</td><td style="font-size:0.85em;">${escapeHtml(pu.focus)}</td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;">
-      <strong>Source note:</strong> Nakshatra deity/symbol/keynote content is a general classical reference synthesis (not a verbatim quotation of a single text); star lords follow the standard Vimshottari sequence; pada-to-Navamsa-sign flavor reuses this app's own D9 divisional chart calculation (a pada is, by definition, exactly one Navamsa division) rather than a separately invented mapping. See docs/nakshatra/research-notes.md for sources consulted.
+      <strong>Source note:</strong> Nakshatra deity/symbol/keynote content is a general classical reference synthesis (not a verbatim quotation of a single text); star lords follow the standard Vimshottari sequence; pada-to-Navamsa-sign flavor reuses this app's own D9 divisional chart calculation (a pada is, by definition, exactly one Navamsa division) rather than a separately invented mapping. Additionally, every pada number (1st-4th, in ANY nakshatra) carries a fixed classical Purushartha (fourfold life-goal) emphasis — see below — since the zodiac's Fire/Earth/Air/Water element cycle repeats every 4 signs, so a nakshatra's 4 consecutive Navamsa padas always land Fire, Earth, Air, Water in that order. See docs/nakshatra/research-notes.md for sources consulted.
+      <h4 style="margin:8px 0 4px;">Pada &rarr; Purushartha reference (applies to every nakshatra)</h4>
+      ${purusharthaRefHtml}
     </div>
     ${planetCardsHtml}
   `;
