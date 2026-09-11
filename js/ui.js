@@ -2674,6 +2674,33 @@ function renderKnowledgeBaseTab() {
   }
   const report = kbInterpretChart(state.chart);
   const lagna = report.lagna;
+  // Reuses the exact same composite Sign-Relation/Conjunction/Aspect
+  // strength score shown in the "Friendship & Strength" tab
+  // (computePlanetaryStrength, planetaryStrength.js) — no recalculation —
+  // so each planet's interpretation text here can be read alongside how
+  // favorably or unfavorably that planet is actually placed.
+  const strengthData = computePlanetaryStrength(state.chart.planets);
+  const strengthByPlanet = {};
+  strengthData.forEach(s => { strengthByPlanet[s.name] = s; });
+
+  const kbStrengthBadge = (total) => {
+    const cls = total >= 0 ? 'score-positive' : 'score-negative';
+    return `<span class="${cls}">${total >= 0 ? '+' : ''}${total}%</span>`;
+  };
+  const kbStrengthQualifier = (s) => {
+    if (!s) return '';
+    if (s.total >= 50) return `With a strongly favorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}, driven by its ${s.signRelation.toLowerCase()} sign-lord relation), the supportive effects above are likely to manifest more fully than the cautions.`;
+    if (s.total >= 15) return `With a mildly favorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}), the supportive effects above are somewhat favored.`;
+    if (s.total > -15) return `With a near-neutral Friendship &amp; Strength score (${kbStrengthBadge(s.total)}), expect a mixed expression of the above — neither strongly favored nor strongly hindered.`;
+    if (s.total > -50) return `With a mildly unfavorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}), the cautions above are somewhat more likely to show.`;
+    return `With a strongly unfavorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}, driven by its ${s.signRelation.toLowerCase()} sign-lord relation), the cautions above are more likely to manifest than the supportive effects — see the Friendship &amp; Strength tab for the full relation breakdown.`;
+  };
+
+  const lagnaLordName = SIGN_LORD[lagna.sign];
+  const lagnaLordStrength = strengthByPlanet[lagnaLordName];
+  const lagnaStrengthLine = lagnaLordStrength
+    ? `<p style="font-size:0.9em;color:#555;">Lagna lord ${lagnaLordName}'s Friendship &amp; Strength score: ${kbStrengthBadge(lagnaLordStrength.total)} — ${lagnaLordStrength.total >= 0 ? 'supports the above traits expressing well' : 'may weaken how fully the above traits express; see the Friendship &amp; Strength tab'}.</p>`
+    : '';
 
   const lagnaHtml = lagna.error
     ? `<p>${escapeHtml(lagna.error)}</p>`
@@ -2683,23 +2710,28 @@ function renderKnowledgeBaseTab() {
       ${lagna.body_health ? `<p><strong>Body/Health:</strong> ${escapeHtml(lagna.body_health)}</p>` : ''}
       ${lagna.career_tendency ? `<p><strong>Career tendency:</strong> ${escapeHtml(lagna.career_tendency)}</p>` : ''}
       ${lagna.caution ? `<p style="color:#a35c00;"><strong>Caution:</strong> ${escapeHtml(lagna.caution)}</p>` : ''}
+      ${lagnaStrengthLine}
     `;
 
   const planetCardsHtml = PARASHARI_KB.planets.map(name => {
     const p = report.planets[name];
     if (!p || p.note) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — ${escapeHtml(p ? p.note : 'No data')}</div>`;
+    const s = strengthByPlanet[name];
     return `
       <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
         <strong>${name}</strong> — House ${p.house}${p.sign ? ` in ${p.sign}` : ''}${p.coreSignification ? ` <span style="font-size:0.85em;color:#555;">(${escapeHtml(p.coreSignification)})</span>` : ''}
+        ${s ? ` &nbsp; Friendship &amp; Strength: ${kbStrengthBadge(s.total)} <span style="font-size:0.8em;color:#555;">(sign-lord relation: ${s.signRelation})</span>` : ''}
         ${p.houseTheme ? `<div style="font-size:0.85em;color:#555;">House ${p.house} theme: ${escapeHtml(p.houseTheme)}</div>` : ''}
         <p>${escapeHtml(p.houseInterpretation)}</p>
         ${p.signInterpretation ? `<p style="font-size:0.85em;${p.signInterpretation.indexOf('not been authored') !== -1 ? 'color:#888;font-style:italic;' : ''}">${escapeHtml(p.signInterpretation)}</p>` : ''}
+        ${s ? `<p style="font-size:0.85em;color:#555;">${kbStrengthQualifier(s)}</p>` : ''}
       </div>`;
   }).join('');
 
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;">
-      <strong>Source note:</strong> ${escapeHtml(PARASHARI_KB.meta.content_type)}
+      <strong>Source note:</strong> ${escapeHtml(PARASHARI_KB.meta.content_type)}<br>
+      <span style="font-size:0.85em;color:#555;">Each planet below also shows its composite Friendship &amp; Strength score (from the "Friendship &amp; Strength" tab) — a quick, this-app-specific favorable/unfavorable read from sign-lord relation, conjunctions and aspects, used here only to qualify how strongly the interpretation text is likely to manifest, not as classical Shadbala.</span>
     </div>
     <h3>Lagna</h3>
     ${lagnaHtml}
