@@ -2716,6 +2716,46 @@ function renderKnowledgeBaseTab() {
     return sum >= 1 ? 'good' : sum <= -1 ? 'bad' : 'neutral';
   };
 
+  // Full 12-sign Planet-in-Sign reference per planet (not just the sign it
+  // currently occupies). Dignity and sign-lord relation are both fixed,
+  // chart-independent facts (Exalted/Debilitated/Moolatrikona/Own Sign are
+  // the same for every chart; the sign-lord's natural friendship never
+  // changes) — reused here at a representative mid-sign degree (15°) since
+  // no specific chart degree applies to a hypothetical sign. Where a
+  // planet has a Moolatrikona range in that sign narrower than the whole
+  // sign, its exact range is footnoted regardless of what 15° alone would
+  // show, so the narrow-range case (e.g. Mercury in Virgo, 16°-20°) isn't
+  // silently missed.
+  const kbAllSignsForPlanet = (planetName) => {
+    const isClassical = SHADBALA_PLANETS.includes(planetName);
+    return SIGNS.map(sign => {
+      const dignity = isClassical
+        ? detailedDignity(planetName, sign, 15)
+        : { tier: 'Neutral', text: 'Rahu/Ketu sign dignity is classically disputed; treated as neutral here.' };
+      const signRelation = signLordRelation(planetName, sign);
+      const mt = MOOLATRIKONA[planetName];
+      const mtNote = mt && mt.sign === sign && dignity.tier !== 'Moolatrikona'
+        ? ` (Moolatrikona applies specifically in ${mt.start}°-${mt.end}° of this sign.)`
+        : '';
+      const quality = kbSignQuality(dignity.tier, signRelation);
+      return { sign, tier: dignity.tier, text: dignity.text + mtNote, signRelation, quality };
+    });
+  };
+  const kbAllSignsTableHtml = (planetName, currentSign) => {
+    const rows = kbAllSignsForPlanet(planetName).map(r => `
+      <tr class="quality-${r.quality}">
+        <td>${r.sign}${r.sign === currentSign ? ' <strong>(current)</strong>' : ''}</td>
+        <td>${r.tier}</td>
+        <td>${r.signRelation}</td>
+        <td style="font-size:0.85em;">${escapeHtml(r.text)}</td>
+      </tr>`).join('');
+    return `
+      <table class="rem-table">
+        <thead><tr><th>Sign</th><th>Dignity</th><th>Sign-Lord Relation</th><th>Note</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  };
+
   const kbStrengthQualifier = (s) => {
     if (!s) return '';
     if (s.total >= 50) return `With a strongly favorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}, driven by its ${s.signRelation.toLowerCase()} sign-lord relation), the supportive effects above are likely to manifest more fully than the cautions.`;
@@ -2771,6 +2811,10 @@ function renderKnowledgeBaseTab() {
         <p>${escapeHtml(p.houseInterpretation)}</p>
         ${planetInSignHtml}
         ${s ? `<p style="font-size:0.85em;color:#555;">${kbStrengthQualifier(s)}</p>` : ''}
+        <details class="avp-calc"><summary>Planet in Sign — reference for all 12 signs</summary>
+          ${kbAllSignsTableHtml(name, p.sign)}
+          <p style="font-size:0.8em;color:#555;">Dignity and sign-lord relation shown here are fixed, chart-independent facts (evaluated at a representative mid-sign degree); they don't include this chart's actual conjunctions/aspects, so the color here can differ slightly from the "current placement" verdict above, which also factors in the full Friendship &amp; Strength score.</p>
+        </details>
       </div>`;
   }).join('');
 
