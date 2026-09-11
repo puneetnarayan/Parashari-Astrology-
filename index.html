@@ -186,6 +186,11 @@
   .rem2-Moderate { background: #e0a800; color: #3a2a00; }
   .rem2-Mild { background: #a8d9a8; color: #1a3a1a; }
   .rem2-Suppress { background: #cfe8cf; color: #1a3a1a; }
+  .rem2-VeryStrong { background: #2e7d32; }
+  .rem2-Strong { background: #4caf50; }
+  .rem2-Mixed { background: #e0a800; color: #3a2a00; }
+  .rem2-Weak { background: #e76f51; }
+  .rem2-VeryWeak { background: #7a0000; }
   .rem2-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
   .rem2-summary-card { display: inline-block; min-width: 110px; text-align: center; padding: 10px; margin: 4px; border-radius: 8px; color: #fff; }
   .rem2-debug { background: #f4f4f4; font-family: monospace; font-size: 0.8em; padding: 8px; overflow-x: auto; white-space: pre-wrap; }
@@ -293,6 +298,7 @@
   <button class="tab-button" id="tabBtnRemediesCompare" data-tab="tabRemediesCompare">Remedies_Compare</button>
   <button class="tab-button" id="tabBtnKnowledgeBase" data-tab="tabKnowledgeBase">Knowledge Base</button>
   <button class="tab-button" id="tabBtnNakshatraInterp" data-tab="tabNakshatraInterp">Nakshatra Interpretations</button>
+  <button class="tab-button" id="tabBtnSudarshana" data-tab="tabSudarshana">Sudarshana Chakra</button>
 </div>
 
 <div class="controls">
@@ -693,6 +699,41 @@
 <div id="nakInterpOutput" class="output-box pastel-lavender"></div>
 </div>
 
+<div class="tab-panel" id="tabSudarshana">
+<h2>Sudarshana Chakra</h2>
+<p>A three-reference-point analysis of the SAME natal chart — Lagna (external life), Moon (mind/experience), and Sun (identity/status/vitality). The planets never move between these views; only the house numbering (relative to each reference sign) changes. This is a confirmatory/analytical framework, not a replacement for the complete Parashari system — natal promise (from Lagna) remains the foundation, and dasha/transit activation are always considered alongside the three-reference synthesis. <button id="sudarHelpBtn" type="button">What is Sudarshana Chakra? (Help)</button></p>
+<div id="sudarHelpPanel" class="output-box pastel-lavender" hidden></div>
+
+<h3>Three Chakra Views</h3>
+<div id="sudarChakrasOutput" class="output-box pastel-blue"></div>
+
+<h3>Planetary Comparison</h3>
+<p style="font-size:0.9em;color:#555;">Click a row to see that planet's full three-reference analysis.</p>
+<div id="sudarComparisonOutput" class="output-box pastel-mint"></div>
+<div id="sudarPlanetDetailOutput"></div>
+
+<h3>Life-Area Analysis</h3>
+<div id="sudarLifeAreasOutput" class="output-box pastel-peach"></div>
+
+<h3>Annual Sudarshana Chakra Daśā</h3>
+<div id="sudarAnnualOutput" class="output-box pastel-yellow"></div>
+
+<h3>Transit Analysis</h3>
+<div id="sudarTransitOutput" class="output-box pastel-lavender"></div>
+
+<h3>Daśā + Sudarshana</h3>
+<div id="sudarDashaPanelOutput" class="output-box pastel-mint"></div>
+
+<h3>Event / Timing Support</h3>
+<div class="controls">
+  <select id="sudarEventSelect"></select>
+</div>
+<div id="sudarEventOutput" class="output-box pastel-pink"></div>
+
+<h3>Rules / Methodology</h3>
+<details class="avp-calc"><summary>Show methodology</summary><div id="sudarMethodologyOutput"></div></details>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -739,6 +780,7 @@
 <script src="js/knowledgebase/parashariKB.js"></script>
 <script src="js/knowledgebase/kbEngine.js"></script>
 <script src="js/nakshatra/nakshatraInterpretationEngine.js"></script>
+<script src="js/sudarshana/sudarshanaEngine.js"></script>
 <script src="js/remedies2/remedyData2.js"></script>
 <script src="js/remedies2/remedyEngine2.js"></script>
 <script src="js/timezone.js"></script>

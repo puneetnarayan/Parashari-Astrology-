@@ -51,6 +51,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRemediesCompare') renderRemediesCompareTab();
       if (btn.dataset.tab === 'tabKnowledgeBase') renderKnowledgeBaseTab();
       if (btn.dataset.tab === 'tabNakshatraInterp') renderNakshatraInterpTab();
+      if (btn.dataset.tab === 'tabSudarshana') renderSudarshanaTab();
     });
   });
 }
@@ -1940,6 +1941,7 @@ function generateChart() {
     state.sadeSati = null; // recomputed lazily (expensive) when the Sade Sati tab is opened
     state.remedies = null; // recomputed lazily when the Remedies tab is opened
     state.remedies2 = null; // recomputed lazily when the Remedies_2 tab is opened
+    state.sudarshana = null; // recomputed lazily when the Sudarshana Chakra tab is opened
     state.mangalDosha2 = computeMangalDosha2(state.chart);
     try {
       state.shadbala = computeShadbala(state.chart, lat, lon);
@@ -1973,6 +1975,7 @@ function generateChart() {
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Open this tab to compare Remedies_1 and Remedies_2 for this chart.</p>';
     try { renderKnowledgeBaseTab(); } catch (kbErr) { console.error('Knowledge Base render failed:', kbErr); }
     try { renderNakshatraInterpTab(); } catch (nakErr) { console.error('Nakshatra Interpretations render failed:', nakErr); }
+    document.getElementById('sudarChakrasOutput').innerHTML = '<p>Open this tab to compute the Sudarshana Chakra analysis for this chart (takes a moment).</p>';
   } catch (err) {
     state.chart = null;
     state.yogas = null;
@@ -2010,6 +2013,7 @@ function generateChart() {
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('kbOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('nakInterpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('sudarChakrasOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2904,6 +2908,218 @@ function nakInterpAllNakshatraTableHtml(currentNakshatra) {
     </table>`;
 }
 
+// --- Sudarshana Chakra ---
+
+// Strength/Confidence label -> good/neutral/bad, for color coding — always
+// paired with the text label itself (never color alone), per accessibility
+// good practice: Strong/Very Strong = good (light green), Moderate/Mixed =
+// neutral (light yellow), Weak/Very Weak = bad (light red).
+function sudarQualityClass(label) {
+  if (label === 'Strong' || label === 'Very Strong') return 'good';
+  if (label === 'Weak' || label === 'Very Weak') return 'bad';
+  return 'neutral';
+}
+
+function sudarBar(score) {
+  const pct = Math.max(0, Math.min(100, score * 10));
+  const cls = sudarQualityClass(score >= 7.5 ? 'Strong' : score >= 5.5 ? 'Moderate' : score >= 3.5 ? 'Mixed' : 'Weak');
+  const color = cls === 'good' ? '#4caf50' : cls === 'bad' ? '#e57373' : '#ffb300';
+  return `<div style="background:#eee;border-radius:4px;height:10px;width:100%;max-width:180px;overflow:hidden;display:inline-block;vertical-align:middle;"><div style="background:${color};height:100%;width:${pct}%;"></div></div> <span style="font-size:0.85em;">${score}/10</span>`;
+}
+
+function sudarChakraCardsHtml(models) {
+  return `<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+    ${renderNorthIndianChart('Lagna Chakra — External Life', models.Lagna.byHouse)}
+    ${renderNorthIndianChart('Chandra Chakra — Mind / Experience', models.Moon.byHouse)}
+    ${renderNorthIndianChart('Surya Chakra — Identity / Status', models.Sun.byHouse)}
+  </div>`;
+}
+
+function sudarComparisonTableHtml(rows) {
+  const trs = rows.map(r => `
+    <tr onclick="sudarShowPlanetDetail('${r.planet}')" style="cursor:pointer;">
+      <td>${r.planet}</td>
+      <td>${r.sign}</td>
+      <td>${r.fromLagna}</td>
+      <td>${r.fromMoon}</td>
+      <td>${r.fromSun}</td>
+      <td style="font-size:0.85em;">${escapeHtml(r.keyInterpretation)}</td>
+    </tr>`).join('');
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Planet</th><th>Sign</th><th>From Lagna</th><th>From Moon</th><th>From Sun</th><th>Key Interpretation</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+}
+
+function sudarShowPlanetDetail(planetName) {
+  const el = document.getElementById('sudarPlanetDetailOutput');
+  if (!el || !state.sudarshana) return;
+  const d = sudarPlanetDetail(planetName, state.chart, state.sudarshana.models, state.sudarshana.functional);
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;margin-top:8px;border-radius:4px;">
+      <strong>${d.planet}</strong> — ${d.sign}, ${d.dignity} <span style="font-size:0.85em;color:#555;">(${escapeHtml(d.functionalNature)}${d.combust ? ', combust' : ''}${d.retrograde ? ', retrograde' : ''})</span>
+      <table class="rem-table" style="margin-top:6px;">
+        <thead><tr><th></th><th>Lagna</th><th>Moon</th><th>Sun</th></tr></thead>
+        <tbody>
+          <tr><td>House</td><td>${d.fromLagna}</td><td>${d.fromMoon}</td><td>${d.fromSun}</td></tr>
+          <tr><td>Category</td><td>${d.houseCategoryLagna}</td><td>${d.houseCategoryMoon}</td><td>${d.houseCategorySun}</td></tr>
+          <tr><td>Lordship</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipLagna)}</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipMoon)}</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipSun)}</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.85em;">Conjunctions: ${d.conjunctions.join(', ') || 'None'} &nbsp; Aspected by: ${d.aspects.join(', ') || 'None'}</p>
+      <p style="font-size:0.85em;">Relevant life areas: ${d.relevantLifeAreas.join(', ') || 'None specifically'}</p>
+      <p><strong>Synthesis:</strong> ${escapeHtml(d.synthesis)}</p>
+    </div>`;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function sudarSupportRowHtml(label, s) {
+  return `<div style="margin-bottom:4px;"><span style="display:inline-block;width:110px;font-size:0.85em;">${label}</span> ${sudarBar(s.score)} <span class="rem2-badge rem2-${s.strength.replace(/ /g, '')}" style="font-size:0.7em;">${s.strength}</span></div>`;
+}
+
+function sudarLifeAreaCardHtml(item) {
+  const cls = sudarQualityClass(item.synthesis.confidence.replace('Very ', ''));
+  return `
+    <div class="rule-item quality-${cls}" style="padding:8px 12px;margin-bottom:8px;border-radius:4px;">
+      <strong>${item.area}</strong> <span style="font-size:0.8em;color:#555;">(House ${item.house})</span>
+      ${sudarSupportRowHtml('Lagna Support', item.lagna)}
+      ${sudarSupportRowHtml('Moon Support', item.moon)}
+      ${sudarSupportRowHtml('Sun Support', item.sun)}
+      ${sudarSupportRowHtml('Natal Strength', item.natalPromise)}
+      ${sudarSupportRowHtml('Dasha Support', item.dashaSupport)}
+      ${sudarSupportRowHtml('Transit Support', item.transitSupport)}
+      <p style="margin:6px 0 2px;"><strong>Sudarshana Synthesis</strong> (${item.synthesis.confidence}): ${escapeHtml(item.synthesis.text)}</p>
+      <details class="avp-calc"><summary>Show calculation / rules</summary>
+        <div class="kk-calc-chain">
+          <strong>Lagna reasons:</strong><br>${item.lagna.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Moon reasons:</strong><br>${item.moon.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Sun reasons:</strong><br>${item.sun.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Dasha reasons:</strong><br>${item.dashaSupport.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Transit reasons:</strong><br>${item.transitSupport.reasons.join('<br>') || 'None'}
+        </div>
+      </details>
+    </div>`;
+}
+
+function sudarAnnualHtml(annual) {
+  const cls = sudarQualityClass(annual.overall.confidence.replace('Very ', ''));
+  return `
+    <div class="rule-item quality-${cls}" style="padding:10px;border-radius:4px;">
+      <strong>Age ${annual.age.years} — Annual House ${annual.annualHouse}</strong> (${annual.sign}, lord ${annual.lord}) <span style="font-size:0.8em;color:#555;">${remFmtDate(annual.cycleStart)} to ${remFmtDate(annual.cycleEnd)}</span>
+      <p><strong>Annual Focus:</strong> ${annual.theme.title} — ${escapeHtml(annual.theme.description)}</p>
+      ${sudarSupportRowHtml('Natal Condition', annual.natal)}
+      ${sudarSupportRowHtml('Dasha Support', annual.dashaSupport)}
+      ${sudarSupportRowHtml('Transit Support', annual.transitSupport)}
+      <p><strong>Overall Annual Assessment</strong> (${annual.overall.confidence}): This year's activated house (${annual.annualHouse}, from Lagna) centers on ${annual.overall.focus}. This annual layer supplements, and does not replace, the natal promise and Vimshottari dasha shown elsewhere in this app.</p>
+      <details class="avp-calc"><summary>Show calculation / rules</summary>
+        <div class="kk-calc-chain">
+          <strong>Natal reasons:</strong><br>${annual.natal.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Dasha reasons:</strong><br>${annual.dashaSupport.reasons.join('<br>') || 'None'}<br><br>
+          <strong>Transit reasons:</strong><br>${annual.transitSupport.reasons.join('<br>') || 'None'}
+        </div>
+      </details>
+    </div>`;
+}
+
+function sudarTransitsHtml(transits) {
+  const rows = transits.map(t => `
+    <tr>
+      <td>${t.planet}</td><td>${t.sign}</td><td>${t.fromLagna}</td><td>${t.fromMoon}</td><td>${t.fromSun}</td>
+    </tr>`).join('');
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Planet</th><th>Current Sign</th><th>From Lagna</th><th>From Moon</th><th>From Sun</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:0.85em;color:#555;">A transit alone does not guarantee an event — combine with natal promise, dasha activation, and the life-area synthesis above.</p>`;
+}
+
+function sudarDashaPanelHtml(panel) {
+  if (!panel) return '<p>No active dasha found for the current date.</p>';
+  const lordCard = (label, row) => row ? `
+    <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:6px;border-radius:4px;">
+      <strong>${label}: ${row.lord}</strong> — ${row.sign}, ${row.dignity} <span style="font-size:0.8em;color:#555;">(House ${row.fromLagna} from Lagna, ${row.fromMoon} from Moon, ${row.fromSun} from Sun)</span>
+      <p style="font-size:0.85em;">Relevant life areas: ${row.relevantLifeAreas.join(', ') || 'None specifically'}</p>
+    </div>` : `<p>No ${label.toLowerCase()} data available.</p>`;
+  return lordCard('Current Mahadasha', panel.mahaLord) + lordCard('Current Antardasha', panel.antarLord) +
+    '<p style="font-size:0.85em;color:#555;">This shows which areas of life are simultaneously activated by the current dasha and where those same dasha lords fall from all three Sudarshana reference points.</p>';
+}
+
+function sudarEventSupportHtml(result) {
+  if (!result) return '<p>Select an event/life area above.</p>';
+  const cls = sudarQualityClass(result.overallConfidence.replace('Very ', ''));
+  return `
+    <div class="rule-item quality-${cls}" style="padding:10px;border-radius:4px;">
+      <strong>EVENT: ${result.area}</strong>
+      ${sudarSupportRowHtml('Natal Promise', result.natalPromise)}
+      ${sudarSupportRowHtml('Lagna Support', result.lagna)}
+      ${sudarSupportRowHtml('Moon Support', result.moon)}
+      ${sudarSupportRowHtml('Sun Support', result.sun)}
+      ${sudarSupportRowHtml('Dasha Support', result.dashaSupport)}
+      ${sudarSupportRowHtml('Transit Support', result.transitSupport)}
+      <p><strong>Sudarshana Confirmation:</strong> ${result.sudarshanaConfirmation}${result.dashaRelevant ? ' (current dasha lord is directly relevant to this life area)' : ''}</p>
+      <p><strong>Overall Confidence:</strong> ${result.overallConfidence}</p>
+      <p style="font-size:0.85em;">${escapeHtml(result.synthesisText)}</p>
+      <p style="font-size:0.8em;color:#888;">This is an Astrological Support Score, not a probability of the event occurring, and does not imply mathematical certainty.</p>
+    </div>`;
+}
+
+function sudarMethodologyHtml() {
+  return `
+    <p><strong>Reference hierarchy used throughout:</strong> Natal promise (Lagna) &rarr; Dasha activation &rarr; Transit activation &rarr; Sudarshana (3-reference) confirmation/synthesis. Sudarshana support never manufactures a result absent from the natal promise, and never overrides it — it strengthens, qualifies, or contextualizes the existing Parashari interpretation.</p>
+    <p><strong>Three references:</strong> Lagna = external life/body/circumstances. Moon = mind/emotion/day-to-day experience. Sun = vitality/authority/identity/status. Planets never move between these views — only the house NUMBER assigned to each planet changes, since the reference sign becomes House 1 in each view. Conjunctions and aspect geometry are unaffected (they depend only on actual planetary longitudes).</p>
+    <p><strong>House support score</strong> (0-10 per reference): starts at a neutral baseline of 5, then adjusts for occupant natural benefic/malefic count, the house lord's dignity (Exalted/Moolatrikona/Own Sign/Debilitated), whether the house lord itself occupies a Kendra/Trikona or Dusthana from that same reference, and benefic/malefic aspects on the house lord. This deliberately avoids a bare "good house = good result" count (Section 12/14 of the design spec) — a favorable house position can still be qualified by affliction.</p>
+    <p><strong>Dasha support:</strong> boosted when the current Mahadasha/Antardasha lord either rules or occupies the house in question (from Lagna).</p>
+    <p><strong>Transit support:</strong> reuses this app's existing ephemeris (the same current-position calculation used by Ashtakvarga Predictions' transit section) to check which major bodies are currently transiting the house in question, from Lagna.</p>
+    <p><strong>Confidence labels</strong> (Very Strong / Strong / Moderate / Mixed / Weak / Very Weak) are Astrological Support Scores, not statistical probabilities. This app avoids words like "guaranteed" or "certain."</p>
+    <p><strong>Conflict resolution:</strong> when Lagna/Moon/Sun disagree, the synthesis text explicitly describes the mismatch (e.g. "strong external potential, but the native may experience it with more psychological uncertainty") rather than forcing a single verdict.</p>
+    <p style="color:#a35c00;"><strong>This is an analytical/confirmatory framework, not a replacement for the complete Parashari system.</strong> Natal promise (Lagna-based dignity, lordship, yogas, Shadbala — all shown elsewhere in this app) remains the foundation.</p>`;
+}
+
+function sudarHelpHtml() {
+  return `
+    <p><strong>What is Sudarshana Chakra?</strong> It evaluates the SAME horoscope from three reference points — Lagna, Moon, and Sun — rather than computing three separate charts.</p>
+    <p><strong>Why three views?</strong> Lagna = external life/body. Moon = mind/emotional experience. Sun = vitality/status/identity/recognition. Together they give a more complete, multi-dimensional read of the same underlying chart.</p>
+    <p><strong>Are these three separate horoscopes?</strong> No — the planets' actual signs, degrees, conjunctions and aspects never change. Only the house NUMBER assigned to each planet changes, because the reference sign becomes "House 1" in each view.</p>
+    <p><strong>Does a positive Sudarshana result guarantee an event?</strong> No. Natal promise (from the Lagna chart) and Vimshottari dasha remain fundamental — Sudarshana can only strengthen, qualify, or contextualize what the rest of the chart already indicates, never manufacture a result that isn't there.</p>`;
+}
+
+function renderSudarshanaTab() {
+  const el = document.getElementById('sudarChakrasOutput');
+  if (!el) return;
+  if (!state.chart) {
+    ['sudarChakrasOutput', 'sudarComparisonOutput', 'sudarLifeAreasOutput', 'sudarAnnualOutput', 'sudarTransitOutput', 'sudarDashaPanelOutput', 'sudarEventOutput'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    });
+    return;
+  }
+  if (!state.sudarshana) {
+    try { state.sudarshana = sudarComputeModel(state.chart, state.chart.birthUtc, new Date()); }
+    catch (e) { console.error('Sudarshana computation failed:', e); el.innerHTML = '<p>Sudarshana Chakra could not be computed for this chart (see console).</p>'; return; }
+  }
+  const m = state.sudarshana;
+
+  document.getElementById('sudarChakrasOutput').innerHTML = sudarChakraCardsHtml(m.models);
+  document.getElementById('sudarComparisonOutput').innerHTML = sudarComparisonTableHtml(m.planetaryComparison);
+  document.getElementById('sudarPlanetDetailOutput').innerHTML = '';
+  document.getElementById('sudarLifeAreasOutput').innerHTML = m.lifeAreas.map(sudarLifeAreaCardHtml).join('');
+  document.getElementById('sudarAnnualOutput').innerHTML = sudarAnnualHtml(m.annual);
+  document.getElementById('sudarTransitOutput').innerHTML = sudarTransitsHtml(m.transits);
+  document.getElementById('sudarDashaPanelOutput').innerHTML = sudarDashaPanelHtml(m.dashaPanel);
+  document.getElementById('sudarMethodologyOutput').innerHTML = sudarMethodologyHtml();
+
+  const select = document.getElementById('sudarEventSelect');
+  select.innerHTML = m.lifeAreas.map(a => `<option value="${escapeHtml(a.area)}">${escapeHtml(a.area)}</option>`).join('');
+  const renderEvent = () => {
+    const result = sudarEventSupport(select.value, m.lifeAreas, m.dashaPanel);
+    document.getElementById('sudarEventOutput').innerHTML = sudarEventSupportHtml(result);
+  };
+  select.onchange = renderEvent;
+  renderEvent();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initEngineStatusBadge();
@@ -2944,6 +3160,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('remDashaOnly').addEventListener('change', renderRemediesTab);
   document.getElementById('rem2DebugMode').addEventListener('change', renderRemedies2Tab);
   document.getElementById('rem2ShowAll').addEventListener('change', renderRemedies2Tab);
+  document.getElementById('sudarHelpBtn').addEventListener('click', () => {
+    const panel = document.getElementById('sudarHelpPanel');
+    if (panel.hidden) { panel.innerHTML = sudarHelpHtml(); panel.hidden = false; }
+    else panel.hidden = true;
+  });
   initSavedNatives();
   initAutoRegenerate();
   renderInterpretation2Tab();
