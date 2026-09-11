@@ -292,6 +292,7 @@
   <button class="tab-button" id="tabBtnRemedies2" data-tab="tabRemedies2">Remedies_2</button>
   <button class="tab-button" id="tabBtnRemediesCompare" data-tab="tabRemediesCompare">Remedies_Compare</button>
   <button class="tab-button" id="tabBtnKnowledgeBase" data-tab="tabKnowledgeBase">Knowledge Base</button>
+  <button class="tab-button" id="tabBtnNakshatraInterp" data-tab="tabNakshatraInterp">Nakshatra Interpretations</button>
 </div>
 
 <div class="controls">
@@ -686,6 +687,12 @@
 <div id="kbOutput" class="output-box pastel-mint"></div>
 </div>
 
+<div class="tab-panel" id="tabNakshatraInterp">
+<h2>Nakshatra Interpretations</h2>
+<p>For each planet, an interpretation of its current Nakshatra (lunar mansion) and Pada (quarter), synthesized from this app's existing classical reference data — each nakshatra's deity/symbol/keynote, its Vimshottari star lord, the planet's own core significations, and the pada's Navamsa-sign flavor (using this app's existing D9 divisional chart calculation, since one pada is by definition exactly one Navamsa division). Every statement traces back to one of these reused sources — nothing here is freely invented per planet/nakshatra combination.</p>
+<div id="nakInterpOutput" class="output-box pastel-lavender"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -731,6 +738,7 @@
 <script src="js/remedies/remedyEngine.js"></script>
 <script src="js/knowledgebase/parashariKB.js"></script>
 <script src="js/knowledgebase/kbEngine.js"></script>
+<script src="js/nakshatra/nakshatraInterpretationEngine.js"></script>
 <script src="js/remedies2/remedyData2.js"></script>
 <script src="js/remedies2/remedyEngine2.js"></script>
 <script src="js/timezone.js"></script>

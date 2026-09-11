@@ -50,6 +50,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRemedies2') renderRemedies2Tab();
       if (btn.dataset.tab === 'tabRemediesCompare') renderRemediesCompareTab();
       if (btn.dataset.tab === 'tabKnowledgeBase') renderKnowledgeBaseTab();
+      if (btn.dataset.tab === 'tabNakshatraInterp') renderNakshatraInterpTab();
     });
   });
 }
@@ -1971,6 +1972,7 @@ function generateChart() {
     document.getElementById('remedies2Output').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Open this tab to compare Remedies_1 and Remedies_2 for this chart.</p>';
     try { renderKnowledgeBaseTab(); } catch (kbErr) { console.error('Knowledge Base render failed:', kbErr); }
+    try { renderNakshatraInterpTab(); } catch (nakErr) { console.error('Nakshatra Interpretations render failed:', nakErr); }
   } catch (err) {
     state.chart = null;
     state.yogas = null;
@@ -2007,6 +2009,7 @@ function generateChart() {
     document.getElementById('remedies2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('kbOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('nakInterpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2828,6 +2831,55 @@ function renderKnowledgeBaseTab() {
     <h3>Planets</h3>
     ${planetCardsHtml}
   `;
+}
+
+// --- Nakshatra Interpretations ---
+
+function renderNakshatraInterpTab() {
+  const el = document.getElementById('nakInterpOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+
+  const planetCardsHtml = PLANET_NAMES.map(name => {
+    const planetObj = state.chart.planets.find(p => p.name === name);
+    if (!planetObj) return '';
+    const r = nakInterpForPlanet(name, planetObj.longitude);
+    if (!r) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — could not determine nakshatra/pada.</div>`;
+    return `
+      <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
+        <strong>${name}</strong> — ${r.nakshatra}, Pada ${r.pada} <span style="font-size:0.8em;color:#555;">(star lord: ${r.starLord}; deity: ${r.deity}; symbol: ${r.symbol})</span>
+        <p>${escapeHtml(r.paragraph)}</p>
+        <details class="avp-calc"><summary>All 27 nakshatras — reference (deity, symbol, keynote, star lord)</summary>
+          ${nakInterpAllNakshatraTableHtml(r.nakshatra)}
+        </details>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;">
+      <strong>Source note:</strong> Nakshatra deity/symbol/keynote content is a general classical reference synthesis (not a verbatim quotation of a single text); star lords follow the standard Vimshottari sequence; pada-to-Navamsa-sign flavor reuses this app's own D9 divisional chart calculation (a pada is, by definition, exactly one Navamsa division) rather than a separately invented mapping. See docs/nakshatra/research-notes.md for sources consulted.
+    </div>
+    ${planetCardsHtml}
+  `;
+}
+
+function nakInterpAllNakshatraTableHtml(currentNakshatra) {
+  const rows = nakInterpAllNakshatras().map(n => `
+    <tr${n.nakshatra === currentNakshatra ? ' style="background:#eaf7ea;"' : ''}>
+      <td>${n.nakshatra}${n.nakshatra === currentNakshatra ? ' <strong>(current)</strong>' : ''}</td>
+      <td>${n.starLord}</td>
+      <td>${escapeHtml(n.deity)}</td>
+      <td>${escapeHtml(n.symbol)}</td>
+      <td style="font-size:0.85em;">${escapeHtml(n.keynote)}</td>
+    </tr>`).join('');
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Nakshatra</th><th>Star Lord</th><th>Deity</th><th>Symbol</th><th>Keynote</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
