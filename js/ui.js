@@ -2687,6 +2687,35 @@ function renderKnowledgeBaseTab() {
     const cls = total >= 0 ? 'score-positive' : 'score-negative';
     return `<span class="${cls}">${total >= 0 ? '+' : ''}${total}%</span>`;
   };
+  // Planet-in-Sign quality: the uploaded knowledge base's own planetInSign
+  // field is a stub (no authored text), so rather than fabricate 108 new
+  // narrative paragraphs, this reuses the app's EXISTING classical dignity
+  // engine (detailedDignity, dignityDetails.js — same one used everywhere
+  // else in the app) for the real placement quality, combined with the
+  // natural friendship sign-lord relation already computed above.
+  const kbSignQuality = (dignityTier, signRelation) => {
+    let score = 0;
+    if (dignityTier === 'Exalted') score += 2;
+    else if (dignityTier === 'Moolatrikona' || dignityTier === 'Own Sign') score += 1.5;
+    else if (dignityTier === 'Debilitated') score -= 2;
+    if (signRelation === 'Own') score += 1;
+    else if (signRelation === 'Friend') score += 0.5;
+    else if (signRelation === 'Enemy') score -= 0.5;
+    if (score >= 1) return 'good';
+    if (score <= -1) return 'bad';
+    return 'neutral';
+  };
+  const kbStrengthQuality = (total) => (total >= 15 ? 'good' : total <= -15 ? 'bad' : 'neutral');
+  // Per this request: combine the Planet-in-Sign quality with the
+  // Friendship & Strength score into one good/neutral/bad verdict, shown
+  // as light green / light yellow / light red (the app's existing
+  // .quality-good/.quality-neutral/.quality-bad convention, reused as-is).
+  const kbCombinedQuality = (signQ, strengthQ) => {
+    const v = q => (q === 'good' ? 1 : q === 'bad' ? -1 : 0);
+    const sum = v(signQ) + v(strengthQ);
+    return sum >= 1 ? 'good' : sum <= -1 ? 'bad' : 'neutral';
+  };
+
   const kbStrengthQualifier = (s) => {
     if (!s) return '';
     if (s.total >= 50) return `With a strongly favorable Friendship &amp; Strength score (${kbStrengthBadge(s.total)}, driven by its ${s.signRelation.toLowerCase()} sign-lord relation), the supportive effects above are likely to manifest more fully than the cautions.`;
@@ -2717,13 +2746,30 @@ function renderKnowledgeBaseTab() {
     const p = report.planets[name];
     if (!p || p.note) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — ${escapeHtml(p ? p.note : 'No data')}</div>`;
     const s = strengthByPlanet[name];
+
+    const planetObj = state.chart.planets.find(pl => pl.name === name);
+    const isClassical = SHADBALA_PLANETS.includes(name);
+    const degreeInSign = normalizeDegrees(planetObj.longitude) % 30;
+    const dignity = isClassical
+      ? detailedDignity(name, p.sign, degreeInSign)
+      : { tier: 'Neutral', text: 'Rahu/Ketu sign dignity is classically disputed; treated as neutral here.' };
+    const signQ = kbSignQuality(dignity.tier, s ? s.signRelation : 'Neutral');
+    const strengthQ = s ? kbStrengthQuality(s.total) : 'neutral';
+    const combinedQ = kbCombinedQuality(signQ, strengthQ);
+
+    const planetInSignHtml = `
+      <div class="rule-item quality-${combinedQ}" style="padding:6px 10px;margin-top:6px;border-radius:4px;">
+        <strong>Planet in Sign — ${p.sign}:</strong> ${escapeHtml(dignity.text)}${s ? ` Its sign lord relation is <strong>${s.signRelation}</strong>.` : ''}
+        <div style="font-size:0.8em;color:#555;margin-top:2px;">Combined with its Friendship &amp; Strength score${s ? ` (${kbStrengthBadge(s.total)})` : ''}, this placement reads as overall <strong>${combinedQ.toUpperCase()}</strong> for ${name}.</div>
+      </div>`;
+
     return `
       <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
         <strong>${name}</strong> — House ${p.house}${p.sign ? ` in ${p.sign}` : ''}${p.coreSignification ? ` <span style="font-size:0.85em;color:#555;">(${escapeHtml(p.coreSignification)})</span>` : ''}
         ${s ? ` &nbsp; Friendship &amp; Strength: ${kbStrengthBadge(s.total)} <span style="font-size:0.8em;color:#555;">(sign-lord relation: ${s.signRelation})</span>` : ''}
         ${p.houseTheme ? `<div style="font-size:0.85em;color:#555;">House ${p.house} theme: ${escapeHtml(p.houseTheme)}</div>` : ''}
         <p>${escapeHtml(p.houseInterpretation)}</p>
-        ${p.signInterpretation ? `<p style="font-size:0.85em;${p.signInterpretation.indexOf('not been authored') !== -1 ? 'color:#888;font-style:italic;' : ''}">${escapeHtml(p.signInterpretation)}</p>` : ''}
+        ${planetInSignHtml}
         ${s ? `<p style="font-size:0.85em;color:#555;">${kbStrengthQualifier(s)}</p>` : ''}
       </div>`;
   }).join('');
@@ -2731,7 +2777,7 @@ function renderKnowledgeBaseTab() {
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;">
       <strong>Source note:</strong> ${escapeHtml(PARASHARI_KB.meta.content_type)}<br>
-      <span style="font-size:0.85em;color:#555;">Each planet below also shows its composite Friendship &amp; Strength score (from the "Friendship &amp; Strength" tab) — a quick, this-app-specific favorable/unfavorable read from sign-lord relation, conjunctions and aspects, used here only to qualify how strongly the interpretation text is likely to manifest, not as classical Shadbala.</span>
+      <span style="font-size:0.85em;color:#555;">Each planet below also shows its composite Friendship &amp; Strength score (from the "Friendship &amp; Strength" tab) — a quick, this-app-specific favorable/unfavorable read from sign-lord relation, conjunctions and aspects, used here only to qualify how strongly the interpretation text is likely to manifest, not as classical Shadbala. The uploaded knowledge base's own Planet-in-Sign field is a stub (no authored text yet), so the "Planet in Sign" block below instead reuses this app's existing classical dignity engine (Exalted/Moolatrikona/Own Sign/Neutral/Debilitated) combined with the sign-lord relation and Friendship &amp; Strength score, color-coded <span class="quality-good" style="padding:1px 6px;border-radius:3px;">light green = good</span>, <span class="quality-neutral" style="padding:1px 6px;border-radius:3px;">light yellow = neutral</span>, <span class="quality-bad" style="padding:1px 6px;border-radius:3px;">light red = bad</span>.</span>
     </div>
     <h3>Lagna</h3>
     ${lagnaHtml}
