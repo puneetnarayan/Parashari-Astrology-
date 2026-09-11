@@ -270,6 +270,7 @@
 <p id="engineStatusBadge" style="font-size:0.8em;color:#666;">Loading calculation engine...</p>
 
 <div class="tab-strip">
+  <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Natives</button>
   <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
   <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
   <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
@@ -287,10 +288,10 @@
   <button class="tab-button" id="tabBtnAshtakvargaPredictions" data-tab="tabAshtakvargaPredictions">Ashtakvarga Predictions</button>
   <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
   <button class="tab-button" id="tabBtnKakshyaTimeline" data-tab="tabKakshyaTimeline">Kakshya Life-Area Timeline</button>
-  <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Saved Natives</button>
   <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies_1</button>
   <button class="tab-button" id="tabBtnRemedies2" data-tab="tabRemedies2">Remedies_2</button>
   <button class="tab-button" id="tabBtnRemediesCompare" data-tab="tabRemediesCompare">Remedies_Compare</button>
+  <button class="tab-button" id="tabBtnKnowledgeBase" data-tab="tabKnowledgeBase">Knowledge Base</button>
 </div>
 
 <div class="controls">
@@ -601,7 +602,7 @@
 </div>
 
 <div class="tab-panel" id="tabSavedNatives">
-<h2>Saved Natives</h2>
+<h2>Natives</h2>
 <p>Store and reload native records in a shared CSV file (Name,Sex,Location,City,State,Country,BirthDate,BirthTime,Latitude,Longitude,TimezoneMode,UTCOffset,Notes) — compatible with the sibling KP app's Saved Natives file. No changes here affect existing chart/calculation logic.</p>
 
 <h3>CSV File</h3>
@@ -679,6 +680,12 @@
 <div id="remediesCompareOutput" class="output-box pastel-peach"></div>
 </div>
 
+<div class="tab-panel" id="tabKnowledgeBase">
+<h2>Knowledge Base</h2>
+<p>A supplementary Parashari interpretation reference (Lagna-in-sign, Planet-in-house) for the current chart, drawn from a standard/consensus interpretive synthesis of common Parashari principles — not a verbatim quotation of any single classical text. Planet-in-sign content is a stub in this knowledge base (structure present, text not yet authored) and is shown honestly as such rather than invented.</p>
+<div id="kbOutput" class="output-box pastel-mint"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -722,6 +729,8 @@
 <script src="js/savedNatives/csvUtil.js"></script>
 <script src="js/remedies/remedyData.js"></script>
 <script src="js/remedies/remedyEngine.js"></script>
+<script src="js/knowledgebase/parashariKB.js"></script>
+<script src="js/knowledgebase/kbEngine.js"></script>
 <script src="js/remedies2/remedyData2.js"></script>
 <script src="js/remedies2/remedyEngine2.js"></script>
 <script src="js/timezone.js"></script>

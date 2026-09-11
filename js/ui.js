@@ -49,6 +49,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRemedies') renderRemediesTab();
       if (btn.dataset.tab === 'tabRemedies2') renderRemedies2Tab();
       if (btn.dataset.tab === 'tabRemediesCompare') renderRemediesCompareTab();
+      if (btn.dataset.tab === 'tabKnowledgeBase') renderKnowledgeBaseTab();
     });
   });
 }
@@ -1969,6 +1970,7 @@ function generateChart() {
     document.getElementById('remediesOutput').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
     document.getElementById('remedies2Output').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Open this tab to compare Remedies_1 and Remedies_2 for this chart.</p>';
+    try { renderKnowledgeBaseTab(); } catch (kbErr) { console.error('Knowledge Base render failed:', kbErr); }
   } catch (err) {
     state.chart = null;
     state.yogas = null;
@@ -2004,6 +2006,7 @@ function generateChart() {
     document.getElementById('remediesOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remedies2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remediesCompareOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('kbOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2657,6 +2660,51 @@ function renderRemediesCompareTab() {
     ${disagreementDetailHtml}
 
     <p style="font-size:0.85em;color:#555;">Both engines are independently-built and independently-weighted deterministic rule engines reusing the same underlying chart calculations. Agreement is a useful cross-check; a disagreement means the two rule sets weighed the same underlying factors differently, not that one engine is simply wrong — see each engine's own "why" details above, and each tab's research notes (docs/remedies/research-notes.md, docs/remedies2/research-notes.md) for its specific design choices.</p>
+  `;
+}
+
+// --- Knowledge Base (parashari-kb) ---
+
+function renderKnowledgeBaseTab() {
+  const el = document.getElementById('kbOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  const report = kbInterpretChart(state.chart);
+  const lagna = report.lagna;
+
+  const lagnaHtml = lagna.error
+    ? `<p>${escapeHtml(lagna.error)}</p>`
+    : `
+      <p><strong>${lagna.sign} Lagna:</strong> ${escapeHtml(lagna.summary || '')}</p>
+      ${lagna.personality ? `<p><strong>Personality:</strong> ${escapeHtml(lagna.personality)}</p>` : ''}
+      ${lagna.body_health ? `<p><strong>Body/Health:</strong> ${escapeHtml(lagna.body_health)}</p>` : ''}
+      ${lagna.career_tendency ? `<p><strong>Career tendency:</strong> ${escapeHtml(lagna.career_tendency)}</p>` : ''}
+      ${lagna.caution ? `<p style="color:#a35c00;"><strong>Caution:</strong> ${escapeHtml(lagna.caution)}</p>` : ''}
+    `;
+
+  const planetCardsHtml = PARASHARI_KB.planets.map(name => {
+    const p = report.planets[name];
+    if (!p || p.note) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — ${escapeHtml(p ? p.note : 'No data')}</div>`;
+    return `
+      <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
+        <strong>${name}</strong> — House ${p.house}${p.sign ? ` in ${p.sign}` : ''}${p.coreSignification ? ` <span style="font-size:0.85em;color:#555;">(${escapeHtml(p.coreSignification)})</span>` : ''}
+        ${p.houseTheme ? `<div style="font-size:0.85em;color:#555;">House ${p.house} theme: ${escapeHtml(p.houseTheme)}</div>` : ''}
+        <p>${escapeHtml(p.houseInterpretation)}</p>
+        ${p.signInterpretation ? `<p style="font-size:0.85em;${p.signInterpretation.indexOf('not been authored') !== -1 ? 'color:#888;font-style:italic;' : ''}">${escapeHtml(p.signInterpretation)}</p>` : ''}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;">
+      <strong>Source note:</strong> ${escapeHtml(PARASHARI_KB.meta.content_type)}
+    </div>
+    <h3>Lagna</h3>
+    ${lagnaHtml}
+    <h3>Planets</h3>
+    ${planetCardsHtml}
   `;
 }
 
