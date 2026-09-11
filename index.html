@@ -179,6 +179,16 @@
   .rem-table { border-collapse: collapse; width: 100%; margin-bottom: 12px; font-size: 0.9em; }
   .rem-table th, .rem-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
   .rem-table th { background: #f0f0f0; }
+  .rem2-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
+  .rem2-Critical { background: #7a0000; }
+  .rem2-High { background: #c1121f; }
+  .rem2-Significant { background: #e76f51; }
+  .rem2-Moderate { background: #e0a800; color: #3a2a00; }
+  .rem2-Mild { background: #a8d9a8; color: #1a3a1a; }
+  .rem2-Suppress { background: #cfe8cf; color: #1a3a1a; }
+  .rem2-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
+  .rem2-summary-card { display: inline-block; min-width: 110px; text-align: center; padding: 10px; margin: 4px; border-radius: 8px; color: #fff; }
+  .rem2-debug { background: #f4f4f4; font-family: monospace; font-size: 0.8em; padding: 8px; overflow-x: auto; white-space: pre-wrap; }
 
   /* Shadbala tab */
   .sb-planet-card { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; background: #fff; }
@@ -275,7 +285,8 @@
   <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
   <button class="tab-button" id="tabBtnKakshyaTimeline" data-tab="tabKakshyaTimeline">Kakshya Life-Area Timeline</button>
   <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Saved Natives</button>
-  <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies</button>
+  <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies_1</button>
+  <button class="tab-button" id="tabBtnRemedies2" data-tab="tabRemedies2">Remedies_2</button>
 </div>
 
 <div class="controls">
@@ -631,7 +642,7 @@
 </div>
 
 <div class="tab-panel" id="tabRemedies">
-<h2>Remedies</h2>
+<h2>Remedies_1</h2>
 <p>Generate a chart on the "Chart &amp; Analysis" tab first. Chart-specific remedies (Chant, Donation, Action, Gemstone) drawn from a fixed, curated database — never improvised at runtime. Every remedy shows why it was chosen, from which chart factors, with its source and confidence level. <strong>No remedy here is a guarantee of any outcome</strong> — this is a traditional astrological practice guide, not medical, legal, or financial advice.</p>
 <div class="controls">
   <select id="remCategoryFilter">
@@ -646,6 +657,16 @@
   <label><input type="checkbox" id="remDashaOnly"> Current or upcoming dasha-relevant only</label>
 </div>
 <div id="remediesOutput" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabRemedies2">
+<h2>Remedies_2</h2>
+<p>Personalized Parashari Remedy Analysis — a second, independently-built deterministic remedy engine (separate from Remedies_1) evaluating natural/functional nature, house, sign, dignity, lordship, conjunctions, aspects, combustion, debilitation/cancellation, Shadbala, yogas and dasha activation for all 9 planets. <strong>Traditional remedial practice guidance only — not a medical, legal, or financial guarantee.</strong></p>
+<div class="controls">
+  <label><input type="checkbox" id="rem2DebugMode"> Debug mode (show raw rule path &amp; scores)</label>
+  <label><input type="checkbox" id="rem2ShowAll"> Show all detected afflictions (including suppressed/low-priority)</label>
+</div>
+<div id="remedies2Output" class="output-box pastel-peach"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>
@@ -691,6 +712,8 @@
 <script src="js/savedNatives/csvUtil.js"></script>
 <script src="js/remedies/remedyData.js"></script>
 <script src="js/remedies/remedyEngine.js"></script>
+<script src="js/remedies2/remedyData2.js"></script>
+<script src="js/remedies2/remedyEngine2.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>

@@ -47,6 +47,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabKakshya') renderKakshyaTab();
       if (btn.dataset.tab === 'tabKakshyaTimeline') renderKakshyaTimelineTab();
       if (btn.dataset.tab === 'tabRemedies') renderRemediesTab();
+      if (btn.dataset.tab === 'tabRemedies2') renderRemedies2Tab();
     });
   });
 }
@@ -1935,6 +1936,7 @@ function generateChart() {
     state.dashaSelection = {}; // clears any drill-down selection from a previous chart
     state.sadeSati = null; // recomputed lazily (expensive) when the Sade Sati tab is opened
     state.remedies = null; // recomputed lazily when the Remedies tab is opened
+    state.remedies2 = null; // recomputed lazily when the Remedies_2 tab is opened
     state.mangalDosha2 = computeMangalDosha2(state.chart);
     try {
       state.shadbala = computeShadbala(state.chart, lat, lon);
@@ -1964,12 +1966,14 @@ function generateChart() {
     try { renderKakshyaTimelineTab(); } catch (ktErr) { console.error('Kakshya Timeline render failed:', ktErr); }
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
     document.getElementById('remediesOutput').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
+    document.getElementById('remedies2Output').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
   } catch (err) {
     state.chart = null;
     state.yogas = null;
     state.dasha = null;
     state.sadeSati = null;
     state.remedies = null;
+    state.remedies2 = null;
     state.mangalDosha2 = null;
     state.shadbala = null;
     statusEl.innerHTML = `<span style="color:#b23b3b;">Error: ${err.message}</span>`;
@@ -1996,6 +2000,7 @@ function generateChart() {
     document.getElementById('avpOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('kakshyaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remediesOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('remedies2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2448,6 +2453,104 @@ function renderRemediesTab() {
   `;
 }
 
+// --- Remedies_2 (independent second engine, remedies2/) ---
+
+function rem2Badge(label) { return `<span class="rem2-badge rem2-${label.replace(/ /g, '')}">${label}</span>`; }
+
+function rem2PackageCardHtml(pkg) {
+  const remedyHtml = pkg.remedies.map(r => {
+    if (r.type === 'chant') return `<p><strong>Chant (${escapeHtml(r.purpose)}):</strong> ${r.sanskrit} — <em>${escapeHtml(r.transliteration)}</em><br>Total Japa: <strong>${r.totalJapa.toLocaleString()}</strong> &nbsp; Suggested: ${Math.round(r.totalJapa / 40)}/day for ~40 days &nbsp; Preferred day: ${r.preferredDay}</p>`;
+    if (r.type === 'donation') return `<p><strong>Donation:</strong> ${escapeHtml(r.primary)} (alternatives: ${r.alternatives.map(escapeHtml).join(', ')}) — for ${escapeHtml(r.beneficiary)}. Frequency: ${escapeHtml(r.frequency)}. <em>${escapeHtml(r.cautions)}</em></p>`;
+    if (r.type === 'action') return `<p><strong>Action/Conduct:</strong> ${r.items.map(escapeHtml).join('; ')}.</p>`;
+    if (r.type === 'gemstone') return `<p><strong>Gemstone${r.conditional ? ' (conditional)' : ''}:</strong> ${escapeHtml(r.name)} — ${escapeHtml(r.metal)}, ${escapeHtml(r.finger)}, ${escapeHtml(r.day)}.<br><span style="color:#a35c00;">${escapeHtml(r.reason)}</span></p>`;
+    return '';
+  }).join('');
+
+  const gemLine = pkg.gemstone.recommended
+    ? ''
+    : `<p style="color:#666;"><strong>Gemstone:</strong> NOT RECOMMENDED — ${escapeHtml(pkg.gemstone.reason)}</p>`;
+
+  return `
+    <div class="rem2-card">
+      <div>${rem2Badge(pkg.priority)} <strong>${pkg.planet}</strong> — Severity ${pkg.natalSeverity}/100 (${pkg.severityLabel}) &nbsp; <span style="font-size:0.85em;color:#555;">${pkg.currentRelevance}</span></div>
+      <p><strong>Primary reason:</strong> ${escapeHtml(pkg.primaryReason)}</p>
+      <p><strong>Affected life areas:</strong> ${pkg.affectedLifeAreas.join(' • ')}</p>
+      ${remedyHtml}
+      ${gemLine}
+      <details class="avp-calc"><summary>Detailed reasoning (all factors)</summary>
+        <div class="kk-calc-chain">
+          <strong>Adverse/contributing factors:</strong><br>${pkg.adverseFactors.map(escapeHtml).join('<br>') || 'None.'}<br><br>
+          <strong>Protective/mitigating factors:</strong><br>${pkg.protectiveFactors.map(escapeHtml).join('<br>') || 'None.'}
+        </div>
+      </details>
+    </div>`;
+}
+
+function rem2DiagnosticMatrixHtml(assessments) {
+  const rows = Object.values(assessments).map(a => `
+    <tr>
+      <td>${a.planet}</td>
+      <td>${escapeHtml(a.functionalNature)}</td>
+      <td>${a.house}</td>
+      <td>${a.sign}</td>
+      <td>${a.dignity}</td>
+      <td style="font-size:0.85em;">${a.factors.filter(f => f.weight > 0).map(f => escapeHtml(f.note)).join('; ') || 'None'}</td>
+      <td>${a.currentRelevance}</td>
+      <td>${a.natalSeverity}</td>
+      <td>${rem2Badge(a.priority)}</td>
+    </tr>`).join('');
+  return `
+    <table class="rem-table">
+      <thead><tr><th>Planet</th><th>Functional Nature</th><th>House</th><th>Sign</th><th>Dignity</th><th>Major Afflictions</th><th>Dasha Status</th><th>Severity</th><th>Priority</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function rem2DebugHtml(assessments) {
+  const debugObjects = Object.values(assessments).map(a => ({
+    planet: a.planet, functionalNature: a.functionalNature, house: a.house, sign: a.sign, dignity: a.dignity,
+    combust: a.combust, retrograde: a.retrograde, conjunctions: a.conjunctions, aspectsReceived: a.aspectsReceived,
+    dashaActive: a.dashaActive, dashaLevel: a.dashaLevel, rawScore: a.rawScore,
+    natalSeverity: a.natalSeverity, priorityScore: a.priorityScore, priority: a.priority,
+    remedyDirection: a.remedyDirection, gemstone: a.gemstone,
+    factors: a.factors
+  }));
+  return `<div class="rem2-debug">${escapeHtml(JSON.stringify(debugObjects, null, 2))}</div>`;
+}
+
+function renderRemedies2Tab() {
+  const el = document.getElementById('remedies2Output');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (!state.remedies2) {
+    try { state.remedies2 = computeRemedies2(state.chart); }
+    catch (e) { console.error('Remedies_2 computation failed:', e); el.innerHTML = '<p>Remedies_2 could not be computed for this chart (see console).</p>'; return; }
+  }
+  const r = state.remedies2;
+  const debugMode = document.getElementById('rem2DebugMode').checked;
+  const showAll = document.getElementById('rem2ShowAll').checked;
+  const listToShow = showAll ? r.packages : r.primary;
+
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;">
+      <strong>Priority Summary</strong><br>
+      ${Object.entries(r.summary).map(([label, count]) => `<div class="rem2-summary-card rem2-${label.replace(/ /g, '')}">${label}<br><span style="font-size:1.4em;">${count}</span></div>`).join('')}
+    </div>
+
+    <h3>Recommended Remedies</h3>
+    ${listToShow.length ? listToShow.map(rem2PackageCardHtml).join('') : '<p>No meaningful afflictions detected above the suppression threshold for this chart.</p>'}
+    ${!showAll && r.suppressed.length ? `<p style="font-size:0.85em;color:#555;">${r.suppressed.length} additional low-priority/suppressed planet(s) not shown — check "Show all detected afflictions" above.</p>` : ''}
+
+    <h3>Planetary Diagnostic Matrix</h3>
+    ${rem2DiagnosticMatrixHtml(r.assessments)}
+
+    ${debugMode ? `<h3>Debug Output (rule path &amp; scores)</h3>${rem2DebugHtml(r.assessments)}` : ''}
+  `;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initEngineStatusBadge();
@@ -2486,6 +2589,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('remClassicalOnly').addEventListener('change', renderRemediesTab);
   document.getElementById('remHighConfidenceOnly').addEventListener('change', renderRemediesTab);
   document.getElementById('remDashaOnly').addEventListener('change', renderRemediesTab);
+  document.getElementById('rem2DebugMode').addEventListener('change', renderRemedies2Tab);
+  document.getElementById('rem2ShowAll').addEventListener('change', renderRemedies2Tab);
   initSavedNatives();
   initAutoRegenerate();
   renderInterpretation2Tab();
