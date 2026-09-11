@@ -2843,15 +2843,24 @@ function renderNakshatraInterpTab() {
     return;
   }
 
+  // Reused, not recomputed — same composite score as the Friendship &
+  // Strength tab, used here (combined with the planet's relation to its
+  // own nakshatra star lord) to color-code each block.
+  const strengthData = computePlanetaryStrength(state.chart.planets);
+  const strengthByPlanet = {};
+  strengthData.forEach(s => { strengthByPlanet[s.name] = s; });
+
   const planetCardsHtml = PLANET_NAMES.map(name => {
     const planetObj = state.chart.planets.find(p => p.name === name);
     if (!planetObj) return '';
     const r = nakInterpForPlanet(name, planetObj.longitude);
     if (!r) return `<div class="rule-item quality-neutral" style="padding:8px 12px;"><strong>${name}</strong> — could not determine nakshatra/pada.</div>`;
+    const q = nakInterpQuality(name, r.starLord, strengthByPlanet);
     return `
-      <div class="rule-item quality-neutral" style="padding:8px 12px;margin-bottom:8px;">
+      <div class="rule-item quality-${q.quality}" style="padding:8px 12px;margin-bottom:8px;border-radius:4px;">
         <strong>${name}</strong> — ${r.nakshatra}, Pada ${r.pada} <span class="rem-type-badge" style="background:#f1e6ff;">${r.purushartha.name} pada (${r.purushartha.element})</span> <span style="font-size:0.8em;color:#555;">(star lord: ${r.starLord}; deity: ${r.deity}; symbol: ${r.symbol})</span>
         <p>${escapeHtml(r.paragraph)}</p>
+        <p style="font-size:0.85em;color:#555;">Relation to star lord ${r.starLord}: <strong>${q.relation}</strong>${q.strengthTotal !== null ? `; ${name}'s own Friendship &amp; Strength score: <span class="${q.strengthTotal >= 0 ? 'score-positive' : 'score-negative'}">${q.strengthTotal >= 0 ? '+' : ''}${q.strengthTotal}%</span>` : ''} — combined, this placement reads as overall <strong>${q.quality.toUpperCase()}</strong>.</p>
         <details class="avp-calc"><summary>All 27 nakshatras — reference (deity, symbol, keynote, star lord)</summary>
           ${nakInterpAllNakshatraTableHtml(r.nakshatra)}
         </details>
@@ -2871,7 +2880,7 @@ function renderNakshatraInterpTab() {
 
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;">
-      <strong>Source note:</strong> Nakshatra deity/symbol/keynote content is a general classical reference synthesis (not a verbatim quotation of a single text); star lords follow the standard Vimshottari sequence; pada-to-Navamsa-sign flavor reuses this app's own D9 divisional chart calculation (a pada is, by definition, exactly one Navamsa division) rather than a separately invented mapping. Additionally, every pada number (1st-4th, in ANY nakshatra) carries a fixed classical Purushartha (fourfold life-goal) emphasis — see below — since the zodiac's Fire/Earth/Air/Water element cycle repeats every 4 signs, so a nakshatra's 4 consecutive Navamsa padas always land Fire, Earth, Air, Water in that order. See docs/nakshatra/research-notes.md for sources consulted.
+      <strong>Source note:</strong> Nakshatra deity/symbol/keynote content is a general classical reference synthesis (not a verbatim quotation of a single text); star lords follow the standard Vimshottari sequence; pada-to-Navamsa-sign flavor reuses this app's own D9 divisional chart calculation (a pada is, by definition, exactly one Navamsa division) rather than a separately invented mapping. Additionally, every pada number (1st-4th, in ANY nakshatra) carries a fixed classical Purushartha (fourfold life-goal) emphasis — see below — since the zodiac's Fire/Earth/Air/Water element cycle repeats every 4 signs, so a nakshatra's 4 consecutive Navamsa padas always land Fire, Earth, Air, Water in that order. Each planet's block below is also color-coded — <span class="quality-good" style="padding:1px 6px;border-radius:3px;">light green = good</span>, <span class="quality-neutral" style="padding:1px 6px;border-radius:3px;">light yellow = neutral</span>, <span class="quality-bad" style="padding:1px 6px;border-radius:3px;">light red = bad</span> — combining that planet's natural-friendship relation to its own nakshatra's star lord with its Friendship &amp; Strength score (both reused from the Friendship &amp; Strength tab, not new scoring). See docs/nakshatra/research-notes.md for sources consulted.
       <h4 style="margin:8px 0 4px;">Pada &rarr; Purushartha reference (applies to every nakshatra)</h4>
       ${purusharthaRefHtml}
     </div>

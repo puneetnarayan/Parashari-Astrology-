@@ -55,6 +55,25 @@ function nakInterpPadaFlavor(longitude) {
   return { sign: d9.sign, traits };
 }
 
+// Planet-in-Nakshatra quality — combines the planet's natural-friendship
+// relation to its OWN nakshatra's star lord (reusing relationBetween,
+// planetaryStrength.js — the same lookup used by the Friendship &
+// Strength tab) with that planet's own composite Friendship & Strength
+// score (also reused, not recomputed) into one good/neutral/bad verdict,
+// consistent with the same combined-quality approach already used for
+// Planet-in-Sign on the Knowledge Base tab.
+function nakInterpQuality(planetName, starLord, strengthByPlanet) {
+  const relation = relationBetween(planetName, starLord);
+  const relScore = relation === 'Own' ? 1.5 : relation === 'Friend' ? 1 : relation === 'Enemy' ? -1 : 0;
+  const relQuality = relScore >= 1 ? 'good' : relScore <= -1 ? 'bad' : 'neutral';
+  const s = strengthByPlanet[planetName];
+  const strengthQuality = s ? (s.total >= 15 ? 'good' : s.total <= -15 ? 'bad' : 'neutral') : 'neutral';
+  const v = q => (q === 'good' ? 1 : q === 'bad' ? -1 : 0);
+  const sum = v(relQuality) + v(strengthQuality);
+  const quality = sum >= 1 ? 'good' : sum <= -1 ? 'bad' : 'neutral';
+  return { relation, quality, strengthTotal: s ? s.total : null };
+}
+
 // Full interpretation for one planet at its current chart longitude.
 function nakInterpForPlanet(planetName, longitude) {
   const nak = nakshatraFromLongitude(longitude);
@@ -94,5 +113,5 @@ function nakInterpAllNakshatras() {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { PADA_ORDINAL, PADA_PURUSHARTHA, nakInterpPadaFlavor, nakInterpForPlanet, nakInterpAllNakshatras };
+  module.exports = { PADA_ORDINAL, PADA_PURUSHARTHA, nakInterpPadaFlavor, nakInterpQuality, nakInterpForPlanet, nakInterpAllNakshatras };
 }

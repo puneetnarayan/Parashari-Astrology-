@@ -89,14 +89,34 @@ planet's current nakshatra highlighted).
   tab is descriptive/reference in nature, not a new affliction-assessment
   engine (unlike Remedies_1/Remedies_2).
 
+## Color coding (good/neutral/bad)
+
+Each planet's block is color-coded light green/yellow/red (the same
+`.quality-good`/`.quality-neutral`/`.quality-bad` convention used
+elsewhere in the app, including the Knowledge Base tab's Planet-in-Sign
+section), via `nakInterpQuality()`. This combines two reused, not new,
+signals: the planet's natural-friendship relation (Own/Friend/Neutral/
+Enemy, `relationBetween()` from `planetaryStrength.js`) to its OWN
+nakshatra's star lord, and that planet's composite Friendship & Strength
+score (`computePlanetaryStrength()`, the same score shown on the
+Friendship & Strength tab). Neither factor is nakshatra-content-specific
+fabrication — both are existing chart-derived facts, combined the same
+way the Knowledge Base tab already combines Planet-in-Sign dignity with
+the Friendship & Strength score.
+
 ## Testing performed
 
 Consistent with the rest of this app (no formal automated test
 framework): verified via headless-browser (Playwright + Chromium) checks
 — full regression pass across every tab (no console/page errors) after
 adding this tab, the tab renders real chart-derived nakshatra/pada content
-for all 9 planets, and each planet's "all 27 nakshatras" reference table
-has exactly 27 rows with the current nakshatra correctly highlighted.
+for all 9 planets, each planet's "all 27 nakshatras" reference table has
+exactly 27 rows with the current nakshatra correctly highlighted, and the
+color-coding logic was verified planet-by-planet against its printed
+relation/strength inputs (e.g. Mars: Neutral relation to its star lord
+Rahu + a -40% Friendship & Strength score correctly renders "bad";
+Moon: Friend relation to its star lord Sun + a +15% score correctly
+renders "good").
 
 ## Areas requiring manual astrological review
 
