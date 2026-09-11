@@ -48,6 +48,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabKakshyaTimeline') renderKakshyaTimelineTab();
       if (btn.dataset.tab === 'tabRemedies') renderRemediesTab();
       if (btn.dataset.tab === 'tabRemedies2') renderRemedies2Tab();
+      if (btn.dataset.tab === 'tabRemediesCompare') renderRemediesCompareTab();
     });
   });
 }
@@ -1967,6 +1968,7 @@ function generateChart() {
     document.getElementById('sadeSatiOutput').innerHTML = '<p>Open this tab to compute the Sade Sati timeline for this chart (takes a few seconds).</p>';
     document.getElementById('remediesOutput').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
     document.getElementById('remedies2Output').innerHTML = '<p>Open this tab to compute chart-specific remedies (takes a moment).</p>';
+    document.getElementById('remediesCompareOutput').innerHTML = '<p>Open this tab to compare Remedies_1 and Remedies_2 for this chart.</p>';
   } catch (err) {
     state.chart = null;
     state.yogas = null;
@@ -2001,6 +2003,7 @@ function generateChart() {
     document.getElementById('kakshyaOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remediesOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('remedies2Output').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    document.getElementById('remediesCompareOutput').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     ktLastMatrix = null;
     document.getElementById('ktMatrixContainer').innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
     document.getElementById('ktSummary').innerHTML = '';
@@ -2548,6 +2551,112 @@ function renderRemedies2Tab() {
     ${rem2DiagnosticMatrixHtml(r.assessments)}
 
     ${debugMode ? `<h3>Debug Output (rule path &amp; scores)</h3>${rem2DebugHtml(r.assessments)}` : ''}
+  `;
+}
+
+// --- Remedies_Compare (cross-checks Remedies_1 vs Remedies_2) ---
+
+// Normalizes each engine's own remedyMode/remedyDirection vocabulary down
+// to a shared 'pacify' | 'strengthen' | 'none' axis so the two independent
+// engines can be compared on equal terms.
+function remcDirection1(mode) {
+  if (mode === 'STRENGTHEN_PLANET') return 'strengthen';
+  if (mode === 'PACIFY_PLANET' || mode === 'PACIFY_AFFLICTION') return 'pacify';
+  return 'none';
+}
+function remcDirection2(direction) {
+  if (direction === 'strengthen') return 'strengthen';
+  if (direction === 'pacify' || direction === 'both') return 'pacify';
+  return 'none';
+}
+// Normalizes each engine's own gemstone vocabulary to 'Yes' | 'Conditional' | 'No'.
+function remcGem1(status) {
+  if (status === 'RECOMMENDED') return 'Yes';
+  if (status === 'CONDITIONALLY_RECOMMENDED' || status === 'PROFESSIONAL_REVIEW_REQUIRED') return 'Conditional';
+  return 'No';
+}
+function remcGem2(gem) {
+  if (!gem.recommended) return 'No';
+  return gem.conditional ? 'Conditional' : 'Yes';
+}
+
+function renderRemediesCompareTab() {
+  const el = document.getElementById('remediesCompareOutput');
+  if (!el) return;
+  if (!state.chart) {
+    el.innerHTML = '<p>Generate a chart on the "Chart &amp; Analysis" tab first.</p>';
+    return;
+  }
+  if (!state.remedies) {
+    try { state.remedies = computeRemedies(state.chart); }
+    catch (e) { console.error('Remedies_1 computation failed:', e); el.innerHTML = '<p>Remedies_1 could not be computed for this chart (see console).</p>'; return; }
+  }
+  if (!state.remedies2) {
+    try { state.remedies2 = computeRemedies2(state.chart); }
+    catch (e) { console.error('Remedies_2 computation failed:', e); el.innerHTML = '<p>Remedies_2 could not be computed for this chart (see console).</p>'; return; }
+  }
+  const r1 = state.remedies, r2 = state.remedies2;
+  const planetNames = SHADBALA_PLANETS.concat(['Rahu', 'Ketu']);
+
+  let directionAgree = 0, gemAgree = 0;
+  const rows = planetNames.map(name => {
+    const a1 = r1.assessments[name], a2 = r2.assessments[name];
+    const dir1 = remcDirection1(a1.remedyMode), dir2 = remcDirection2(a2.remedyDirection);
+    const gem1 = remcGem1(a1.gemstoneStatus), gem2 = remcGem2(a2.gemstone);
+    const dirMatch = dir1 === dir2, gemMatch = gem1 === gem2;
+    if (dirMatch) directionAgree++;
+    if (gemMatch) gemAgree++;
+    return {
+      name, a1, a2, dir1, dir2, gem1, gem2, dirMatch, gemMatch,
+      rowDisagree: !dirMatch || !gemMatch
+    };
+  });
+
+  const rowHtml = (row) => `
+    <tr${row.rowDisagree ? ' class="remc-row-disagree"' : ''}>
+      <td><strong>${row.name}</strong></td>
+      <td>${row.a1.severity} (${row.a1.afflictionScore}/100)</td>
+      <td>${row.a2.severityLabel} (${row.a2.natalSeverity}/100) &nbsp; ${rem2Badge(row.a2.priority)}</td>
+      <td>${row.dir1}</td>
+      <td>${row.dir2}</td>
+      <td class="${row.dirMatch ? 'remc-agree' : 'remc-disagree'}">${row.dirMatch ? 'Agree' : 'Differ'}</td>
+      <td>${row.gem1}</td>
+      <td>${row.gem2}</td>
+      <td class="${row.gemMatch ? 'remc-agree' : 'remc-disagree'}">${row.gemMatch ? 'Agree' : 'Differ'}</td>
+    </tr>`;
+
+  const disagreements = rows.filter(r => r.rowDisagree);
+  const disagreementDetailHtml = disagreements.length ? disagreements.map(row => `
+    <div class="rem2-card">
+      <strong>${row.name}</strong> — ${!row.dirMatch ? `Remedy direction differs: Remedies_1 says <em>${row.dir1}</em>, Remedies_2 says <em>${row.dir2}</em>. ` : ''}${!row.gemMatch ? `Gemstone eligibility differs: Remedies_1 says <em>${row.gem1}</em>, Remedies_2 says <em>${row.gem2}</em>.` : ''}
+      <details class="avp-calc"><summary>Why each engine reached its conclusion</summary>
+        <div class="kk-calc-chain">
+          <strong>Remedies_1 reasoning:</strong><br>${(row.a1.afflictions || []).concat(row.a1.beneficSupport || []).map(escapeHtml).join('<br>') || 'No specific factors recorded.'}<br><br>
+          <strong>Remedies_2 reasoning:</strong><br>${row.a2.factors.map(f => escapeHtml(f.note)).join('<br>') || 'No specific factors recorded.'}
+        </div>
+      </details>
+    </div>`).join('') : '<p>No disagreements — both engines reached the same remedy direction and gemstone eligibility for every planet.</p>';
+
+  el.innerHTML = `
+    <div class="rule-item quality-neutral" style="padding:10px;">
+      <strong>Agreement Summary</strong><br>
+      Remedy direction (pacify/strengthen/none): <strong>${directionAgree}/9</strong> planets agree.<br>
+      Gemstone eligibility: <strong>${gemAgree}/9</strong> planets agree.
+    </div>
+
+    <h3>Side-by-Side Comparison</h3>
+    <table class="rem-table">
+      <thead>
+        <tr><th rowspan="2">Planet</th><th colspan="2">Severity</th><th colspan="3">Remedy Direction</th><th colspan="3">Gemstone</th></tr>
+        <tr><th>Remedies_1</th><th>Remedies_2</th><th>Remedies_1</th><th>Remedies_2</th><th></th><th>Remedies_1</th><th>Remedies_2</th><th></th></tr>
+      </thead>
+      <tbody>${rows.map(rowHtml).join('')}</tbody>
+    </table>
+
+    <h3>Where the Engines Disagree</h3>
+    ${disagreementDetailHtml}
+
+    <p style="font-size:0.85em;color:#555;">Both engines are independently-built and independently-weighted deterministic rule engines reusing the same underlying chart calculations. Agreement is a useful cross-check; a disagreement means the two rule sets weighed the same underlying factors differently, not that one engine is simply wrong — see each engine's own "why" details above, and each tab's research notes (docs/remedies/research-notes.md, docs/remedies2/research-notes.md) for its specific design choices.</p>
   `;
 }
 

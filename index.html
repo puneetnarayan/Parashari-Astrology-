@@ -189,6 +189,9 @@
   .rem2-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
   .rem2-summary-card { display: inline-block; min-width: 110px; text-align: center; padding: 10px; margin: 4px; border-radius: 8px; color: #fff; }
   .rem2-debug { background: #f4f4f4; font-family: monospace; font-size: 0.8em; padding: 8px; overflow-x: auto; white-space: pre-wrap; }
+  .remc-agree { color: #1a5c1a; font-weight: bold; }
+  .remc-disagree { color: #a35c00; font-weight: bold; }
+  .remc-row-disagree { background: #fff8ec; }
 
   /* Shadbala tab */
   .sb-planet-card { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; background: #fff; }
@@ -287,6 +290,7 @@
   <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Saved Natives</button>
   <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies_1</button>
   <button class="tab-button" id="tabBtnRemedies2" data-tab="tabRemedies2">Remedies_2</button>
+  <button class="tab-button" id="tabBtnRemediesCompare" data-tab="tabRemediesCompare">Remedies_Compare</button>
 </div>
 
 <div class="controls">
@@ -667,6 +671,12 @@
   <label><input type="checkbox" id="rem2ShowAll"> Show all detected afflictions (including suppressed/low-priority)</label>
 </div>
 <div id="remedies2Output" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabRemediesCompare">
+<h2>Remedies_Compare</h2>
+<p>Side-by-side comparison of Remedies_1 and Remedies_2 — two independently-built deterministic remedy engines evaluating the same chart. Both reuse the same underlying dignity/functional/Shadbala/dasha/yoga calculations but score, consolidate and rank independently, so agreement between them is a useful cross-check, and disagreement highlights where the two rule sets weigh factors differently — not that one is "wrong."</p>
+<div id="remediesCompareOutput" class="output-box pastel-peach"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>
