@@ -37,6 +37,9 @@ const NAKSHATRAS = [
   'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'
 ];
 const VIMSHOTTARI_SEQUENCE = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
+// Classical Vimshottari Dasha years per planet (totals to the 120-year cycle), used by js/dasha/vimshottariDasha.js.
+const VIMSHOTTARI_YEARS = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
+const VIMSHOTTARI_TOTAL_YEARS = 120;
 
 function buildNakshatraTable() {
   const table = [];
@@ -123,6 +126,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     PARASHARI_TABLES_LOGIC_TEXT, SIGNS, SIGN_LORD, MOVABLE_SIGNS, FIXED_SIGNS,
     NAKSHATRAS, NAKSHATRA_TABLE, PLANET_NAMES, PLANET_ABBR,
+    VIMSHOTTARI_SEQUENCE, VIMSHOTTARI_YEARS, VIMSHOTTARI_TOTAL_YEARS,
     normalizeDegrees, nakshatraFromLongitude, padaOf,
     longitudeToDegMinSec, formatDegMinSec, formatDegMinSecShort, formatDegMin
   };

@@ -95,6 +95,175 @@
   .condition-flag-on  { color: #a04000; font-weight: bold; }
   .condition-flag-off { color: #999; }
 
+  .matching-columns { display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+  .matching-fieldset { flex: 1 1 320px; }
+  .matching-verdict { font-size: 1.05em; margin: 8px 0; }
+  .mangal-columns { display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+  .mangal-partner { flex: 1 1 320px; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 8px 12px; background: rgba(255,255,255,0.5); }
+  .mangal-partner ul { margin: 4px 0; padding-left: 20px; font-size: 0.9em; }
+  .mangal-partner li { margin: 3px 0; }
+
+  .yoga-row-good   td { background-color: #d9f2d9 !important; }
+  .yoga-row-bad    td { background-color: #ffdcdc !important; }
+  .yoga-row-medium td { background-color: #fff3d6 !important; color: #666; }
+  span.yoga-row-good   { background-color: #d9f2d9; }
+  span.yoga-row-bad    { background-color: #ffdcdc; }
+  span.yoga-row-medium { background-color: #fff3d6; }
+
+  .dasha-columns { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .dasha-column { flex: 1 1 260px; min-width: 240px; }
+  .dasha-column h4 { margin: 0 0 6px 0; }
+  .dasha-column-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+  .dasha-column-table th, .dasha-column-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  .dasha-lord-link { background: none; border: none; padding: 0; color: #1a5cb0; text-decoration: underline; cursor: pointer; font: inherit; }
+  .dasha-lord-link:hover { color: #0d3a75; }
+  /* Current running period: orange. A user-selected (clicked) row: yellow. Current takes visual precedence if a row is both. */
+  .dasha-selected td { background-color: #fff3b0 !important; }
+  .dasha-current td { background-color: #ffb347 !important; font-weight: bold; }
+
+  /* Interpretation-2 reference tab: long verbatim spec text + reference tables */
+  .interp2-pre { white-space: pre-wrap; font-family: Consolas, Monaco, monospace; font-size: 0.82em; line-height: 1.4; background: #fffefa; border: 1px solid #ddd; padding: 12px; overflow-x: auto; }
+  .interp2-note { font-style: italic; color: #664400; background: #fff8e1; border-left: 3px solid #e0a800; padding: 8px 12px; margin: 10px 0; }
+  .interp2-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin: 10px 0; }
+  .interp2-table th, .interp2-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; }
+  .interp2-table th { background: #f0f0f0; }
+  .rule-section { margin-bottom: 18px; }
+  .rule-section h4 { margin: 0 0 6px 0; }
+  .rule-item { padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 0.92em; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-flag-yogakaraka { color: #0a7d2c; font-weight: bold; }
+  .rule-flag-malefic { color: #b30000; font-weight: bold; }
+  .rule-flag-benefic { color: #0a7d2c; }
+  .rule-flag-neutral { color: #555; }
+
+  /* Good/bad/neutral interpretation highlighting, used across the
+     Interpretations and Interpretation-2 tabs: light green = favorable,
+     light red = unfavorable, light yellow = neutral/mixed. */
+  tr.quality-good td, .rule-item.quality-good, td.quality-good, span.quality-good { background-color: #d9f2d9 !important; }
+  tr.quality-bad td, .rule-item.quality-bad, td.quality-bad, span.quality-bad { background-color: #ffdcdc !important; }
+  tr.quality-neutral td, .rule-item.quality-neutral, td.quality-neutral, span.quality-neutral { background-color: #fff3d6 !important; }
+
+  /* Sade Sati / Mangal Dosha (extended) tabs */
+  .countdown-box { display: inline-block; min-width: 220px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 10px 16px; margin: 6px 10px 6px 0; text-align: center; }
+  .countdown-box .countdown-label { font-size: 0.8em; color: #666; margin-bottom: 4px; }
+  .countdown-box .countdown-value { font-size: 1.3em; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .countdown-box.countdown-ongoing { border-color: #ffb347; background: #fff8ec; }
+  .countdown-box.countdown-next { border-color: #7fb37f; background: #f3fbf3; }
+  .sadesati-episode-header { font-weight: bold; margin-top: 14px; }
+  .status-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+  .status-badge-Ongoing { background: #ffb347; color: #4a2c00; }
+  .status-badge-Upcoming { background: #d9ecff; color: #164a7a; }
+  .status-badge-Past { background: #e0e0e0; color: #555; }
+  .strength-badge { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
+  .strength-None { background: #d9f2d9; color: #1a5c1a; }
+  .strength-Mild { background: #fff3d6; color: #7a5c00; }
+  .strength-Moderate { background: #ffe0b3; color: #7a3c00; }
+  .strength-Strong { background: #ffdcdc; color: #8a1a1a; }
+
+  /* Remedies tab */
+  .rem-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
+  .rem-sev-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
+  .rem-sev-EXTREME { background: #7a0000; }
+  .rem-sev-VERY-SEVERE { background: #c1121f; }
+  .rem-sev-SEVERE { background: #e76f51; }
+  .rem-sev-MODERATE { background: #e0a800; color: #3a2a00; }
+  .rem-sev-MILD { background: #a8d9a8; color: #1a3a1a; }
+  .rem-sev-SUPPORTIVE { background: #cfe8cf; color: #1a3a1a; }
+  .rem-type-badge { display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 0.75em; background: #eee; color: #333; margin-left: 6px; }
+  .rem-gem-warning { background: #fff3cd; border-left: 4px solid #e0a800; padding: 10px 14px; margin-bottom: 12px; font-size: 0.9em; }
+  .rem-gem-status-RECOMMENDED { color: #1a5c1a; font-weight: bold; }
+  .rem-gem-status-CONDITIONALLY_RECOMMENDED { color: #7a6a00; font-weight: bold; }
+  .rem-gem-status-NOT_RECOMMENDED { color: #666; font-weight: bold; }
+  .rem-gem-status-AVOID { color: #8a1a1a; font-weight: bold; }
+  .rem-gem-status-PROFESSIONAL_REVIEW_REQUIRED { color: #a35c00; font-weight: bold; }
+  .rem-table { border-collapse: collapse; width: 100%; margin-bottom: 12px; font-size: 0.9em; }
+  .rem-table th, .rem-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+  .rem-table th { background: #f0f0f0; }
+  .rem2-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: bold; color: #fff; }
+  .rem2-Critical { background: #7a0000; }
+  .rem2-High { background: #c1121f; }
+  .rem2-Significant { background: #e76f51; }
+  .rem2-Moderate { background: #e0a800; color: #3a2a00; }
+  .rem2-Mild { background: #a8d9a8; color: #1a3a1a; }
+  .rem2-Suppress { background: #cfe8cf; color: #1a3a1a; }
+  .rem2-VeryStrong { background: #2e7d32; }
+  .rem2-Strong { background: #4caf50; }
+  .rem2-Mixed { background: #e0a800; color: #3a2a00; }
+  .rem2-Weak { background: #e76f51; }
+  .rem2-VeryWeak { background: #7a0000; }
+  tr.sudar-row-selected td { background: #fff9c4 !important; }
+  details.sudar-calc-flash { animation: sudarFlash 1.5s ease-out; }
+  @keyframes sudarFlash { 0% { background: #fff9c4; } 100% { background: transparent; } }
+  .rem2-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
+  .rem2-summary-card { display: inline-block; min-width: 110px; text-align: center; padding: 10px; margin: 4px; border-radius: 8px; color: #fff; }
+  .rem2-debug { background: #f4f4f4; font-family: monospace; font-size: 0.8em; padding: 8px; overflow-x: auto; white-space: pre-wrap; }
+  .remc-agree { color: #1a5c1a; font-weight: bold; }
+  .remc-disagree { color: #a35c00; font-weight: bold; }
+  .remc-row-disagree { background: #fff8ec; }
+
+  /* Shadbala tab */
+  .sb-planet-card { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; background: #fff; }
+  .sb-planet-header { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .sb-planet-header:hover { background: #f7f7f7; }
+  .sb-planet-body { padding: 0 14px 14px 14px; display: none; }
+  .sb-planet-card.expanded .sb-planet-body { display: block; }
+  .sb-rank-badge { display: inline-block; min-width: 22px; text-align: center; background: #333; color: #fff; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-right: 8px; }
+  .sb-strength-Very-Strong, .sb-strength-Strong { color: #1a5c1a; font-weight: bold; }
+  .sb-strength-Above-Average { color: #3d7a3d; }
+  .sb-strength-Moderate { color: #7a6a00; }
+  .sb-strength-Below-Average { color: #a35c00; }
+  .sb-strength-Weak, .sb-strength-Very-Weak { color: #a31a1a; font-weight: bold; }
+  .sb-bar-track { background: #eee; border-radius: 4px; height: 10px; width: 100%; overflow: hidden; }
+  .sb-bar-fill { height: 10px; background: linear-gradient(90deg,#7fb37f,#3d7a3d); }
+  .sb-component-table td, .sb-component-table th { padding: 3px 8px; }
+  .sb-overview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .sb-overview-tile { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; min-width: 130px; background: #fff; text-align: center; }
+  .sb-overview-tile .sb-tile-planet { font-weight: bold; }
+
+  /* Ashtakvarga Predictions / Kakshya Analysis */
+  .assess-badge { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 0.85em; font-weight: bold; }
+  .assess-Strongly-Supportive, .assess-Strong { background: #c9edc9; color: #1a5c1a; }
+  .assess-Supportive, .assess-Moderate { background: #d9f2d9; color: #1a5c1a; }
+  .assess-Mixed { background: #fff3d6; color: #7a6a00; }
+  .assess-Neutral---Limited-Evidence, .assess-Insufficient-Evidence { background: #eee; color: #555; }
+  .assess-Challenging, .assess-Weak { background: #ffe0d9; color: #8a3c1a; }
+  .assess-Strongly-Challenging { background: #ffdcdc; color: #8a1a1a; }
+  tr.kk-current-hour td { outline: 2px solid #1a5cb0; outline-offset: -2px; font-weight: bold; }
+  .kk-calc-chain { font-family: Consolas, Monaco, monospace; font-size: 0.85em; background: #fffefa; border: 1px solid #ddd; padding: 8px 10px; white-space: pre-wrap; }
+  details.avp-calc { margin-top: 4px; }
+  details.avp-calc summary { cursor: pointer; color: #1a5cb0; font-size: 0.9em; }
+
+  /* Kakshya Life-Area Timeline */
+  :root {
+    --kt-excellent: #1a7d1a; --kt-verygood: #4caf50; --kt-good: #a8d9a8;
+    --kt-neutral: #f4d35e; --kt-bad: #f4a261; --kt-worse: #e76f51; --kt-worst: #c1121f;
+    --kt-insufficient: #cccccc;
+  }
+  .kt-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+  .kt-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.85em; }
+  .kt-swatch { width: 16px; height: 16px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,0.15); }
+  .kt-matrix-scroll { overflow-x: auto; max-width: 100%; border: 1px solid #ccc; }
+  table.kt-matrix { border-collapse: collapse; width: max-content; }
+  table.kt-matrix th, table.kt-matrix td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; font-size: 0.85em; white-space: nowrap; }
+  table.kt-matrix thead th { position: sticky; top: 0; background: #f7f7f7; z-index: 2; }
+  table.kt-matrix .kt-area-header { position: sticky; left: 0; background: #f7f7f7; z-index: 3; text-align: left; min-width: 160px; }
+  table.kt-matrix tbody th { position: sticky; left: 0; background: #fff; z-index: 1; text-align: left; min-width: 160px; cursor: pointer; }
+  table.kt-matrix thead th:first-child { z-index: 4; }
+  td.kt-cell { cursor: pointer; color: #fff; font-weight: bold; min-width: 40px; }
+  td.kt-cell:focus { outline: 3px solid #1a5cb0; }
+  td.kt-cell.kt-insufficient { background: repeating-linear-gradient(45deg, #ddd, #ddd 4px, #eee 4px, #eee 8px); color: #666; }
+  .kt-assess-Excellent { background: var(--kt-excellent); }
+  .kt-assess-Very-Good { background: var(--kt-verygood); }
+  .kt-assess-Good { background: var(--kt-good); color: #1a1a1a !important; }
+  .kt-assess-Neutral { background: var(--kt-neutral); color: #1a1a1a !important; }
+  .kt-assess-Bad { background: var(--kt-bad); color: #1a1a1a !important; }
+  .kt-assess-Worse { background: var(--kt-worse); }
+  .kt-assess-Worst { background: var(--kt-worst); }
+  @media print {
+    .controls, #ktCellDetail button { display: none !important; }
+    table.kt-matrix thead th, table.kt-matrix .kt-area-header, table.kt-matrix tbody th { position: static; }
+  }
+
   /* Bhinnashtakavarga strength shading: weak/average/auspicious (bindus out of 8) */
   .bav-weak       { background-color: #ffdcdc !important; }
   .bav-average    { background-color: #fff6c9 !important; }
@@ -109,13 +278,31 @@
 <p id="engineStatusBadge" style="font-size:0.8em;color:#666;">Loading calculation engine...</p>
 
 <div class="tab-strip">
+  <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Natives</button>
   <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
   <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
   <button class="tab-button" id="tabBtnAshtakvarga" data-tab="tabAshtakvarga">Ashtakvarga</button>
   <button class="tab-button" id="tabBtnDivisional" data-tab="tabDivisional">Divisional Charts</button>
   <button class="tab-button" id="tabBtnStrength" data-tab="tabStrength">Friendship &amp; Strength</button>
   <button class="tab-button" id="tabBtnInterpretations" data-tab="tabInterpretations">Interpretations</button>
+  <button class="tab-button" id="tabBtnInterpretations2" data-tab="tabInterpretations2">Interpretation-2</button>
   <button class="tab-button" id="tabBtnBhinnashtakavarga" data-tab="tabBhinnashtakavarga">Bhinnashtakavarga</button>
+  <button class="tab-button" id="tabBtnMatching" data-tab="tabMatching">Kundali Matching</button>
+  <button class="tab-button" id="tabBtnYogas" data-tab="tabYogas">Yogas</button>
+  <button class="tab-button" id="tabBtnDasha" data-tab="tabDasha">Dasha</button>
+  <button class="tab-button" id="tabBtnSadeSati" data-tab="tabSadeSati">Sade Sati</button>
+  <button class="tab-button" id="tabBtnMangalDosha2" data-tab="tabMangalDosha2">Mangal Dosha</button>
+  <button class="tab-button" id="tabBtnShadbala" data-tab="tabShadbala">Shadbala</button>
+  <button class="tab-button" id="tabBtnAshtakvargaPredictions" data-tab="tabAshtakvargaPredictions">Ashtakvarga Predictions</button>
+  <button class="tab-button" id="tabBtnKakshya" data-tab="tabKakshya">Kakshya Analysis</button>
+  <button class="tab-button" id="tabBtnKakshyaTimeline" data-tab="tabKakshyaTimeline">Kakshya Life-Area Timeline</button>
+  <button class="tab-button" id="tabBtnRemedies" data-tab="tabRemedies">Remedies_1</button>
+  <button class="tab-button" id="tabBtnRemedies2" data-tab="tabRemedies2">Remedies_2</button>
+  <button class="tab-button" id="tabBtnRemediesCompare" data-tab="tabRemediesCompare">Remedies_Compare</button>
+  <button class="tab-button" id="tabBtnKnowledgeBase" data-tab="tabKnowledgeBase">Knowledge Base</button>
+  <button class="tab-button" id="tabBtnNakshatraInterp" data-tab="tabNakshatraInterp">Nakshatra Interpretations</button>
+  <button class="tab-button" id="tabBtnSudarshana" data-tab="tabSudarshana">Sudarshana Chakra</button>
+  <button class="tab-button" id="tabBtnParashariAnalysis" data-tab="tabParashariAnalysis">Parashari Analysis</button>
 </div>
 
 <div class="controls">
@@ -145,7 +332,7 @@
 <div id="ascendantOutput" class="output-box pastel-peach"></div>
 
 <h2>Planet Table</h2>
-<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign.</p>
+<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign. Dignity = Exalted/Moolatrikona/Own Sign (favorable, light green) / Neutral (ordinary sign dignity, light yellow) / Debilitated (unfavorable, light red); Rahu/Ketu dignity is classically disputed and shown as Neutral.</p>
 <div id="planetTableOutput" class="output-box pastel-blue"></div>
 </div>
 
@@ -230,6 +417,15 @@
 <div id="planetConditionsOutput" class="output-box pastel-yellow"></div>
 </div>
 
+<div class="tab-panel" id="tabInterpretations2">
+<h2>Interpretation-2</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Live rule-based analysis for THIS chart, computed per the rule taxonomy below: Vargottama/Dig Bala, Degree-Sensitive Conditions (0&deg;/29&deg;/Gandanta), Conjunction &amp; Aspect narratives, Functional Benefic/Malefic Classification, Nakshatra character, and Neecha Bhanga checks. (Lagna, Planet-in-Sign, Planet-in-House, Dignity, Combustion, and Retrograde are already covered on the "Interpretations" tab and are not repeated here.)</p>
+<div id="ruleEngineOutput" class="output-box pastel-mint"></div>
+
+<h2 style="margin-top:28px;">Reference Spec (source documents)</h2>
+<div id="interpretation2Output" class="output-box pastel-peach"></div>
+</div>
+
 <div class="tab-panel" id="tabBhinnashtakavarga">
 <h2>Bhinnashtakavarga (All Planets)</h2>
 <p>Generate a chart on the "Chart &amp; Analysis" tab first. Bhinnashtakavarga (bindus, 0-8, per house) for each of the 7 classical planets, in table and chart form.</p>
@@ -254,6 +450,302 @@
 <div class="vedic-chart-container" id="bavAllChartOutput"></div>
 </div>
 
+<div class="tab-panel" id="tabMatching">
+<h2>Kundali Matching (Ashtakoot Guna Milan)</h2>
+<p>Enter both partners' birth details (offline Swiss Ephemeris, same engine as the rest of this app) and click Match to compute the classical 8-koota, 36-point Guna Milan score plus a Mangal Dosha check.</p>
+
+<div class="matching-columns">
+  <fieldset class="matching-fieldset">
+    <legend>Boy</legend>
+    <label>Name: <input type="text" id="boyName" placeholder="e.g. Rohan" style="width:180px;"></label><br><br>
+    <label>Birth Date: <input type="date" id="boyDate"></label>
+    <label>Birth Time: <input type="time" id="boyTime" step="1"></label><br><br>
+    <label>Latitude: <input type="text" id="boyLat" placeholder="e.g. 28.6139"></label>
+    <label>Longitude: <input type="text" id="boyLon" placeholder="e.g. 77.2090"></label>
+  </fieldset>
+
+  <fieldset class="matching-fieldset">
+    <legend>Girl</legend>
+    <label>Name: <input type="text" id="girlName" placeholder="e.g. Priya" style="width:180px;"></label><br><br>
+    <label>Birth Date: <input type="date" id="girlDate"></label>
+    <label>Birth Time: <input type="time" id="girlTime" step="1"></label><br><br>
+    <label>Latitude: <input type="text" id="girlLat" placeholder="e.g. 28.6139"></label>
+    <label>Longitude: <input type="text" id="girlLon" placeholder="e.g. 77.2090"></label>
+  </fieldset>
+</div>
+
+<div class="controls">
+  <label>Timezone mode (applied to both):
+    <select id="matchingTimezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="matchingIanaZoneLabel">Time zone: <select id="matchingIanaZone"></select></label>
+  <label id="matchingUtcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="matchingUtcOffset" placeholder="+5:30"></label>
+</div>
+<div class="controls">
+  <button id="matchKundalisBtn">Match Kundalis (Offline)</button>
+  <button id="matchingResetBtn" type="button">Reset</button>
+</div>
+
+<div id="matchingOutput" class="output-box pastel-lavender"></div>
+</div>
+
+<div class="tab-panel" id="tabYogas">
+<h2>Yogas (Planetary Combinations)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart. Present auspicious yogas are listed first (best/highest magnitude first), then present inauspicious yogas (worst/highest magnitude first), then every yoga not found in this chart — its derivation and meaning are always shown either way.</p>
+<div class="controls">
+  <span><span class="bav-legend-swatch yoga-row-good"></span>Present — Auspicious</span>
+  <span><span class="bav-legend-swatch yoga-row-bad"></span>Present — Inauspicious</span>
+  <span><span class="bav-legend-swatch yoga-row-medium"></span>Not Present</span>
+</div>
+<div id="yogasTableOutput" class="output-box pastel-yellow"></div>
+</div>
+
+<div class="tab-panel" id="tabDasha">
+<h2>Vimshottari Dasha</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed automatically on every Generate Chart from the Moon's nakshatra at birth — the classical 120-year Vimshottari cycle, shown to 4 levels: Mahadasha (MD), Antardasha (AD), Pratyantardasha (PD) and Sookshma Dasha (SD). Click a planet name in a column to open its sub-periods in the next column. The currently running period at each level is highlighted <strong style="color:#b35c00;">orange</strong>; any row you click is highlighted <strong style="background:#fff3b0;">yellow</strong>.</p>
+<div id="dashaTableOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabSadeSati">
+<h2>Sade Sati</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Computed by scanning transiting Saturn's real position across ~80 years from birth — every Sade Sati episode (Saturn transiting the 12th/1st/2nd sign from the natal Moon), with dates, ages, house effects, and a good/neutral/bad quality read per phase. This scan can take a few seconds the first time.</p>
+<div id="sadeSatiOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabMangalDosha2">
+<h2>Mangal Dosha (Kuja Dosha)</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Single-chart Mangal Dosha analysis: how it's derived from 3 classical reference points (Lagna/Moon/Venus), a strength score in multiples of 5, possible neutralization factors, and commonly cited remedies. For a two-chart comparison, see the Kundali Matching tab.</p>
+<div id="mangalDosha2Output" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabShadbala">
+<h2>Shadbala</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Six-fold classical planetary strength (Sthana/Dig/Kala/Cheshta/Naisargika/Drik Bala) for the 7 classical planets, in Rupa/Virupa units, with a dynamic interpretation of why each planet is strong or weak and what that means — strength is capacity to act, not a verdict on whether the outcome is favorable.</p>
+<div class="controls">
+  <label><input type="checkbox" id="shadbalaDetailedToggle"> Detailed Calculation View (off = Beginner View)</label>
+  <select id="shadbalaSortBy">
+    <option value="rank">Sort by Total Shadbala</option>
+    <option value="ratio">Sort by Strength Ratio</option>
+    <option value="name">Sort by Planet Name</option>
+    <option value="natural">Sort by Natural Benefic/Malefic</option>
+    <option value="functional">Sort by Functional Role</option>
+  </select>
+</div>
+<div id="shadbalaOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabAshtakvargaPredictions">
+<h2>Ashtakvarga Predictions</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Reuses this chart's existing BAV/SAV data (Ashtakvarga tab) — nothing here recomputes bindus. Notation: this app uses the BINDU convention (0-8 per sign), never Rekha. Predictions are background-support indications, not guaranteed events — always read alongside natal promise, dasha and transit.</p>
+<div class="controls">
+  <select id="avpLifeAreaSelect">
+    <option value="Wealth">Wealth &amp; Savings</option>
+    <option value="Career">Career &amp; Status</option>
+    <option value="Health">Health &amp; Longevity</option>
+    <option value="Marriage">Marriage</option>
+    <option value="Children">Children</option>
+    <option value="Property">Property &amp; Assets</option>
+    <option value="Education">Education</option>
+  </select>
+</div>
+<div id="avpOutput" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabKakshya">
+<h2>Kakshya Analysis</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. A micro-timing refinement layered on the existing Ashtakavarga data: each sign is divided into 8 Kakshyas of 3&deg;45' each (Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon, Lagna). This never overrides natal promise, dasha, or the larger transit — it only refines when, within an already-indicated transit, the effect is more or less likely to express.</p>
+<div class="controls">
+  <label>Timeline/Window planet: <select id="kakshyaPlanetSelect">
+    <option>Saturn</option><option>Jupiter</option><option>Mars</option><option>Sun</option><option>Venus</option><option>Mercury</option><option>Moon</option>
+  </select></label>
+  <label>Find windows — Life area: <select id="kakshyaLifeAreaSelect">
+    <option value="">(any / by house below)</option>
+    <option value="Wealth">Wealth</option><option value="Career">Career</option><option value="Health">Health</option>
+    <option value="Marriage">Marriage</option><option value="Children">Children</option><option value="Property">Property</option><option value="Education">Education</option>
+  </select></label>
+  <label>House: <input type="number" id="kakshyaHouseFilter" min="1" max="12" style="width:50px;" placeholder="1-12"></label>
+  <label>From: <input type="date" id="kakshyaWindowStart"></label>
+  <label>To: <input type="date" id="kakshyaWindowEnd"></label>
+  <button id="kakshyaFindWindowsBtn">Find Kakshya Windows</button>
+</div>
+<div id="kakshyaOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabKakshyaTimeline">
+<h2>Kakshya Life-Area Timeline</h2>
+<p><em>Visual timeline of Kakshya-based support across major areas of life.</em> Generate a chart on the "Chart &amp; Analysis" tab first.</p>
+<p style="font-size:0.9em;background:#fff8e1;border-left:3px solid #e0a800;padding:8px 12px;">
+<strong>How to read this chart:</strong> Green periods indicate stronger calculated support for the selected area of life, yellow indicates mixed or limited support, and red indicates more difficult periods. The colour is based on the combined assessment of the relevant Ashtakavarga (BAV/SAV), Kakshya, and current Dasha factors — it is a supportive/challenging timing assessment, not a guarantee that any event will or won't happen. Kakshya is a refinement/timing layer; it should not be read independently of the natal chart and dasha.
+</p>
+<div class="controls">
+  <label>Quick range: <select id="ktQuickRange">
+    <option value="3">Next 3 months</option>
+    <option value="6" selected>Next 6 months</option>
+    <option value="12">Next 1 year</option>
+    <option value="24">Next 2 years</option>
+    <option value="36">Next 3 years</option>
+    <option value="60">Next 5 years</option>
+    <option value="custom">Custom range</option>
+  </select></label>
+  <label>From: <input type="date" id="ktStartDate"></label>
+  <label>To: <input type="date" id="ktEndDate"></label>
+  <label>Resolution: <select id="ktResolution">
+    <option value="month" selected>Month</option>
+    <option value="week">Week</option>
+    <option value="day">Day</option>
+  </select></label>
+  <label>Life areas: <select id="ktAreaGroup">
+    <option>All</option><option>Career &amp; Money</option><option>Relationships</option><option>Family &amp; Children</option>
+    <option>Property &amp; Assets</option><option>Education</option><option>Health</option><option>Travel</option><option>Business</option><option>Spirituality</option>
+  </select></label>
+  <button id="ktBuildBtn">Build Timeline</button>
+  <button id="ktExportCsvBtn">Export CSV</button>
+  <button id="ktPrintBtn">Print Report</button>
+</div>
+<div id="ktLegend" class="kt-legend"></div>
+<div id="ktMatrixContainer"></div>
+<div id="ktCellDetail"></div>
+<div id="ktSummary"></div>
+<details class="avp-calc"><summary>How is the colour calculated? (Methodology)</summary><div id="ktMethodology"></div></details>
+</div>
+
+<div class="tab-panel" id="tabSavedNatives">
+<h2>Natives</h2>
+<p>Store and reload native records in a shared CSV file (Name,Sex,Location,City,State,Country,BirthDate,BirthTime,Latitude,Longitude,TimezoneMode,UTCOffset,Notes) — compatible with the sibling KP app's Saved Natives file. No changes here affect existing chart/calculation logic.</p>
+
+<h3>CSV File</h3>
+<div class="controls">
+  <button id="snConnectBtn" type="button">Connect (Open CSV)</button>
+  <button id="snStartNewBtn" type="button">Start New CSV</button>
+  <button id="snSaveFileBtn" type="button">Save</button>
+  <span id="snFileStatus" style="font-size:0.9em;color:#555;"></span>
+</div>
+<input type="file" id="snFileInputFallback" accept=".csv,text/csv" style="display:none;">
+
+<h3>Save / Add Native</h3>
+<fieldset>
+  <label>Name: <input type="text" id="snName"></label>
+  <label>Sex: <select id="snSex"><option value=""></option><option>Male</option><option>Female</option><option>Other</option></select></label>
+  <label>Location: <input type="text" id="snLocation" placeholder="free-text summary, optional"></label><br><br>
+  <label>City: <input type="text" id="snCity"></label>
+  <label>State: <input type="text" id="snState"></label>
+  <label>Country: <input type="text" id="snCountry"></label><br><br>
+  <label>Birth Date: <input type="date" id="snBirthDate"></label>
+  <label>Birth Time: <input type="time" id="snBirthTime" step="1"></label>
+  <label>Latitude: <input type="text" id="snLat" placeholder="e.g. 28.6139"></label>
+  <label>Longitude: <input type="text" id="snLon" placeholder="e.g. 77.2090"></label><br><br>
+  <label>Timezone Mode:
+    <select id="snTimezoneMode">
+      <option value="iana">Time zone name</option>
+      <option value="offset">UTC offset</option>
+    </select>
+  </label>
+  <label id="snIanaZoneLabel">Time zone: <select id="snIanaZone"></select></label>
+  <label id="snUtcOffsetLabel" hidden>UTC offset (e.g. +5:30): <input type="text" id="snUtcOffset" placeholder="+5:30"></label><br><br>
+  <label>Notes:<br><textarea id="snNotes" rows="2" style="width:100%;max-width:500px;"></textarea></label><br><br>
+  <button id="snCopyFromChartBtn" type="button">Copy from Chart &amp; Analysis tab</button>
+  <button id="snSaveNativeBtn" type="button">Save / Add Native</button>
+  <button id="snClearFormBtn" type="button">Clear Form</button>
+</fieldset>
+<div id="snSaveStatus" style="font-size:0.9em;color:#555;"></div>
+
+<h3>Search &amp; Load</h3>
+<input type="text" id="snSearchBox" placeholder="Search all fields…" style="width:100%;max-width:400px;">
+<div id="snTableOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabRemedies">
+<h2>Remedies_1</h2>
+<p>Generate a chart on the "Chart &amp; Analysis" tab first. Chart-specific remedies (Chant, Donation, Action, Gemstone) drawn from a fixed, curated database — never improvised at runtime. Every remedy shows why it was chosen, from which chart factors, with its source and confidence level. <strong>No remedy here is a guarantee of any outcome</strong> — this is a traditional astrological practice guide, not medical, legal, or financial advice.</p>
+<div class="controls">
+  <select id="remCategoryFilter">
+    <option value="all">All categories</option>
+    <option value="chant">Chant only</option>
+    <option value="donation">Donation only</option>
+    <option value="action">Action only</option>
+    <option value="gemstone">Gemstone only</option>
+  </select>
+  <label><input type="checkbox" id="remClassicalOnly"> Classical/Traditional sources only</label>
+  <label><input type="checkbox" id="remHighConfidenceOnly"> High confidence only</label>
+  <label><input type="checkbox" id="remDashaOnly"> Current or upcoming dasha-relevant only</label>
+</div>
+<div id="remediesOutput" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabRemedies2">
+<h2>Remedies_2</h2>
+<p>Personalized Parashari Remedy Analysis — a second, independently-built deterministic remedy engine (separate from Remedies_1) evaluating natural/functional nature, house, sign, dignity, lordship, conjunctions, aspects, combustion, debilitation/cancellation, Shadbala, yogas and dasha activation for all 9 planets. <strong>Traditional remedial practice guidance only — not a medical, legal, or financial guarantee.</strong></p>
+<div class="controls">
+  <label><input type="checkbox" id="rem2DebugMode"> Debug mode (show raw rule path &amp; scores)</label>
+  <label><input type="checkbox" id="rem2ShowAll"> Show all detected afflictions (including suppressed/low-priority)</label>
+</div>
+<div id="remedies2Output" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabRemediesCompare">
+<h2>Remedies_Compare</h2>
+<p>Side-by-side comparison of Remedies_1 and Remedies_2 — two independently-built deterministic remedy engines evaluating the same chart. Both reuse the same underlying dignity/functional/Shadbala/dasha/yoga calculations but score, consolidate and rank independently, so agreement between them is a useful cross-check, and disagreement highlights where the two rule sets weigh factors differently — not that one is "wrong."</p>
+<div id="remediesCompareOutput" class="output-box pastel-peach"></div>
+</div>
+
+<div class="tab-panel" id="tabKnowledgeBase">
+<h2>Knowledge Base</h2>
+<p>A supplementary Parashari interpretation reference (Lagna-in-sign, Planet-in-house) for the current chart, drawn from a standard/consensus interpretive synthesis of common Parashari principles — not a verbatim quotation of any single classical text. Planet-in-sign content is a stub in this knowledge base (structure present, text not yet authored) and is shown honestly as such rather than invented.</p>
+<div id="kbOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabNakshatraInterp">
+<h2>Nakshatra Interpretations</h2>
+<p>For each planet, an interpretation of its current Nakshatra (lunar mansion) and Pada (quarter), synthesized from this app's existing classical reference data — each nakshatra's deity/symbol/keynote, its Vimshottari star lord, the planet's own core significations, and the pada's Navamsa-sign flavor (using this app's existing D9 divisional chart calculation, since one pada is by definition exactly one Navamsa division). Every statement traces back to one of these reused sources — nothing here is freely invented per planet/nakshatra combination.</p>
+<div id="nakInterpOutput" class="output-box pastel-lavender"></div>
+</div>
+
+<div class="tab-panel" id="tabSudarshana">
+<h2>Sudarshana Chakra</h2>
+<p>A three-reference-point analysis of the SAME natal chart — Lagna (external life), Moon (mind/experience), and Sun (identity/status/vitality). The planets never move between these views; only the house numbering (relative to each reference sign) changes. This is a confirmatory/analytical framework, not a replacement for the complete Parashari system — natal promise (from Lagna) remains the foundation, and dasha/transit activation are always considered alongside the three-reference synthesis. <button id="sudarHelpBtn" type="button">What is Sudarshana Chakra? (Help)</button></p>
+<div id="sudarHelpPanel" class="output-box pastel-lavender" hidden></div>
+
+<h3>Three Chakra Views</h3>
+<div id="sudarChakrasOutput" class="output-box pastel-blue"></div>
+
+<h3>Planetary Comparison</h3>
+<p style="font-size:0.9em;color:#555;">Click a row to see that planet's full three-reference analysis.</p>
+<div id="sudarComparisonOutput" class="output-box pastel-mint"></div>
+<div id="sudarPlanetDetailOutput"></div>
+
+<h3>Life-Area Analysis</h3>
+<div id="sudarLifeAreasOutput" class="output-box pastel-peach"></div>
+
+<h3>Annual Sudarshana Chakra Daśā</h3>
+<div id="sudarAnnualOutput" class="output-box pastel-yellow"></div>
+
+<h3>Transit Analysis</h3>
+<div id="sudarTransitOutput" class="output-box pastel-lavender"></div>
+
+<h3>Daśā + Sudarshana</h3>
+<div id="sudarDashaPanelOutput" class="output-box pastel-mint"></div>
+
+<h3>Event / Timing Support</h3>
+<div class="controls">
+  <select id="sudarEventSelect"></select>
+</div>
+<div id="sudarEventOutput" class="output-box pastel-pink"></div>
+
+<h3>Rules / Methodology</h3>
+<details class="avp-calc"><summary>Show methodology</summary><div id="sudarMethodologyOutput"></div></details>
+
+<h3>Calculations (all Life Areas)</h3>
+<p style="font-size:0.9em;color:#555;">Click any score cell in the Life-Area Summary table above to jump straight to that area's full calculation here.</p>
+<div id="sudarCalcSectionOutput" class="output-box pastel-mint"></div>
+</div>
+
+<div class="tab-panel" id="tabParashariAnalysis">
+  <div id="pa-root"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -275,6 +767,36 @@
 <script src="js/interpretations/retrogradeInterpretations.js"></script>
 <script src="js/interpretations/lagnaInterpretations.js"></script>
 <script src="js/interpretations/interpretationEngine.js"></script>
+<script src="js/interpretations2/promptReference.js"></script>
+<script src="js/interpretations2/nakshatraTraits.js"></script>
+<script src="js/interpretations2/ruleEngine.js"></script>
+<script src="js/matching/ashtakootRules.js"></script>
+<script src="js/matching/mangalDoshaRules.js"></script>
+<script src="js/matching/kundaliMatching.js"></script>
+<script src="js/yogas/yogaRules.js"></script>
+<script src="js/yogas/yogaEngine.js"></script>
+<script src="js/dasha/vimshottariDasha.js"></script>
+<script src="js/sadesati/sadeSatiEngine.js"></script>
+<script src="js/mangaldosha2/mangalDoshaEngine2.js"></script>
+<script src="js/shadbala/sunTimes.js"></script>
+<script src="js/shadbala/shadbalaEngine.js"></script>
+<script src="js/shadbala/shadbalaInterpretation.js"></script>
+<script src="js/ashtakvargaPredictions/ashtakvargaRuleDatabase.js"></script>
+<script src="js/ashtakvargaPredictions/ashtakvargaPredictionEngine.js"></script>
+<script src="js/kakshya/kakshyaEngine.js"></script>
+<script src="js/kakshyaTimeline/timelineLifeAreas.js"></script>
+<script src="js/kakshyaTimeline/timelineEngine.js"></script>
+<script src="js/savedNatives/csvUtil.js"></script>
+<script src="js/remedies/remedyData.js"></script>
+<script src="js/remedies/remedyEngine.js"></script>
+<script src="js/knowledgebase/parashariKB.js"></script>
+<script src="js/knowledgebase/kbEngine.js"></script>
+<script src="js/nakshatra/nakshatraInterpretationEngine.js"></script>
+<script src="js/sudarshana/sudarshanaEngine.js"></script>
+<script src="js/remedies2/remedyData2.js"></script>
+<script src="js/remedies2/remedyEngine2.js"></script>
+<script src="js/parashariAnalysis/parashariAnalysisEngine.js"></script>
+<script src="js/parashariAnalysis/parashariAnalysisUI.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
