@@ -726,28 +726,41 @@ function renderRuleEngineTab() {
 
 let sadeSatiCountdownTimer = null;
 
-function formatCountdown(msRemaining) {
-  if (msRemaining <= 0) return '0d 0h 0m 0s';
-  const totalSeconds = Math.floor(msRemaining / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+// Calendar-accurate Years-Months-Days-Hours-Minutes-Seconds breakdown
+// between two Date objects (extends the same borrow-based logic used by
+// ageAt() in vimshottariDasha.js, adding the time-of-day components ageAt
+// doesn't need).
+function ssCalendarCountdown(fromDate, toDate) {
+  if (toDate <= fromDate) return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true };
+  let years = toDate.getUTCFullYear() - fromDate.getUTCFullYear();
+  let months = toDate.getUTCMonth() - fromDate.getUTCMonth();
+  let days = toDate.getUTCDate() - fromDate.getUTCDate();
+  let hours = toDate.getUTCHours() - fromDate.getUTCHours();
+  let minutes = toDate.getUTCMinutes() - fromDate.getUTCMinutes();
+  let seconds = toDate.getUTCSeconds() - fromDate.getUTCSeconds();
+  if (seconds < 0) { seconds += 60; minutes -= 1; }
+  if (minutes < 0) { minutes += 60; hours -= 1; }
+  if (hours < 0) { hours += 24; days -= 1; }
+  if (days < 0) {
+    months -= 1;
+    const daysInPrevMonth = new Date(Date.UTC(toDate.getUTCFullYear(), toDate.getUTCMonth(), 0)).getUTCDate();
+    days += daysInPrevMonth;
+  }
+  if (months < 0) { months += 12; years -= 1; }
+  return { years, months, days, hours, minutes, seconds, isPast: false };
+}
+
+function ssFormatYMDHMS(c) {
+  if (c.isPast) return 'Completed';
+  return `${c.years}y ${c.months}m ${c.days}d ${c.hours}h ${c.minutes}m ${c.seconds}s`;
 }
 
 function tickSadeSatiCountdowns() {
   const now = new Date();
-  const ongoingEl = document.getElementById('sadeSatiCountdownOngoing');
-  const nextEl = document.getElementById('sadeSatiCountdownNext');
-  if (ongoingEl) {
-    const endTime = Number(ongoingEl.dataset.endTime);
-    ongoingEl.textContent = formatCountdown(endTime - now.getTime());
-  }
-  if (nextEl) {
-    const startTime = Number(nextEl.dataset.startTime);
-    nextEl.textContent = formatCountdown(startTime - now.getTime());
-  }
+  document.querySelectorAll('.ss-live-countdown[data-target-time]').forEach(el => {
+    const targetTime = Number(el.dataset.targetTime);
+    el.textContent = ssFormatYMDHMS(ssCalendarCountdown(now, new Date(targetTime)));
+  });
 }
 
 function renderSadeSatiPhaseTable(segments) {
@@ -805,16 +818,29 @@ function renderSadeSatiContent(el, result) {
     const endTime = result.ongoing.end.getTime();
     countdownHtml += `
       <div class="countdown-box countdown-ongoing">
-        <div class="countdown-label">Ongoing Sade Sati ends in</div>
-        <div class="countdown-value" id="sadeSatiCountdownOngoing" data-end-time="${endTime}">${formatCountdown(endTime - Date.now())}</div>
+        <div class="countdown-label">Full Sade Sati period ends in</div>
+        <div class="countdown-value ss-live-countdown" data-target-time="${endTime}">${ssFormatYMDHMS(ssCalendarCountdown(new Date(), result.ongoing.end))}</div>
+        <div style="font-size:0.8em;color:#555;">on ${formatDashaDateTime(result.ongoing.end)}</div>
       </div>`;
+    const now = new Date();
+    result.ongoing.segments.forEach((seg, i) => {
+      const isPast = now >= seg.end;
+      const endTimeMs = seg.end.getTime();
+      countdownHtml += `
+      <div class="countdown-box countdown-next">
+        <div class="countdown-label">${escapeHtml(seg.phaseLabel)} — ${seg.sign}${isPast ? ' (ended)' : ' ends in'}</div>
+        <div class="countdown-value${isPast ? '' : ' ss-live-countdown'}" ${isPast ? '' : `data-target-time="${endTimeMs}"`}>${isPast ? 'Completed' : ssFormatYMDHMS(ssCalendarCountdown(now, seg.end))}</div>
+        <div style="font-size:0.8em;color:#555;">on ${formatDashaDateTime(seg.end)}</div>
+      </div>`;
+    });
   }
   if (result.next) {
     const startTime = result.next.start.getTime();
     countdownHtml += `
       <div class="countdown-box countdown-next">
         <div class="countdown-label">${result.ongoing ? 'Next Sade Sati (after this one) starts in' : 'Next Sade Sati starts in'}</div>
-        <div class="countdown-value" id="sadeSatiCountdownNext" data-start-time="${startTime}">${formatCountdown(startTime - Date.now())}</div>
+        <div class="countdown-value ss-live-countdown" data-target-time="${startTime}">${ssFormatYMDHMS(ssCalendarCountdown(new Date(), result.next.start))}</div>
+        <div style="font-size:0.8em;color:#555;">on ${formatDashaDateTime(result.next.start)}</div>
       </div>`;
   }
   if (!result.ongoing && !result.next) {
@@ -1777,6 +1803,7 @@ function renderRelationsTable(strengthData) {
     <tr>
       <td>${p.name}</td>
       <td>${p.sign}</td>
+      <td>${SIGN_LORD[p.sign]}</td>
       <td class="rel-${p.signRelation}">${p.signRelation}</td>
       <td>${relationList(p.conjRelations)}</td>
       <td>${relationList(p.aspectRelations)}</td>
@@ -1784,7 +1811,7 @@ function renderRelationsTable(strengthData) {
   el.innerHTML = `
     <table>
       <thead><tr>
-        <th>Planet</th><th>Sign</th><th>Sign Lord Relation</th><th>Conjunct With</th><th>Aspected By</th>
+        <th>Planet</th><th>Sign</th><th>Sign Lord</th><th>Sign Lord Relation</th><th>Conjunct With</th><th>Aspected By</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -3284,8 +3311,44 @@ function renderSudarshanaTab() {
   renderEvent();
 }
 
+// --- Global table-cell centering (numbers, percentages, ratios, Yes/No) ---
+// Applies across every table in the app, present or future, without
+// needing every render*Table() function edited individually: a
+// MutationObserver watches for newly-inserted table cells (this app
+// re-renders whole tables via innerHTML) and center-aligns any <td> whose
+// own text content is purely a number, percentage, ratio, or Yes/No —
+// text/interpretation cells (which never match this narrow pattern) are
+// left exactly as they were.
+function isCenterableCellText(text) {
+  const t = text.trim();
+  if (!t) return false;
+  if (/^[+-]?\d+(\.\d+)?%?$/.test(t)) return true; // 7, -3, 4.5, 72%, -50%
+  if (/^[+-]?\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/.test(t)) return true; // 3/8, 4.5/10
+  if (/^(Yes|No|Y|N|True|False)$/i.test(t)) return true;
+  return false;
+}
+function centerNumericCellsIn(root) {
+  if (!root.querySelectorAll) return;
+  root.querySelectorAll('td').forEach(td => {
+    if (isCenterableCellText(td.textContent)) td.style.textAlign = 'center';
+  });
+  if (root.tagName === 'TD' && isCenterableCellText(root.textContent)) root.style.textAlign = 'center';
+}
+function initTableCellCentering() {
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType === 1) centerNumericCellsIn(node);
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  centerNumericCellsIn(document.body); // catch anything already rendered
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
+  initTableCellCentering();
   initEngineStatusBadge();
   populateIanaZones();
   initTimezoneModeToggle();
