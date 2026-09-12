@@ -146,7 +146,12 @@ function sudarPlanetDetail(planetName, chart, models, functional) {
   const relevantLifeAreas = SUDARSHANA_LIFE_AREAS.filter(a => a.houses.includes(fromLagna)).map(a => a.name);
 
   const themeLagna = HOUSE_THEMES[fromLagna].title, themeMoon = HOUSE_THEMES[fromMoon].title, themeSun = HOUSE_THEMES[fromSun].title;
-  const synthesisText = `From Lagna, ${planetName} activates ${themeLagna} (${houseCategoryFrom(fromLagna)}, house ${fromLagna}) — the external/circumstantial layer. From Moon, it falls in the house governing ${themeMoon} (house ${fromMoon}), coloring how this is mentally/emotionally experienced. From Sun, it falls in the house governing ${themeSun} (house ${fromSun}), affecting how this connects to identity, vitality and status. ${dignity.text} ${funcInfo.text}`;
+  const synthesisByReference = {
+    lagna: `From Lagna, ${planetName} activates ${themeLagna} (${houseCategoryFrom(fromLagna)}, house ${fromLagna}) — the external/circumstantial layer. ${dignity.text} ${funcInfo.text}`,
+    moon: `From Moon, ${planetName} falls in the house governing ${themeMoon} (house ${fromMoon}), coloring how this is mentally/emotionally experienced.`,
+    sun: `From Sun, ${planetName} falls in the house governing ${themeSun} (house ${fromSun}), affecting how this connects to identity, vitality and status.`
+  };
+  const synthesisText = `${synthesisByReference.lagna} ${synthesisByReference.moon} ${synthesisByReference.sun}`;
 
   return {
     planet: planetName, sign: p.sign, longitude: p.longitude, dignity: dignity.tier, dignityText: dignity.text,
@@ -154,7 +159,7 @@ function sudarPlanetDetail(planetName, chart, models, functional) {
     lordshipLagna: lordshipFrom('Lagna'), lordshipMoon: lordshipFrom('Moon'), lordshipSun: lordshipFrom('Sun'),
     houseCategoryLagna: houseCategoryFrom(fromLagna), houseCategoryMoon: houseCategoryFrom(fromMoon), houseCategorySun: houseCategoryFrom(fromSun),
     conjunctions: p.conjunctWith || [], aspects: p.aspectedBy || [], combust: !!p.combust, retrograde: !!p.retrograde,
-    functionalNature: funcInfo.label, relevantLifeAreas, synthesis: synthesisText
+    functionalNature: funcInfo.label, relevantLifeAreas, synthesis: synthesisText, synthesisByReference
   };
 }
 

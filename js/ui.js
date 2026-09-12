@@ -2927,27 +2927,148 @@ function sudarBar(score) {
   return `<div style="background:#eee;border-radius:4px;height:10px;width:100%;max-width:180px;overflow:hidden;display:inline-block;vertical-align:middle;"><div style="background:${color};height:100%;width:${pct}%;"></div></div> <span style="font-size:0.85em;">${score}/10</span>`;
 }
 
-function sudarChakraCardsHtml(models) {
-  return `<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
-    ${renderNorthIndianChart('Lagna Chakra — External Life', models.Lagna.byHouse)}
-    ${renderNorthIndianChart('Chandra Chakra — Mind / Experience', models.Moon.byHouse)}
-    ${renderNorthIndianChart('Surya Chakra — Identity / Status', models.Sun.byHouse)}
+// Standard planet colors (common Jyotish-software convention), used as a
+// background behind each planet's abbreviation wherever planets are drawn
+// in the Sudarshana chakra diagrams — a LOCAL convention for this tab's
+// own diagrams only, so the shared renderNorthIndianChart() used by every
+// other chart tab in this app is left untouched.
+const SUDAR_PLANET_COLORS = {
+  Sun: { bg: '#e65100', fg: '#fff' }, Moon: { bg: '#eeeeee', fg: '#333' },
+  Mars: { bg: '#b71c1c', fg: '#fff' }, Mercury: { bg: '#2e7d32', fg: '#fff' },
+  Jupiter: { bg: '#e67e22', fg: '#fff' }, Venus: { bg: '#f8bbd0', fg: '#4a148c' },
+  Saturn: { bg: '#000000', fg: '#fff' }, Rahu: { bg: '#616161', fg: '#fff' },
+  Ketu: { bg: '#8d6e63', fg: '#fff' }, As: { bg: '#1565c0', fg: '#fff' }
+};
+
+function sudarPlanetChipsSvg(planetNames, cx, cy, chipW, chipH, fontSize) {
+  chipW = chipW || 20; chipH = chipH || 10; fontSize = fontSize || 7;
+  const gap = 2;
+  const totalWidth = planetNames.length * chipW + Math.max(0, planetNames.length - 1) * gap;
+  const startX = cx - totalWidth / 2;
+  return planetNames.map((name, i) => {
+    const colors = SUDAR_PLANET_COLORS[name] || { bg: '#999', fg: '#fff' };
+    const x = startX + i * (chipW + gap);
+    return `<rect x="${x}" y="${cy - chipH / 2}" width="${chipW}" height="${chipH}" rx="2" fill="${colors.bg}" /><text x="${x + chipW / 2}" y="${cy + fontSize / 2 - 1}" text-anchor="middle" font-size="${fontSize}" fill="${colors.fg}" font-weight="bold">${planetLabel(name)}</text>`;
+  }).join('');
+}
+
+// Sudarshana-specific North Indian chakra: same diamond layout as the
+// shared renderNorthIndianChart(), but with color-coded planet chips
+// instead of plain text (kept local to this tab per this request).
+function sudarNorthIndianChartColored(title, byHouse) {
+  const polygons = NORTH_INDIAN_HOUSES.map(h => {
+    const data = byHouse[h.house];
+    const sign = SIGNS[data.signIndex];
+    const planetChips = data.planets.length ? sudarPlanetChipsSvg(data.planets.map(p => p.name), h.label[0], h.label[1] + 14) : '';
+    return `
+      <polygon points="${h.points}" fill="none" stroke="#555" stroke-width="1.5" />
+      <text x="${h.label[0]}" y="${h.label[1]}" text-anchor="middle" font-weight="bold">${sign.slice(0, 3)}</text>
+      <text x="${h.label[0]}" y="${h.label[1] - 12}" text-anchor="middle" font-size="8" fill="#888">${h.house}</text>
+      ${planetChips}
+    `;
+  }).join('');
+  return `<div class="chart-block"><h3>${title}</h3>
+    <svg class="vedic-chart-svg" width="320" height="320" viewBox="-10 -10 320 320">
+      <rect x="0" y="0" width="300" height="300" fill="#fff" stroke="#555" stroke-width="2" />
+      <line x1="0" y1="0" x2="300" y2="300" stroke="#555" />
+      <line x1="300" y1="0" x2="0" y2="300" stroke="#555" />
+      ${polygons}
+    </svg></div>`;
+}
+
+// Traditional circular Sudarshana Chakra wheel (per the reference
+// screenshot): three nested rings — Lagna (outer), Chandra (middle), Surya
+// (inner) — each its own house-number band plus a planet band. Sign 0
+// (Aries) is placed at the top; signs proceed clockwise at 30° each. Each
+// ring's house numbers are computed the SAME way as the rest of this tab
+// (wholeSignHouseOf against that reference's own sign) — no separate
+// calculation, purely a different visual layout of the same models.
+function sudarCircularChakraSvg(models) {
+  const size = 520, cx = 260, cy = 260;
+  const rings = [
+    { model: models.Lagna, label: 'Lagna', numOuter: 250, numInner: 224, planetOuter: 224, planetInner: 182 },
+    { model: models.Moon, label: 'Chandra', numOuter: 182, numInner: 156, planetOuter: 156, planetInner: 112 },
+    { model: models.Sun, label: 'Surya', numOuter: 112, numInner: 86, planetOuter: 86, planetInner: 42 }
+  ];
+  const angleFor = signIndex => (signIndex * 30 - 90) * Math.PI / 180;
+  const pt = (r, signIndex, offsetDeg) => {
+    const a = angleFor(signIndex) + (offsetDeg || 0) * Math.PI / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+
+  let svg = '';
+  // Planets by sign, from the natal chart (same for every ring — only the
+  // house NUMBER differs per reference, not the planet's actual position).
+  const planetsBySign = {};
+  SIGNS.forEach(s => { planetsBySign[s] = []; });
+  state.chart.planets.forEach(p => { if (planetsBySign[p.sign]) planetsBySign[p.sign].push(p.name); });
+
+  rings.forEach(ring => {
+    // Boundary circles for this ring's band.
+    svg += `<circle cx="${cx}" cy="${cy}" r="${ring.numOuter}" fill="none" stroke="#555" stroke-width="1.3" />`;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${ring.planetInner}" fill="none" stroke="#555" stroke-width="1.3" />`;
+    for (let signIndex = 0; signIndex < 12; signIndex++) {
+      // Radial spoke at each sign boundary (-15deg offset = boundary between signs).
+      const [x1, y1] = pt(ring.numOuter, signIndex, -15);
+      const [x2, y2] = pt(ring.planetInner, signIndex, -15);
+      svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#999" stroke-width="0.75" />`;
+
+      const houseNum = wholeSignHouseOf(signIndex, ring.model.referenceSignIndex);
+      const [nx, ny] = pt((ring.numOuter + ring.numInner) / 2, signIndex, 0);
+      svg += `<text x="${nx}" y="${ny + 3}" text-anchor="middle" font-size="9" fill="#333">${houseNum}</text>`;
+
+      const planets = planetsBySign[SIGNS[signIndex]];
+      if (planets.length) {
+        const [px, py] = pt((ring.planetOuter + ring.planetInner) / 2, signIndex, 0);
+        svg += planets.length > 1
+          ? planets.map((name, i) => {
+              const [ppx, ppy] = pt((ring.planetOuter + ring.planetInner) / 2, signIndex, (i - (planets.length - 1) / 2) * 8);
+              return sudarPlanetChipsSvg([name], ppx, ppy, 16, 9, 6.5);
+            }).join('')
+          : sudarPlanetChipsSvg(planets, px, py, 18, 10, 7);
+      }
+    }
+  });
+
+  // Ring legend as plain HTML (not rotating SVG text) so it never collides
+  // with a planet chip at whatever angle that chip happens to fall.
+  const legend = rings.map(r => `<span style="margin-right:14px;"><strong>${r.label}</strong> (${r.model.reference === 'Lagna' ? 'outer' : r.model.reference === 'Moon' ? 'middle' : 'inner'} ring) — sign ${r.model.referenceSign} = House 1</span>`).join('');
+
+  return `<div class="chart-block">
+    <h3>Sudarshan Chakra (traditional circular view)</h3>
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Circular Sudarshana Chakra wheel showing Lagna, Chandra and Surya reference rings with house numbers and planet positions">
+      ${svg}
+      <text x="${cx}" y="${cy}" text-anchor="middle" font-size="9" fill="#888">Sudarshan Chakra</text>
+    </svg>
+    <p style="font-size:0.8em;color:#555;max-width:${size}px;">${legend} &nbsp; Aries is at the top; signs proceed clockwise.</p>
   </div>`;
+}
+
+function sudarChakraCardsHtml(models) {
+  return `
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+      ${sudarCircularChakraSvg(models)}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:12px;">
+      ${sudarNorthIndianChartColored('Lagna Chakra — External Life', models.Lagna.byHouse)}
+      ${sudarNorthIndianChartColored('Chandra Chakra — Mind / Experience', models.Moon.byHouse)}
+      ${sudarNorthIndianChartColored('Surya Chakra — Identity / Status', models.Sun.byHouse)}
+    </div>`;
 }
 
 function sudarComparisonTableHtml(rows) {
   const trs = rows.map(r => `
-    <tr onclick="sudarShowPlanetDetail('${r.planet}')" style="cursor:pointer;">
+    <tr id="sudarRow-${r.planet}" onclick="sudarShowPlanetDetail('${r.planet}')" style="cursor:pointer;">
       <td>${r.planet}</td>
       <td>${r.sign}</td>
-      <td>${r.fromLagna}</td>
-      <td>${r.fromMoon}</td>
-      <td>${r.fromSun}</td>
+      <td style="text-align:center;">${r.fromLagna}</td>
+      <td style="text-align:center;">${r.fromMoon}</td>
+      <td style="text-align:center;">${r.fromSun}</td>
       <td style="font-size:0.85em;">${escapeHtml(r.keyInterpretation)}</td>
     </tr>`).join('');
   return `
     <table class="rem-table">
-      <thead><tr><th>Planet</th><th>Sign</th><th>From Lagna</th><th>From Moon</th><th>From Sun</th><th>Key Interpretation</th></tr></thead>
+      <thead><tr><th>Planet</th><th>Sign</th><th style="text-align:center;">From Lagna</th><th style="text-align:center;">From Moon</th><th style="text-align:center;">From Sun</th><th>Key Interpretation</th></tr></thead>
       <tbody>${trs}</tbody>
     </table>`;
 }
@@ -2956,26 +3077,69 @@ function sudarShowPlanetDetail(planetName) {
   const el = document.getElementById('sudarPlanetDetailOutput');
   if (!el || !state.sudarshana) return;
   const d = sudarPlanetDetail(planetName, state.chart, state.sudarshana.models, state.sudarshana.functional);
+
+  document.querySelectorAll('#sudarComparisonOutput tr.sudar-row-selected').forEach(tr => tr.classList.remove('sudar-row-selected'));
+  const rowEl = document.getElementById(`sudarRow-${planetName}`);
+  if (rowEl) rowEl.classList.add('sudar-row-selected');
+
   el.innerHTML = `
     <div class="rule-item quality-neutral" style="padding:10px;margin-top:8px;border-radius:4px;">
       <strong>${d.planet}</strong> — ${d.sign}, ${d.dignity} <span style="font-size:0.85em;color:#555;">(${escapeHtml(d.functionalNature)}${d.combust ? ', combust' : ''}${d.retrograde ? ', retrograde' : ''})</span>
       <table class="rem-table" style="margin-top:6px;">
-        <thead><tr><th></th><th>Lagna</th><th>Moon</th><th>Sun</th></tr></thead>
+        <thead><tr><th></th><th style="text-align:center;">Lagna</th><th style="text-align:center;">Moon</th><th style="text-align:center;">Sun</th></tr></thead>
         <tbody>
-          <tr><td>House</td><td>${d.fromLagna}</td><td>${d.fromMoon}</td><td>${d.fromSun}</td></tr>
-          <tr><td>Category</td><td>${d.houseCategoryLagna}</td><td>${d.houseCategoryMoon}</td><td>${d.houseCategorySun}</td></tr>
+          <tr><td>House</td><td style="text-align:center;">${d.fromLagna}</td><td style="text-align:center;">${d.fromMoon}</td><td style="text-align:center;">${d.fromSun}</td></tr>
+          <tr><td>Category</td><td style="text-align:center;">${d.houseCategoryLagna}</td><td style="text-align:center;">${d.houseCategoryMoon}</td><td style="text-align:center;">${d.houseCategorySun}</td></tr>
           <tr><td>Lordship</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipLagna)}</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipMoon)}</td><td style="font-size:0.85em;">${escapeHtml(d.lordshipSun)}</td></tr>
         </tbody>
       </table>
       <p style="font-size:0.85em;">Conjunctions: ${d.conjunctions.join(', ') || 'None'} &nbsp; Aspected by: ${d.aspects.join(', ') || 'None'}</p>
       <p style="font-size:0.85em;">Relevant life areas: ${d.relevantLifeAreas.join(', ') || 'None specifically'}</p>
-      <p><strong>Synthesis:</strong> ${escapeHtml(d.synthesis)}</p>
+      <table class="rem-table" style="margin-top:6px;">
+        <thead><tr><th>Reference</th><th>Perspective</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Lagna</strong></td><td>${escapeHtml(d.synthesisByReference.lagna)}</td></tr>
+          <tr><td><strong>Moon</strong></td><td>${escapeHtml(d.synthesisByReference.moon)}</td></tr>
+          <tr><td><strong>Sun</strong></td><td>${escapeHtml(d.synthesisByReference.sun)}</td></tr>
+        </tbody>
+      </table>
     </div>`;
   el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function sudarSupportRowHtml(label, s) {
   return `<div style="margin-bottom:4px;"><span style="display:inline-block;width:110px;font-size:0.85em;">${label}</span> ${sudarBar(s.score)} <span class="rem2-badge rem2-${s.strength.replace(/ /g, '')}" style="font-size:0.7em;">${s.strength}</span></div>`;
+}
+
+// Support-metric x life-area summary table (life areas as columns,
+// support types as rows) — score + color + text label per cell, no bar
+// graph, per this request.
+function sudarLifeAreaSummaryTableHtml(lifeAreas) {
+  const metrics = [
+    { label: 'Lagna Support', get: item => item.lagna },
+    { label: 'Moon Support', get: item => item.moon },
+    { label: 'Sun Support', get: item => item.sun },
+    { label: 'Natal Strength', get: item => item.natalPromise },
+    { label: 'Dasha Support', get: item => item.dashaSupport },
+    { label: 'Transit Support', get: item => item.transitSupport },
+    { label: 'Overall Confidence', get: item => ({ score: item.synthesis.score, strength: item.synthesis.confidence }) }
+  ];
+  const headerCells = lifeAreas.map(a => `<th style="text-align:center;">${escapeHtml(a.area)}</th>`).join('');
+  const rows = metrics.map(m => {
+    const cells = lifeAreas.map(item => {
+      const s = m.get(item);
+      const cls = sudarQualityClass(s.strength.replace('Very ', ''));
+      return `<td class="quality-${cls}" style="text-align:center;white-space:nowrap;">${s.score}<br><span style="font-size:0.75em;">${s.strength}</span></td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap;"><strong>${m.label}</strong></td>${cells}</tr>`;
+  }).join('');
+  return `
+    <div style="overflow-x:auto;">
+      <table class="rem-table">
+        <thead><tr><th></th>${headerCells}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function sudarLifeAreaCardHtml(item) {
@@ -3104,7 +3268,7 @@ function renderSudarshanaTab() {
   document.getElementById('sudarChakrasOutput').innerHTML = sudarChakraCardsHtml(m.models);
   document.getElementById('sudarComparisonOutput').innerHTML = sudarComparisonTableHtml(m.planetaryComparison);
   document.getElementById('sudarPlanetDetailOutput').innerHTML = '';
-  document.getElementById('sudarLifeAreasOutput').innerHTML = m.lifeAreas.map(sudarLifeAreaCardHtml).join('');
+  document.getElementById('sudarLifeAreasOutput').innerHTML = sudarLifeAreaSummaryTableHtml(m.lifeAreas) + m.lifeAreas.map(sudarLifeAreaCardHtml).join('');
   document.getElementById('sudarAnnualOutput').innerHTML = sudarAnnualHtml(m.annual);
   document.getElementById('sudarTransitOutput').innerHTML = sudarTransitsHtml(m.transits);
   document.getElementById('sudarDashaPanelOutput').innerHTML = sudarDashaPanelHtml(m.dashaPanel);
