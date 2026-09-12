@@ -3135,7 +3135,10 @@ function sudarShowPlanetDetail(planetName) {
 }
 
 function sudarSupportRowHtml(label, s) {
-  return `<div style="margin-bottom:4px;"><span style="display:inline-block;width:110px;font-size:0.85em;">${label}</span> ${sudarBar(s.score)} <span class="rem2-badge rem2-${s.strength.replace(/ /g, '')}" style="font-size:0.7em;">${s.strength}</span></div>`;
+  const favBadge = (s.favorability && s.favorability !== 'Unknown' && s.favorability !== 'Neutral')
+    ? ` <span class="rem2-badge rem2-${s.favorability === 'Favorable' ? 'Strong' : 'Weak'}" style="font-size:0.7em;">${s.favorability}</span>`
+    : '';
+  return `<div style="margin-bottom:4px;"><span style="display:inline-block;width:110px;font-size:0.85em;">${label}</span> ${sudarBar(s.score)} <span class="rem2-badge rem2-${s.strength.replace(/ /g, '')}" style="font-size:0.7em;">${s.strength}</span>${favBadge}</div>`;
 }
 
 // Support-metric x life-area summary table (life areas as columns,
@@ -3156,7 +3159,8 @@ function sudarLifeAreaSummaryTableHtml(lifeAreas) {
     const cells = lifeAreas.map(item => {
       const s = m.get(item);
       const cls = sudarQualityClass(s.strength.replace('Very ', ''));
-      return `<td class="quality-${cls}" style="text-align:center;white-space:nowrap;">${s.score}<br><span style="font-size:0.75em;">${s.strength}</span></td>`;
+      const fav = (s.favorability && s.favorability !== 'Unknown' && s.favorability !== 'Neutral') ? `<br><span style="font-size:0.7em;color:${s.favorability === 'Favorable' ? '#1a5c1a' : '#8a1a1a'};">${s.favorability}</span>` : '';
+      return `<td class="quality-${cls}" style="text-align:center;white-space:nowrap;">${s.score}<br><span style="font-size:0.75em;">${s.strength}</span>${fav}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap;"><strong>${m.label}</strong></td>${cells}</tr>`;
   }).join('');
@@ -3261,7 +3265,7 @@ function sudarMethodologyHtml() {
     <p><strong>Reference hierarchy used throughout:</strong> Natal promise (Lagna) &rarr; Dasha activation &rarr; Transit activation &rarr; Sudarshana (3-reference) confirmation/synthesis. Sudarshana support never manufactures a result absent from the natal promise, and never overrides it — it strengthens, qualifies, or contextualizes the existing Parashari interpretation.</p>
     <p><strong>Three references:</strong> Lagna = external life/body/circumstances. Moon = mind/emotion/day-to-day experience. Sun = vitality/authority/identity/status. Planets never move between these views — only the house NUMBER assigned to each planet changes, since the reference sign becomes House 1 in each view. Conjunctions and aspect geometry are unaffected (they depend only on actual planetary longitudes).</p>
     <p><strong>House support score</strong> (0-10 per reference): starts at a neutral baseline of 5, then adjusts for occupant natural benefic/malefic count, the house lord's dignity (Exalted/Moolatrikona/Own Sign/Debilitated), whether the house lord itself occupies a Kendra/Trikona or Dusthana from that same reference, and benefic/malefic aspects on the house lord. This deliberately avoids a bare "good house = good result" count (Section 12/14 of the design spec) — a favorable house position can still be qualified by affliction.</p>
-    <p><strong>Dasha support:</strong> boosted when the current Mahadasha/Antardasha lord either rules or occupies the house in question (from Lagna).</p>
+    <p><strong>Dasha support:</strong> boosted when the current Mahadasha/Antardasha lord either rules or occupies the house in question (from Lagna). This is also folded together with that connecting lord's OWN dignity (Exalted/Own Sign/Moolatrikona/Debilitated, via the existing dignity engine): a well-dignified connecting lord pushes the score up and is labeled "Favorable," while a debilitated one pulls it down and is labeled "Unfavorable" — so "Strong" means the current period both strongly activates AND favorably supports that house's themes, not merely that it's "in focus." A house like the 6th (debt, enemies) being favorably activated generally means the native is well-placed to overcome/clear that theme, not that the theme itself intensifies against the native.</p>
     <p><strong>Transit support:</strong> reuses this app's existing ephemeris (the same current-position calculation used by Ashtakvarga Predictions' transit section) to check which major bodies are currently transiting the house in question, from Lagna.</p>
     <p><strong>Confidence labels</strong> (Very Strong / Strong / Moderate / Mixed / Weak / Very Weak) are Astrological Support Scores, not statistical probabilities. This app avoids words like "guaranteed" or "certain."</p>
     <p><strong>Conflict resolution:</strong> when Lagna/Moon/Sun disagree, the synthesis text explicitly describes the mismatch (e.g. "strong external potential, but the native may experience it with more psychological uncertainty") rather than forcing a single verdict.</p>

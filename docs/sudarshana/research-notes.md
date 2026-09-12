@@ -75,6 +75,27 @@ natal promise), and the overall life-area confidence weights it double —
 Moon/Sun/dasha/transit qualify it but cannot manufacture a result absent
 from it (Section 2/26/42).
 
+### Dasha Support now folds in the connecting lord's own dignity
+
+A user question exposed a real ambiguity in the original design: "Dasha
+Support" only measured whether the current Mahadasha/Antardasha lord was
+*connected* to a house (ruling or occupying it) — a pure activation
+signal that said nothing about whether that activation was good or bad.
+For a house like the 6th (Debt, Enemies/Competition), a "Strong" score
+could be misread either way — is the native winning, or is the debt/
+enemy problem intensifying?
+
+`sudarDashaSupportForHouse()` now also evaluates the connecting lord's
+own dignity (via the existing `detailedDignity()` engine, not
+recomputed) and folds it directly into the score: an Exalted/Own-Sign/
+Moolatrikona connecting lord pushes the score up and is labeled
+**Favorable**; a Debilitated one pulls it down and is labeled
+**Unfavorable**. The UI shows this as an explicit badge next to the
+Strong/Moderate/Weak label, and the reasons list spells out which
+planet's dignity drove the direction. "Strong" now means the current
+period both strongly activates AND favorably supports that house's
+themes — not merely that the theme is "in focus."
+
 ## Deliberate scope decisions
 
 The source prompt (51 sections) asked for several things not implemented

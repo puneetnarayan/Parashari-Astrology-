@@ -204,25 +204,55 @@ function sudarHouseSupportScore(model, houseNum, chart) {
   return { score: Math.round(score * 10) / 10, strength, reasons, occupants, lordName };
 }
 
-function sudarDashaSupportForHouse(lagnaModel, houseNum) {
-  if (!state.dasha) return { score: 5, strength: 'Moderate', reasons: ['No dasha data available.'] };
+// "Dasha Support" combines two distinct things, both needed for a useful
+// verdict: how strongly the CURRENT dasha is connected to this house
+// (activation — the original scoring), and whether the connecting dasha
+// lord's own dignity makes that activation favorable or unfavorable
+// (reused from the existing detailedDignity() engine, not recomputed).
+// A "Strong" score alone used to only mean "heavily activated right now,"
+// which said nothing about whether that activation helps or hurts —
+// folding dignity in means Strong now also leans toward a genuinely
+// favorable reading, and a badly-afflicted connecting lord pulls the
+// score down instead of just being silently omitted.
+function sudarDashaSupportForHouse(lagnaModel, houseNum, chart) {
+  if (!state.dasha) return { score: 5, strength: 'Moderate', reasons: ['No dasha data available.'], favorability: 'Unknown' };
   const idx = findCurrentIndex(state.dasha);
-  if (idx < 0) return { score: 5, strength: 'Moderate', reasons: ['No active dasha found for the current date.'] };
+  if (idx < 0) return { score: 5, strength: 'Moderate', reasons: ['No active dasha found for the current date.'], favorability: 'Unknown' };
   const maha = state.dasha[idx];
   const aIdx = findCurrentIndex(maha.antardashas);
   const antarLord = aIdx >= 0 ? maha.antardashas[aIdx].lord : null;
   const lordOfHouse = lagnaModel.houseLord[houseNum];
   const occupantsOfHouse = lagnaModel.byHouse[houseNum].planets.map(p => p.name);
   let score = 5;
+  let directionScore = 0; // + favorable, - unfavorable, from connected lords' own dignity
   const reasons = [];
-  if (maha.lord === lordOfHouse) { score += 3; reasons.push(`Current Mahadasha lord (${maha.lord}) is this house's lord.`); }
-  if (occupantsOfHouse.includes(maha.lord)) { score += 2; reasons.push(`Current Mahadasha lord (${maha.lord}) occupies this house.`); }
-  if (antarLord && antarLord === lordOfHouse) { score += 2; reasons.push(`Current Antardasha lord (${antarLord}) is this house's lord.`); }
-  if (antarLord && occupantsOfHouse.includes(antarLord)) { score += 1; reasons.push(`Current Antardasha lord (${antarLord}) occupies this house.`); }
+
+  const dignityOf = (planetName) => {
+    if (!chart) return null;
+    const p = chart.planets.find(pl => pl.name === planetName);
+    if (!p) return null;
+    const isClassical = SHADBALA_PLANETS.includes(planetName);
+    return isClassical ? detailedDignity(planetName, p.sign, normalizeDegrees(p.longitude) % 30) : { tier: 'Neutral' };
+  };
+  const applyDignity = (planetName, label, weight) => {
+    const dig = dignityOf(planetName);
+    if (!dig) return;
+    if (dig.tier === 'Exalted') { directionScore += weight * 2; reasons.push(`${planetName} (${label}) is Exalted — this activation leans favorable.`); }
+    else if (dig.tier === 'Moolatrikona' || dig.tier === 'Own Sign') { directionScore += weight; reasons.push(`${planetName} (${label}) is in ${dig.tier} — this activation leans favorable.`); }
+    else if (dig.tier === 'Debilitated') { directionScore -= weight * 2; reasons.push(`${planetName} (${label}) is Debilitated — this activation may bring more difficulty than benefit despite the connection.`); }
+  };
+
+  if (maha.lord === lordOfHouse) { score += 3; reasons.push(`Current Mahadasha lord (${maha.lord}) is this house's lord.`); applyDignity(maha.lord, 'Mahadasha lord', 2); }
+  if (occupantsOfHouse.includes(maha.lord)) { score += 2; reasons.push(`Current Mahadasha lord (${maha.lord}) occupies this house.`); applyDignity(maha.lord, 'Mahadasha lord', 1); }
+  if (antarLord && antarLord === lordOfHouse) { score += 2; reasons.push(`Current Antardasha lord (${antarLord}) is this house's lord.`); applyDignity(antarLord, 'Antardasha lord', 1); }
+  if (antarLord && occupantsOfHouse.includes(antarLord)) { score += 1; reasons.push(`Current Antardasha lord (${antarLord}) occupies this house.`); applyDignity(antarLord, 'Antardasha lord', 1); }
   if (!reasons.length) reasons.push('Neither the current Mahadasha nor Antardasha lord is connected to this house.');
-  score = Math.max(0, Math.min(10, score));
+
+  score = Math.max(0, Math.min(10, score + directionScore));
   const strength = score >= 7.5 ? 'Strong' : score >= 5.5 ? 'Moderate' : score >= 3.5 ? 'Mixed' : 'Weak';
-  return { score, strength, reasons, mahaLord: maha.lord, antarLord };
+  const favorability = directionScore > 0 ? 'Favorable' : directionScore < 0 ? 'Unfavorable' : 'Neutral';
+  if (directionScore !== 0) reasons.push(`Overall, the current dasha's connection to this house is ${favorability.toLowerCase()} — meaning it is more likely to ${favorability === 'Favorable' ? 'help the native handle/overcome this house\'s themes well' : 'bring difficulty through this house\'s themes'}, not just "in focus."`);
+  return { score, strength, reasons, mahaLord: maha.lord, antarLord, favorability, directionScore };
 }
 
 // Current transit positions for the major bodies (reuses this app's own
@@ -273,7 +303,7 @@ function sudarComputeLifeAreas(models, chart, transitPositions) {
     const lagna = sudarHouseSupportScore(models.Lagna, houseNum, chart);
     const moon = sudarHouseSupportScore(models.Moon, houseNum, chart);
     const sun = sudarHouseSupportScore(models.Sun, houseNum, chart);
-    const dashaSupport = sudarDashaSupportForHouse(models.Lagna, houseNum);
+    const dashaSupport = sudarDashaSupportForHouse(models.Lagna, houseNum, chart);
     const transitSupport = sudarTransitSupportForHouse(transitPositions, models.Lagna, houseNum);
     const natalPromise = lagna; // Lagna anchors natal promise (Section 26/42)
 
@@ -321,7 +351,7 @@ function sudarAnnualAnalysis(models, chart, birthDateUtc, atDate, transitPositio
   const annual = sudarAnnualChakra(chart, birthDateUtc, atDate);
   const houseNum = annual.annualHouse;
   const natal = sudarHouseSupportScore(models.Lagna, houseNum, chart);
-  const dashaSupport = sudarDashaSupportForHouse(models.Lagna, houseNum);
+  const dashaSupport = sudarDashaSupportForHouse(models.Lagna, houseNum, chart);
   const transitSupport = sudarTransitSupportForHouse(transitPositions, models.Lagna, houseNum);
   const theme = HOUSE_THEMES[houseNum];
   const overallScore = Math.round(((natal.score * 2 + dashaSupport.score + transitSupport.score) / 4) * 10) / 10;
