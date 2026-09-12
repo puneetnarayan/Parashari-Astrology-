@@ -63,33 +63,28 @@ below).
   foundation, strongest/weakest planets, formed yogas, life-area
   promises with current confidence, and the running dasha — never a
   single opaque "prediction."
-- **Styling**: per the explicit instruction, this tab's presentation
-  follows *only* the supplied Master UI Design System (Inter font,
-  neutral `#F5F7FA`/`#FFFFFF`/`#E5E7EB` surfaces, `#2563EB` primary,
-  4px-multiple spacing, 34-36px rows/buttons, right-aligned
-  `tabular-nums` numeric columns, WCAG-AA focus rings) — deliberately
-  **not** this app's shared pastel-\*/quality-\*/rem-table conventions
-  used by every other tab. All of it lives in one scoped stylesheet,
-  `js/parashariAnalysis/parashariAnalysis.css`, entirely under the
-  `#tabParashariAnalysis` selector so it cannot leak into, or be
-  overridden by, any other tab's CSS.
+- **Styling** (updated): the tab now follows this app's EXISTING shared
+  UI conventions — `output-box`/`pastel-*` panels, `.rem-table`, and the
+  `quality-good`/`quality-neutral`/`quality-bad` color coding, plus the
+  `avp-calc` expandable-`<details>` pattern for "Why?" reasoning panels —
+  the same visual language as every other tab (Sudarshana Chakra,
+  Ashtakvarga Predictions, Kakshya, etc.). A first pass of this tab used
+  a separate Master UI Design System supplied alongside the original
+  spec, but that was superseded on request in favor of this app's own,
+  already-established UI so the new tab looks and feels consistent with
+  the rest of the app. No new/separate stylesheet exists for this tab.
 
 ## Existing-file changes (minimal, additive only)
 
 - `index.html`: one new tab button + panel at the end of the tab strip,
-  one new `<link>` for the scoped stylesheet, two new `<script>` tags
-  (engine, then UI) — no existing markup altered.
-- `js/ui.js`:
-  1. One line in the existing tab-click handler calling
-     `window.ParashariAnalysisUI.render()` when the new tab is opened —
-     the same lazy render-on-tab-open pattern used by every other tab.
-  2. A guard added to the existing app-wide `centerNumericCellsIn()`
-     (the `MutationObserver`-based utility that force-centers numeric/
-     Yes-No table cells everywhere) to skip any cell inside
-     `#tabParashariAnalysis`. This was necessary because that observer
-     sets `td.style.textAlign` inline, which would otherwise override
-     this tab's Master-UI-Design-System-mandated right-alignment via
-     higher specificity. No other tab's centering behavior changed.
+  two new `<script>` tags (engine, then UI) — no existing markup altered.
+- `js/ui.js`: one line in the existing tab-click handler calling
+  `window.ParashariAnalysisUI.render()` when the new tab is opened — the
+  same lazy render-on-tab-open pattern used by every other tab. (An
+  earlier revision of this tab also added a centering-observer guard for
+  its since-abandoned Master UI Design System version; that guard has
+  been removed now that this tab uses the app's normal numeric-centering
+  behavior like every other tab.)
 
 No `state.parashariAnalysis = null` reset was added to `generateChart()`:
 unlike some earlier tabs, this module's cache invalidation
@@ -123,13 +118,12 @@ spec requires.
   (24 existing + the new one) clicked in sequence with zero page/console
   errors (the only console entry is a pre-existing, unrelated
   `favicon.ico` 404).
-- Confirmed the new tab renders real chart-derived content (4 tables:
-  Houses, Planets, Yogas, Navamsha) with no placeholder text, using the
-  default chart already loaded on page load.
-- Confirmed numeric table cells (`.pa-num`) computed `text-align: right`
-  — i.e. the `centerNumericCellsIn` guard successfully keeps this tab's
-  cells under the Master UI Design System's control rather than the
-  app-wide center-alignment observer.
+- Confirmed the new tab renders real chart-derived content (4+ tables:
+  Houses, Planets, Yogas, Navamsha, Life Areas) with no placeholder text,
+  using the default chart already loaded on page load.
+- Confirmed all `output-box pastel-*` classes render as expected and
+  numeric table cells are centered by the app's existing app-wide
+  `centerNumericCellsIn` observer, exactly as on every other tab.
 
 ## Areas requiring manual astrological review
 

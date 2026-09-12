@@ -3383,15 +3383,10 @@ function isCenterableCellText(text) {
 }
 function centerNumericCellsIn(root) {
   if (!root.querySelectorAll) return;
-  // The Parashari Analysis tab follows its own Master UI Design System
-  // (right-aligned tabular numerics), so it is excluded from this
-  // app-wide centering behavior.
-  if (root.closest && root.closest('#tabParashariAnalysis')) return;
   root.querySelectorAll('td').forEach(td => {
-    if (td.closest('#tabParashariAnalysis')) return;
     if (isCenterableCellText(td.textContent)) td.style.textAlign = 'center';
   });
-  if (root.tagName === 'TD' && !root.closest('#tabParashariAnalysis') && isCenterableCellText(root.textContent)) root.style.textAlign = 'center';
+  if (root.tagName === 'TD' && isCenterableCellText(root.textContent)) root.style.textAlign = 'center';
 }
 function initTableCellCentering() {
   const observer = new MutationObserver(mutations => {
