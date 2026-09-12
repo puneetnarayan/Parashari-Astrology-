@@ -272,6 +272,7 @@
   .vedic-chart-cell .bav-score-circle { width: 18px; height: 18px; font-size: 0.8em; margin-top: 2px; }
   .bav-legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.2); }
 </style>
+<link rel="stylesheet" href="js/parashariAnalysis/parashariAnalysis.css">
 </head>
 <body>
 <h1>Parashari Astrology</h1>
@@ -302,6 +303,7 @@
   <button class="tab-button" id="tabBtnKnowledgeBase" data-tab="tabKnowledgeBase">Knowledge Base</button>
   <button class="tab-button" id="tabBtnNakshatraInterp" data-tab="tabNakshatraInterp">Nakshatra Interpretations</button>
   <button class="tab-button" id="tabBtnSudarshana" data-tab="tabSudarshana">Sudarshana Chakra</button>
+  <button class="tab-button" id="tabBtnParashariAnalysis" data-tab="tabParashariAnalysis">Parashari Analysis</button>
 </div>
 
 <div class="controls">
@@ -741,6 +743,10 @@
 <div id="sudarCalcSectionOutput" class="output-box pastel-mint"></div>
 </div>
 
+<div class="tab-panel" id="tabParashariAnalysis">
+  <div id="pa-root"></div>
+</div>
+
 <script type="module" src="js/swissephBridge.js"></script>
 <script src="js/astronomy.browser.min.js"></script>
 <script src="js/parashariTables.js"></script>
@@ -790,6 +796,8 @@
 <script src="js/sudarshana/sudarshanaEngine.js"></script>
 <script src="js/remedies2/remedyData2.js"></script>
 <script src="js/remedies2/remedyEngine2.js"></script>
+<script src="js/parashariAnalysis/parashariAnalysisEngine.js"></script>
+<script src="js/parashariAnalysis/parashariAnalysisUI.js"></script>
 <script src="js/timezone.js"></script>
 <script src="js/ui.js"></script>
 </body>
