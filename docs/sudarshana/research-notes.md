@@ -96,6 +96,26 @@ planet's dignity drove the direction. "Strong" now means the current
 period both strongly activates AND favorably supports that house's
 themes — not merely that the theme is "in focus."
 
+### Favorability extended to Lagna/Moon/Sun Support, plus a Calculations index
+
+For consistency, `sudarHouseSupportScore()` (used for Lagna/Moon/Sun
+Support) now isolates the same house-lord dignity contribution into its
+own `directionScore` and exposes the same `favorability` field/badge —
+so all three reference supports, not just Dasha Support, now clearly
+say Favorable/Unfavorable/Neutral alongside their Strong/Moderate/Weak
+activation label, using the identical convention.
+
+Also added:
+- A **Dignity** column (Exalted/Moolatrikona/Own Sign/Neutral/
+  Debilitated, color-coded) to the main Chart & Analysis Planet Table,
+  reusing the same `detailedDignity()` engine — not a Sudarshana-only
+  addition, but added at the same time since it's the same underlying
+  classical fact this tab now surfaces via favorability.
+- An end-of-page **Calculations** section (one expandable entry per life
+  area, all 23) at the bottom of the Sudarshana tab. Clicking any score
+  cell in the Life-Area Summary table scrolls to and opens that area's
+  entry there (a brief highlight flash confirms which one).
+
 ## Deliberate scope decisions
 
 The source prompt (51 sections) asked for several things not implemented

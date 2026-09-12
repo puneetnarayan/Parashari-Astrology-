@@ -171,6 +171,7 @@ function sudarPlanetDetail(planetName, chart, models, functional) {
 function sudarHouseSupportScore(model, houseNum, chart) {
   const W = { occupantBenefic: 1, occupantMalefic: -1, exalted: 2, moolatrikona: 1.5, ownSign: 1, debilitated: -2, kendraOrTrikona: 1, dusthana: -1, beneficAspectCap: 1, maleficAspectCap: -1 };
   let score = 5; // neutral baseline out of 10
+  let directionScore = 0; // isolates the house LORD's own dignity specifically, for the favorability tag (Section: dignity folding, same convention as sudarDashaSupportForHouse)
   const reasons = [];
 
   const occupants = model.byHouse[houseNum].planets.map(pl => pl.name);
@@ -184,10 +185,10 @@ function sudarHouseSupportScore(model, houseNum, chart) {
   if (lordPlanet) {
     const isClassical = SHADBALA_PLANETS.includes(lordName);
     const lordDignity = isClassical ? detailedDignity(lordName, lordPlanet.sign, normalizeDegrees(lordPlanet.longitude) % 30) : { tier: 'Neutral' };
-    if (lordDignity.tier === 'Exalted') { score += W.exalted; reasons.push(`+ House lord ${lordName} is Exalted.`); }
-    else if (lordDignity.tier === 'Moolatrikona') { score += W.moolatrikona; reasons.push(`+ House lord ${lordName} is in Moolatrikona.`); }
-    else if (lordDignity.tier === 'Own Sign') { score += W.ownSign; reasons.push(`+ House lord ${lordName} is in its Own Sign.`); }
-    else if (lordDignity.tier === 'Debilitated') { score += W.debilitated; reasons.push(`- House lord ${lordName} is Debilitated.`); }
+    if (lordDignity.tier === 'Exalted') { score += W.exalted; directionScore += W.exalted; reasons.push(`+ House lord ${lordName} is Exalted.`); }
+    else if (lordDignity.tier === 'Moolatrikona') { score += W.moolatrikona; directionScore += W.moolatrikona; reasons.push(`+ House lord ${lordName} is in Moolatrikona.`); }
+    else if (lordDignity.tier === 'Own Sign') { score += W.ownSign; directionScore += W.ownSign; reasons.push(`+ House lord ${lordName} is in its Own Sign.`); }
+    else if (lordDignity.tier === 'Debilitated') { score += W.debilitated; directionScore += W.debilitated; reasons.push(`- House lord ${lordName} is Debilitated.`); }
 
     const lordHouseFromRef = model.houseOfPlanet[lordName];
     if (SUDARSHANA_KENDRA.includes(lordHouseFromRef) || SUDARSHANA_TRIKONA.includes(lordHouseFromRef)) { score += W.kendraOrTrikona; reasons.push(`+ House lord ${lordName} itself occupies a Kendra/Trikona (house ${lordHouseFromRef}) from ${model.reference}.`); }
@@ -201,7 +202,9 @@ function sudarHouseSupportScore(model, houseNum, chart) {
 
   score = Math.max(0, Math.min(10, score));
   const strength = score >= 7.5 ? 'Strong' : score >= 5.5 ? 'Moderate' : score >= 3.5 ? 'Mixed' : 'Weak';
-  return { score: Math.round(score * 10) / 10, strength, reasons, occupants, lordName };
+  const favorability = directionScore > 0 ? 'Favorable' : directionScore < 0 ? 'Unfavorable' : 'Neutral';
+  if (directionScore !== 0) reasons.push(`House lord's own dignity makes this house's condition ${favorability.toLowerCase()} from ${model.reference}, independent of how strongly it's otherwise activated.`);
+  return { score: Math.round(score * 10) / 10, strength, reasons, occupants, lordName, favorability, directionScore };
 }
 
 // "Dasha Support" combines two distinct things, both needed for a useful

@@ -168,24 +168,38 @@ function renderAscendant(ascendant) {
   el.innerHTML = `<strong>Ascendant (Lagna):</strong> ${ascendant.sign} ${ascendant.degreeDms}`;
 }
 
+function planetDignityInfo(p) {
+  const isClassical = SHADBALA_PLANETS.includes(p.name);
+  if (!isClassical) return { tier: 'Neutral', cls: 'neutral' };
+  const degreeInSign = normalizeDegrees(p.longitude) % 30;
+  const dignity = detailedDignity(p.name, p.sign, degreeInSign);
+  const cls = (dignity.tier === 'Exalted' || dignity.tier === 'Moolatrikona' || dignity.tier === 'Own Sign') ? 'good'
+    : dignity.tier === 'Debilitated' ? 'bad' : 'neutral';
+  return { tier: dignity.tier, cls };
+}
+
 function renderPlanetTable(planets) {
   const el = document.getElementById('planetTableOutput');
-  const rows = planets.map(p => `
+  const rows = planets.map(p => {
+    const dignity = planetDignityInfo(p);
+    return `
     <tr>
       <td>${p.name}</td>
       <td>${p.sign}</td>
       <td>${p.degreeDms}</td>
+      <td class="quality-${dignity.cls}">${dignity.tier}</td>
       <td>${p.nakshatra || ''}</td>
       <td>${p.pada || ''}</td>
       <td class="${p.combust ? 'yes-flag' : 'no-flag'}">${p.combust ? 'Yes' : 'No'}</td>
       <td class="${p.retrograde ? 'yes-flag' : 'no-flag'}">${p.retrograde ? 'Yes' : 'No'}</td>
       <td>${p.aspectedBy.length ? p.aspectedBy.join(', ') : '—'}</td>
       <td>${p.conjunctWith.length ? p.conjunctWith.join(', ') : '—'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   el.innerHTML = `
     <table>
       <thead><tr>
-        <th>Planet</th><th>Sign</th><th>Degree</th><th>Nakshatra</th><th>Pada</th>
+        <th>Planet</th><th>Sign</th><th>Degree</th><th>Dignity</th><th>Nakshatra</th><th>Pada</th>
         <th>Combust</th><th>Retrograde</th><th>Aspected By</th><th>Conjunct With</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -3144,6 +3158,22 @@ function sudarSupportRowHtml(label, s) {
 // Support-metric x life-area summary table (life areas as columns,
 // support types as rows) — score + color + text label per cell, no bar
 // graph, per this request.
+function sudarSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+// Scrolls to and opens this life area's full calculation entry in the
+// end-of-page Calculations section, per this request: clicking a score
+// cell in the Life-Area Summary table jumps straight to its calculation.
+function sudarJumpToCalc(slug) {
+  const el = document.getElementById(`sudarCalc-${slug}`);
+  if (!el) return;
+  el.open = true;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.classList.add('sudar-calc-flash');
+  setTimeout(() => el.classList.remove('sudar-calc-flash'), 1500);
+}
+
 function sudarLifeAreaSummaryTableHtml(lifeAreas) {
   const metrics = [
     { label: 'Lagna Support', get: item => item.lagna },
@@ -3160,7 +3190,7 @@ function sudarLifeAreaSummaryTableHtml(lifeAreas) {
       const s = m.get(item);
       const cls = sudarQualityClass(s.strength.replace('Very ', ''));
       const fav = (s.favorability && s.favorability !== 'Unknown' && s.favorability !== 'Neutral') ? `<br><span style="font-size:0.7em;color:${s.favorability === 'Favorable' ? '#1a5c1a' : '#8a1a1a'};">${s.favorability}</span>` : '';
-      return `<td class="quality-${cls}" style="text-align:center;white-space:nowrap;">${s.score}<br><span style="font-size:0.75em;">${s.strength}</span>${fav}</td>`;
+      return `<td class="quality-${cls}" style="text-align:center;white-space:nowrap;cursor:pointer;" onclick="sudarJumpToCalc('${sudarSlug(item.area)}')" title="Click to see the full calculation">${s.score}<br><span style="font-size:0.75em;">${s.strength}</span>${fav}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap;"><strong>${m.label}</strong></td>${cells}</tr>`;
   }).join('');
@@ -3171,6 +3201,24 @@ function sudarLifeAreaSummaryTableHtml(lifeAreas) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+}
+
+// End-of-page consolidated Calculations section — one entry per life
+// area, target of the Life-Area Summary table's clickable cells.
+function sudarCalculationsSectionHtml(lifeAreas) {
+  return lifeAreas.map(item => `
+    <details class="avp-calc" id="sudarCalc-${sudarSlug(item.area)}">
+      <summary><strong>${escapeHtml(item.area)}</strong> (House ${item.house}) — Sudarshana Synthesis: ${item.synthesis.confidence}</summary>
+      <div class="kk-calc-chain">
+        <p>${escapeHtml(item.synthesis.text)}</p>
+        <strong>Lagna Support (${item.lagna.score}/10, ${item.lagna.strength}):</strong><br>${item.lagna.reasons.join('<br>') || 'None'}<br><br>
+        <strong>Moon Support (${item.moon.score}/10, ${item.moon.strength}):</strong><br>${item.moon.reasons.join('<br>') || 'None'}<br><br>
+        <strong>Sun Support (${item.sun.score}/10, ${item.sun.strength}):</strong><br>${item.sun.reasons.join('<br>') || 'None'}<br><br>
+        <strong>Natal Strength (${item.natalPromise.score}/10, ${item.natalPromise.strength}):</strong><br>${item.natalPromise.reasons.join('<br>') || 'None'}<br><br>
+        <strong>Dasha Support (${item.dashaSupport.score}/10, ${item.dashaSupport.strength}):</strong><br>${item.dashaSupport.reasons.join('<br>') || 'None'}<br><br>
+        <strong>Transit Support (${item.transitSupport.score}/10, ${item.transitSupport.strength}):</strong><br>${item.transitSupport.reasons.join('<br>') || 'None'}
+      </div>
+    </details>`).join('');
 }
 
 function sudarLifeAreaCardHtml(item) {
@@ -3304,6 +3352,7 @@ function renderSudarshanaTab() {
   document.getElementById('sudarTransitOutput').innerHTML = sudarTransitsHtml(m.transits);
   document.getElementById('sudarDashaPanelOutput').innerHTML = sudarDashaPanelHtml(m.dashaPanel);
   document.getElementById('sudarMethodologyOutput').innerHTML = sudarMethodologyHtml();
+  document.getElementById('sudarCalcSectionOutput').innerHTML = sudarCalculationsSectionHtml(m.lifeAreas);
 
   const select = document.getElementById('sudarEventSelect');
   select.innerHTML = m.lifeAreas.map(a => `<option value="${escapeHtml(a.area)}">${escapeHtml(a.area)}</option>`).join('');

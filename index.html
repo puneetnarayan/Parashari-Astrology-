@@ -192,6 +192,8 @@
   .rem2-Weak { background: #e76f51; }
   .rem2-VeryWeak { background: #7a0000; }
   tr.sudar-row-selected td { background: #fff9c4 !important; }
+  details.sudar-calc-flash { animation: sudarFlash 1.5s ease-out; }
+  @keyframes sudarFlash { 0% { background: #fff9c4; } 100% { background: transparent; } }
   .rem2-card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
   .rem2-summary-card { display: inline-block; min-width: 110px; text-align: center; padding: 10px; margin: 4px; border-radius: 8px; color: #fff; }
   .rem2-debug { background: #f4f4f4; font-family: monospace; font-size: 0.8em; padding: 8px; overflow-x: auto; white-space: pre-wrap; }
@@ -329,7 +331,7 @@
 <div id="ascendantOutput" class="output-box pastel-peach"></div>
 
 <h2>Planet Table</h2>
-<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign.</p>
+<p>Combust = classical Parashari orb vs. the Sun. Aspected By = planets casting a Parashari graha drishti (whole-sign) onto this planet. Conjunct With = other planets sharing this planet's sign. Dignity = Exalted/Moolatrikona/Own Sign (favorable, light green) / Neutral (ordinary sign dignity, light yellow) / Debilitated (unfavorable, light red); Rahu/Ketu dignity is classically disputed and shown as Neutral.</p>
 <div id="planetTableOutput" class="output-box pastel-blue"></div>
 </div>
 
@@ -733,6 +735,10 @@
 
 <h3>Rules / Methodology</h3>
 <details class="avp-calc"><summary>Show methodology</summary><div id="sudarMethodologyOutput"></div></details>
+
+<h3>Calculations (all Life Areas)</h3>
+<p style="font-size:0.9em;color:#555;">Click any score cell in the Life-Area Summary table above to jump straight to that area's full calculation here.</p>
+<div id="sudarCalcSectionOutput" class="output-box pastel-mint"></div>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>
