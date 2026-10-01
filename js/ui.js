@@ -69,6 +69,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRecognitionAwardTiming' && window.RecognitionAwardTimingUI) window.RecognitionAwardTimingUI.render();
       if (btn.dataset.tab === 'tabCareerTurningPointTiming' && window.CareerTurningPointTimingUI) window.CareerTurningPointTimingUI.render();
       if (btn.dataset.tab === 'tabLegalMatterTiming' && window.LegalMatterTimingUI) window.LegalMatterTimingUI.render();
+      if (btn.dataset.tab === 'tabSpiritualTurningPointTiming' && window.SpiritualTurningPointTimingUI) window.SpiritualTurningPointTimingUI.render();
     });
   });
 }
