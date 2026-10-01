@@ -1,16 +1,18 @@
 name: Auto-merge Claude Code branch into main
 
 # Vercel is connected to this repo and deploys automatically on every
-# push to `main`. Claude Code always develops on
-# `claude/parashari-astrology-app-32c7gj` (never directly on `main`), so
-# without this workflow every change would need a manual PR merge before
-# Vercel would see it. This workflow closes that gap: any push to the
-# Claude Code branch is merged into `main` automatically, which then
-# triggers Vercel's existing deployment hook with no human step in between.
+# push to `main`. Claude Code develops on
+# `claude/parashari-astrology-app-32c7gj` (never directly on `main`).
+#
+# IMPORTANT: this workflow used to run automatically on every push to
+# that branch, which meant every code change silently triggered a
+# Vercel production deployment and consumed Vercel credits. Per
+# explicit user instruction, automatic deploys are now disabled:
+# this workflow only runs when manually triggered (workflow_dispatch),
+# e.g. from the GitHub Actions tab, or by Claude Code after the user
+# has explicitly confirmed they want to deploy to production.
 on:
-  push:
-    branches:
-      - claude/parashari-astrology-app-32c7gj
+  workflow_dispatch: {}
 
 permissions:
   contents: write

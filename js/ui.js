@@ -66,6 +66,13 @@ function initTabs() {
       if (btn.dataset.tab === 'tabHigherEducationTiming' && window.HigherEducationTimingUI) window.HigherEducationTimingUI.render();
       if (btn.dataset.tab === 'tabVehiclePurchaseTiming' && window.VehiclePurchaseTimingUI) window.VehiclePurchaseTimingUI.render();
       if (btn.dataset.tab === 'tabRetirementTiming' && window.RetirementTimingUI) window.RetirementTimingUI.render();
+      if (btn.dataset.tab === 'tabRecognitionAwardTiming' && window.RecognitionAwardTimingUI) window.RecognitionAwardTimingUI.render();
+      if (btn.dataset.tab === 'tabCareerTurningPointTiming' && window.CareerTurningPointTimingUI) window.CareerTurningPointTimingUI.render();
+      if (btn.dataset.tab === 'tabLegalMatterTiming' && window.LegalMatterTimingUI) window.LegalMatterTimingUI.render();
+      if (btn.dataset.tab === 'tabSpiritualTurningPointTiming' && window.SpiritualTurningPointTimingUI) window.SpiritualTurningPointTimingUI.render();
+      if (btn.dataset.tab === 'tabPropertySaleTiming' && window.PropertySaleTimingUI) window.PropertySaleTimingUI.render();
+      if (btn.dataset.tab === 'tabInheritanceLegacyTiming' && window.InheritanceLegacyTimingUI) window.InheritanceLegacyTimingUI.render();
+      if (btn.dataset.tab === 'tabMarriageSeparationDivorceTiming' && window.MarriageSeparationDivorceTimingUI) window.MarriageSeparationDivorceTimingUI.render();
     });
   });
 }
