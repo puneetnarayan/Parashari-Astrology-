@@ -64,6 +64,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabFinancialGainTiming' && window.FinancialGainTimingUI) window.FinancialGainTimingUI.render();
       if (btn.dataset.tab === 'tabBusinessStartTiming' && window.BusinessStartTimingUI) window.BusinessStartTimingUI.render();
       if (btn.dataset.tab === 'tabHigherEducationTiming' && window.HigherEducationTimingUI) window.HigherEducationTimingUI.render();
+      if (btn.dataset.tab === 'tabVehiclePurchaseTiming' && window.VehiclePurchaseTimingUI) window.VehiclePurchaseTimingUI.render();
     });
   });
 }
