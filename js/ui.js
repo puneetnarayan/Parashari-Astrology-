@@ -60,6 +60,17 @@ function initTabs() {
   });
 }
 
+function initSidebarToggle() {
+  const sidebar = document.getElementById('appSidebar');
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (!sidebar || !btn) return;
+  btn.addEventListener('click', () => {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    btn.setAttribute('aria-expanded', String(!collapsed));
+    btn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  });
+}
+
 function initEngineStatusBadge() {
   const badge = document.getElementById('engineStatusBadge');
   const update = () => {
@@ -3405,6 +3416,7 @@ function initTableCellCentering() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
+  initSidebarToggle();
   initTableCellCentering();
   initEngineStatusBadge();
   populateIanaZones();
