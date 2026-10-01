@@ -56,6 +56,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabParashariAnalysis' && window.ParashariAnalysisUI) window.ParashariAnalysisUI.render();
       if (btn.dataset.tab === 'tabRelocation' && window.RelocationUI) window.RelocationUI.render();
       if (btn.dataset.tab === 'tabPromotionTiming' && window.PromotionTimingUI) window.PromotionTimingUI.render();
+      if (btn.dataset.tab === 'tabJobChangeTiming' && window.JobChangeTimingUI) window.JobChangeTimingUI.render();
     });
   });
 }
