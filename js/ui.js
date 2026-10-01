@@ -70,6 +70,9 @@ function initTabs() {
       if (btn.dataset.tab === 'tabCareerTurningPointTiming' && window.CareerTurningPointTimingUI) window.CareerTurningPointTimingUI.render();
       if (btn.dataset.tab === 'tabLegalMatterTiming' && window.LegalMatterTimingUI) window.LegalMatterTimingUI.render();
       if (btn.dataset.tab === 'tabSpiritualTurningPointTiming' && window.SpiritualTurningPointTimingUI) window.SpiritualTurningPointTimingUI.render();
+      if (btn.dataset.tab === 'tabPropertySaleTiming' && window.PropertySaleTimingUI) window.PropertySaleTimingUI.render();
+      if (btn.dataset.tab === 'tabInheritanceLegacyTiming' && window.InheritanceLegacyTimingUI) window.InheritanceLegacyTimingUI.render();
+      if (btn.dataset.tab === 'tabMarriageSeparationDivorceTiming' && window.MarriageSeparationDivorceTimingUI) window.MarriageSeparationDivorceTimingUI.render();
     });
   });
 }
