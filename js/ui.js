@@ -62,6 +62,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabPropertyTiming' && window.PropertyTimingUI) window.PropertyTimingUI.render();
       if (btn.dataset.tab === 'tabForeignTravelTiming' && window.ForeignTravelTimingUI) window.ForeignTravelTimingUI.render();
       if (btn.dataset.tab === 'tabFinancialGainTiming' && window.FinancialGainTimingUI) window.FinancialGainTimingUI.render();
+      if (btn.dataset.tab === 'tabBusinessStartTiming' && window.BusinessStartTimingUI) window.BusinessStartTimingUI.render();
     });
   });
 }
