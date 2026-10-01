@@ -52,6 +52,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabKnowledgeBase') renderKnowledgeBaseTab();
       if (btn.dataset.tab === 'tabNakshatraInterp') renderNakshatraInterpTab();
       if (btn.dataset.tab === 'tabSudarshana') renderSudarshanaTab();
+      if (btn.dataset.tab === 'tabMarriageTiming' && window.MarriageTimingUI) window.MarriageTimingUI.render();
       if (btn.dataset.tab === 'tabParashariAnalysis' && window.ParashariAnalysisUI) window.ParashariAnalysisUI.render();
     });
   });
