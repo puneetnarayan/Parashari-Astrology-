@@ -57,6 +57,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRelocation' && window.RelocationUI) window.RelocationUI.render();
       if (btn.dataset.tab === 'tabPromotionTiming' && window.PromotionTimingUI) window.PromotionTimingUI.render();
       if (btn.dataset.tab === 'tabJobChangeTiming' && window.JobChangeTimingUI) window.JobChangeTimingUI.render();
+      if (btn.dataset.tab === 'tabCareerStartTiming' && window.CareerStartTimingUI) window.CareerStartTimingUI.render();
     });
   });
 }
