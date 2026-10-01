@@ -59,6 +59,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabJobChangeTiming' && window.JobChangeTimingUI) window.JobChangeTimingUI.render();
       if (btn.dataset.tab === 'tabCareerStartTiming' && window.CareerStartTimingUI) window.CareerStartTimingUI.render();
       if (btn.dataset.tab === 'tabChildbirthTiming' && window.ChildbirthTimingUI) window.ChildbirthTimingUI.render();
+      if (btn.dataset.tab === 'tabPropertyTiming' && window.PropertyTimingUI) window.PropertyTimingUI.render();
     });
   });
 }
