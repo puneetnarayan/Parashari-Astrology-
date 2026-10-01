@@ -31,12 +31,23 @@
   select { border-radius: 6px; padding: 4px 8px; }
 
   /* Tab strip (room left for future tabs: yogas, bhava bala, dasha, transits...) */
-  .tab-strip { display: flex; gap: 8px; margin: 16px 0; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
-  .tab-button { background-color: #f0e6ff; border: 1px solid #cbb8ee; border-radius: 6px 6px 0 0; padding: 8px 18px; font-size: 0.95em; cursor: pointer; color: #2c3e50; }
-  .tab-button:hover { background-color: #e4d3ff; }
-  .tab-button.active { background-color: #b98cf2; color: #fff; border-color: #9a6bd8; font-weight: bold; }
+  .app-shell { display: flex; align-items: flex-start; gap: 0; }
+  .sidebar { flex: 0 0 240px; width: 240px; box-sizing: border-box; border-right: 2px solid #ddd; padding: 8px 10px 20px; transition: width 0.2s ease, flex-basis 0.2s ease, padding 0.2s ease; overflow: hidden; }
+  .sidebar.collapsed { flex: 0 0 44px; width: 44px; padding: 8px 4px 20px; }
+  .sidebar.collapsed .tab-strip { display: none; }
+  .sidebar-toggle { background: #f0e6ff; border: 1px solid #cbb8ee; border-radius: 6px; width: 32px; height: 32px; font-size: 1.1em; cursor: pointer; margin-bottom: 10px; }
+  .sidebar-toggle:hover { background: #e4d3ff; }
+  .main-content { flex: 1 1 auto; min-width: 0; padding: 0 16px; }
+  .tab-strip { display: flex; flex-direction: column; gap: 6px; margin: 0; border-bottom: none; padding-bottom: 0; }
+  .tab-button { background-color: #ffa94d; border: 1px solid #e8872f; border-radius: 6px; padding: 8px 14px; font-size: 0.92em; cursor: pointer; color: #2c3e50; text-align: left; width: 100%; }
+  .tab-button:hover { background-color: #fff3b0; }
+  .tab-button.active { background-color: #ffe14d; color: #2c3e50; border-color: #e0c200; font-weight: bold; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+  @media (max-width: 700px) {
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; background: #fff; }
+    .sidebar:not(.collapsed) { box-shadow: 2px 0 8px rgba(0,0,0,0.15); }
+  }
 
   .yes-flag { color: #b23b3b; font-weight: bold; }
   .no-flag { color: #999; }
@@ -277,7 +288,10 @@
 <h1>Parashari Astrology</h1>
 <p id="engineStatusBadge" style="font-size:0.8em;color:#666;">Loading calculation engine...</p>
 
-<div class="tab-strip">
+<div class="app-shell">
+<nav class="sidebar" id="appSidebar">
+  <button type="button" class="sidebar-toggle" id="sidebarToggleBtn" aria-label="Collapse sidebar" aria-expanded="true">&#9776;</button>
+  <div class="tab-strip" id="tabStrip">
   <button class="tab-button" id="tabBtnSavedNatives" data-tab="tabSavedNatives">Natives</button>
   <button class="tab-button active" id="tabBtnMain" data-tab="tabMain">Chart &amp; Analysis</button>
   <button class="tab-button" id="tabBtnCharts" data-tab="tabCharts">Charts</button>
@@ -306,8 +320,10 @@
   <button class="tab-button" id="tabBtnParashariAnalysis" data-tab="tabParashariAnalysis">Parashari Analysis</button>
   <button class="tab-button" id="tabBtnRelocation" data-tab="tabRelocation">Relocation</button>
   <button class="tab-button" id="tabBtnPromotionTiming" data-tab="tabPromotionTiming">Promotion Timing</button>
-</div>
+  </div>
+</nav>
 
+<main class="main-content" id="mainContent">
 <div class="controls">
   <label><input type="checkbox" id="showSecondsToggle"> Show seconds in charts (off = degree-minute only)</label>
 </div>
@@ -762,6 +778,9 @@
 <div class="tab-panel" id="tabPromotionTiming">
   <h2>Promotion Timing</h2>
   <div id="pt-root"></div>
+</div>
+
+</main>
 </div>
 
 <script type="module" src="js/swissephBridge.js"></script>
