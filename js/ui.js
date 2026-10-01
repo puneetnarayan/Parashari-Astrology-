@@ -68,6 +68,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabRetirementTiming' && window.RetirementTimingUI) window.RetirementTimingUI.render();
       if (btn.dataset.tab === 'tabRecognitionAwardTiming' && window.RecognitionAwardTimingUI) window.RecognitionAwardTimingUI.render();
       if (btn.dataset.tab === 'tabCareerTurningPointTiming' && window.CareerTurningPointTimingUI) window.CareerTurningPointTimingUI.render();
+      if (btn.dataset.tab === 'tabLegalMatterTiming' && window.LegalMatterTimingUI) window.LegalMatterTimingUI.render();
     });
   });
 }
