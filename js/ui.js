@@ -79,6 +79,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabWealthProtectionTiming' && window.WealthProtectionTimingUI) window.WealthProtectionTimingUI.render();
       if (btn.dataset.tab === 'tabYogaActivationTiming' && window.YogaActivationTimingUI) window.YogaActivationTimingUI.render();
       if (btn.dataset.tab === 'tabDashaLifePhase' && window.DashaLifePhaseUI) window.DashaLifePhaseUI.render();
+      if (btn.dataset.tab === 'tabLifeTimeline' && window.LifeTimelineUI) window.LifeTimelineUI.render();
       if (btn.dataset.tab === 'tabChildEducationTiming' && window.ChildEducationTimingUI) window.ChildEducationTimingUI.render();
       if (btn.dataset.tab === 'tabRelationshipPartnershipTiming' && window.RelationshipPartnershipTimingUI) window.RelationshipPartnershipTimingUI.render();
       if (btn.dataset.tab === 'tabHomeConstructionTiming' && window.HomeConstructionTimingUI) window.HomeConstructionTimingUI.render();

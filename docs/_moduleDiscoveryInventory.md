@@ -162,3 +162,34 @@ elements in `index.html` (up from 54).
   in `index.html` (up from 55). (Note: a shell `grep -c 'class="tab-button"'`
   invocation can undercount if quoting is mishandled — verify with
   `grep -c 'data-tab="tab' index.html` or a Python regex count instead.)
+
+## Important Event Sequence / Life Timeline module (step 4) — notes
+- `window.LifeTimeline` (engine) / `window.LifeTimelineUI` (renderer) /
+  `window.LIFETIMELINE_RULES` + `window.LIFETIMELINE_MODULE_REGISTRY` +
+  `window.LIFETIMELINE_CORRELATION_GROUPS` + `window.LIFETIMELINE_PHASE_TEMPLATES`
+  (provenance/static registries), `#lifetimeline-root`. Placed LAST among all
+  timing-module tabs/scripts since it consumes essentially everything else.
+- This is the master chronological synthesis/visualization layer. It
+  integrates all 27 single-event timing modules' `.refresh()` output (every
+  module in the discovery inventory's table above except
+  YogaActivationTiming/DashaLifePhase, which are themselves synthesis
+  layers, not event-candidate-window sources).
+- **Dedup/correlation gotcha discovered and fixed here, reusable for any
+  future aggregation module**: a naive global union-find over
+  "same-correlation-group AND overlapping-or-within-6-months" pairs
+  transitively chains far-apart same-module-pair occurrences into one
+  unbounded multi-year "mega-cluster" (because many modules emit one
+  candidate window per Pratyantardasha across the whole Dasha cycle, so
+  distant occurrences of the same pair are each individually close to some
+  intermediate occurrence). Fixed with a chronological, edge-bounded greedy
+  merge instead (only merge into the most-recently-opened compatible
+  cluster, and only when close to *that cluster's current trailing edge*) —
+  see `NS.groupCorrelatedEvents` / `NS.buildLifePhaseClusters` in
+  `js/lifeTimeline/lifeTimelineEngine.js`. Any future module building
+  clusters out of many modules' own frequently-recurring candidate windows
+  should use this edge-bounded pattern, not a plain pairwise union-find.
+- Tab count after this module: **57** `class="tab-button"` elements (56
+  excluding the first/active tab's `class="tab-button active"`, which the
+  exact-match grep misses — both a Python regex count of
+  `class="tab-button` (prefix match) and a count of `data-tab="tab` agree
+  at 57).
