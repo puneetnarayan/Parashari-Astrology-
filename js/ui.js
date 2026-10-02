@@ -77,6 +77,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabInsuranceProtectionTiming' && window.InsuranceProtectionTimingUI) window.InsuranceProtectionTimingUI.render();
       if (btn.dataset.tab === 'tabMajorExpenditureTiming' && window.MajorExpenditureTimingUI) window.MajorExpenditureTimingUI.render();
       if (btn.dataset.tab === 'tabWealthProtectionTiming' && window.WealthProtectionTimingUI) window.WealthProtectionTimingUI.render();
+      if (btn.dataset.tab === 'tabYogaActivationTiming' && window.YogaActivationTimingUI) window.YogaActivationTimingUI.render();
       if (btn.dataset.tab === 'tabChildEducationTiming' && window.ChildEducationTimingUI) window.ChildEducationTimingUI.render();
       if (btn.dataset.tab === 'tabRelationshipPartnershipTiming' && window.RelationshipPartnershipTimingUI) window.RelationshipPartnershipTimingUI.render();
       if (btn.dataset.tab === 'tabHomeConstructionTiming' && window.HomeConstructionTimingUI) window.HomeConstructionTimingUI.render();

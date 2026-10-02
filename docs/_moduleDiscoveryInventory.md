@@ -114,3 +114,27 @@ NS.checkXCrossCheck = function (candidate) {
 
 ## Known safety-pattern precedent (non-medical)
 majorExpenditureTiming's rule `MAJEXP-NOINVEST-001` / `MAJEXP-NOMEDICAL-001` establish the precedent of having explicit "never recommend an investment/loan" and "never predict a medical emergency" rules in the rules file itself (not just prose) — Wealth Protection should add analogous `WEALTHPROTECTION-NOINVEST-001`, `WEALTHPROTECTION-NODEATH-001` (8th-house safety) rules.
+
+## Yoga engine export (added for Yoga Activation Timing module)
+`js/yogas/yogaEngine.js` had no `window.*` export before this module. A
+minimal, non-invasive wrapper was appended at the very end of the file
+(after its existing `module.exports` block), without touching
+`computeYogas()`'s internal logic at all:
+```js
+if (typeof window !== 'undefined') {
+  window.YogaEngine = { detect: computeYogas };
+}
+```
+`window.YogaEngine.detect(planets, ascendant)` returns the exact same
+`{rows, presentGood, presentBad, notPresent}` shape `computeYogas()` always
+returned; each row is `{key, name, polarity, howDerived, meaning, present,
+magnitude, planets, details}` (fields read directly from
+`YOGA_DEFINITIONS` in `js/yogas/yogaRules.js`). Prefer reading the
+already-computed `state.yogas` (set once per chart generation by `ui.js`)
+over calling `window.YogaEngine.detect` again when both are available, to
+avoid a redundant recompute. Later modules that need yoga formation data
+should reuse `window.YogaEngine.detect` / `state.yogas` rather than adding
+another export or reimplementing yoga rules.
+
+Tab count after Yoga Activation Timing module: **55** `class="tab-button"`
+elements in `index.html` (up from 54).
