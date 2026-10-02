@@ -73,6 +73,11 @@ function initTabs() {
       if (btn.dataset.tab === 'tabPropertySaleTiming' && window.PropertySaleTimingUI) window.PropertySaleTimingUI.render();
       if (btn.dataset.tab === 'tabInheritanceLegacyTiming' && window.InheritanceLegacyTimingUI) window.InheritanceLegacyTimingUI.render();
       if (btn.dataset.tab === 'tabMarriageSeparationDivorceTiming' && window.MarriageSeparationDivorceTimingUI) window.MarriageSeparationDivorceTimingUI.render();
+      if (btn.dataset.tab === 'tabHealthRecoveryTiming' && window.HealthRecoveryTimingUI) window.HealthRecoveryTimingUI.render();
+      if (btn.dataset.tab === 'tabInsuranceProtectionTiming' && window.InsuranceProtectionTimingUI) window.InsuranceProtectionTimingUI.render();
+      if (btn.dataset.tab === 'tabMajorExpenditureTiming' && window.MajorExpenditureTimingUI) window.MajorExpenditureTimingUI.render();
+      if (btn.dataset.tab === 'tabChildEducationTiming' && window.ChildEducationTimingUI) window.ChildEducationTimingUI.render();
+      if (btn.dataset.tab === 'tabRelationshipPartnershipTiming' && window.RelationshipPartnershipTimingUI) window.RelationshipPartnershipTimingUI.render();
       if (btn.dataset.tab === 'tabHomeConstructionTiming' && window.HomeConstructionTimingUI) window.HomeConstructionTimingUI.render();
       if (btn.dataset.tab === 'tabSalaryIncomeTiming' && window.SalaryIncomeTimingUI) window.SalaryIncomeTimingUI.render();
       if (btn.dataset.tab === 'tabLoanDebtReliefTiming' && window.LoanDebtReliefTimingUI) window.LoanDebtReliefTimingUI.render();
