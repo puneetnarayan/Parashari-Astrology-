@@ -138,3 +138,27 @@ another export or reimplementing yoga rules.
 
 Tab count after Yoga Activation Timing module: **55** `class="tab-button"`
 elements in `index.html` (up from 54).
+
+## Dasha-Based Life Phase Analysis module (step 3) — notes for later steps
+- `window.DashaLifePhase` (engine) / `window.DashaLifePhaseUI` (renderer) /
+  `window.DASHALIFEPHASE_RULES` (provenance), `#dashalifephase-root`.
+- This is the master Dasha interpretation/synthesis layer. Later modules
+  (e.g. a future Life Timeline module) that need a chart-specific,
+  house-lordship-derived "theme" for a given Mahadasha/Antardasha should
+  call `window.DashaLifePhase.generateMahadashaTheme(md)` /
+  `analyzeAntardashaTheme(ad, mdTheme)` rather than re-deriving a theme
+  classification from scratch — these are exposed as plain functions on the
+  `window.DashaLifePhase` namespace, not just used internally.
+- `window.DashaLifePhase.getCurrentPhase()` / `getNextPhase()` give the
+  already-computed current/next MD+AD+PD themed breakdown for "what period
+  am I in right now" queries; `buildLifeDashboard()` gives one themed row
+  per Mahadasha across the whole `state.dasha` array.
+- Dasha-hierarchy guard pattern (PD must not override MD/AD without its own
+  structural evidence) is implemented as `analyzePratyantarTheme`'s
+  `hasOwnStructuralEvidence` check — reusable precedent for any future
+  module layering Pratyantardasha-level interpretation on top of
+  Mahadasha/Antardasha-level interpretation.
+- Tab count after this module: **56** `<button class="tab-button">` elements
+  in `index.html` (up from 55). (Note: a shell `grep -c 'class="tab-button"'`
+  invocation can undercount if quoting is mishandled — verify with
+  `grep -c 'data-tab="tab' index.html` or a Python regex count instead.)
