@@ -35,3 +35,11 @@ function computeYogas(planets, ascendant) {
 if (typeof module !== 'undefined') {
   module.exports = { YOGA_ENGINE_LOGIC_TEXT, computeYogas };
 }
+
+// Non-invasive export wrapper only — added for Yoga Activation Timing (and any
+// later module) to reuse this file's existing yoga-formation logic without
+// reimplementing it. Does not change computeYogas()'s internal logic in any way.
+// See docs/_moduleDiscoveryInventory.md for the convention this establishes.
+if (typeof window !== 'undefined') {
+  window.YogaEngine = { detect: computeYogas };
+}
