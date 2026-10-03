@@ -12,6 +12,8 @@ window.RelationshipPartnershipTimingUI = (function () {
   let selectedWindowIndex = null;
   let loveRelFocus = 'Full Timeline';
   let showExplain = false;
+  let showDistinctionNote = true;
+  let showAttractionTrace = false;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function fmtDate(d) { return d ? `${String(d.getUTCDate()).padStart(2, '0')}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${d.getUTCFullYear()}` : 'N/A'; }
@@ -67,12 +69,27 @@ window.RelationshipPartnershipTimingUI = (function () {
     const ab = lr.attractionBoundaries;
     if (!ab || !ab.available) return '<p style="font-size:0.9em;color:#555;">Attraction &amp; Boundaries analysis unavailable (generate a chart first).</p>';
     const rows = ab.factors.map(f => `<tr><td>${esc(f.label)}</td><td class="${qualityClass(f.present === 'Present' ? 'Mixed' : '')}">${esc(f.present)}</td><td>${esc(f.evidence)}</td><td>${evidenceDetails('Alternative reading / rule', [f.alternativeReading])}</td></tr>`).join('');
+    const distinctionToggleLabel = showDistinctionNote ? 'Hide' : 'Show';
+    const traceToggleLabel = showAttractionTrace ? 'Hide calculation sequence' : 'Show calculation sequence';
+    const traceSteps = ab.factors.map((f, i) =>
+      `Step ${i + 1} — ${esc(f.label)} [${f.rule && f.rule.id ? esc(f.rule.id) : 'no rule id'}]: raw chart check &rarr; <strong>${esc(f.present)}</strong><br>` +
+      `&nbsp;&nbsp;&nbsp;&nbsp;Raw evidence: ${esc(f.evidence)}`
+    ).join('<br><br>');
+    const traceBlock = `<br><br>Step ${ab.factors.length + 1} — Tally: ${ab.corroboratingCount} of ${ab.factors.length} factors Present` +
+      `<br>&darr;<br>Step ${ab.factors.length + 2} — Threshold rule applied (hard-coded, not adjustable by factor content): 0 present &rarr; Limited Evidence · 1 present &rarr; Requires Careful Interpretation · 2 present &rarr; Mixed · 3+ present &rarr; Supported · "Strongly Supported" is never reachable in this section` +
+      `<br>&darr;<br>Step ${ab.factors.length + 3} — Result: <strong>${esc(ab.evidenceLabel)}</strong>`;
     return `<h3 id="relpart-sec-attraction">D. Attraction, Boundaries &amp; Relationship Complexity</h3>
       <div class="output-box pastel-yellow" style="border:1px solid #e0b800;">
-        <p><strong>This is not an affair detector.</strong> ${esc(ab.distinctionNote)}</p>
+        <p><strong>This is not an affair detector.</strong>
+          <button id="relpart-distinction-toggle" type="button" class="tab-button" style="margin-left:8px;font-size:0.8em;padding:2px 8px;">${distinctionToggleLabel}</button>
+        </p>
+        ${showDistinctionNote ? `<p>${esc(ab.distinctionNote)}</p>` : ''}
       </div>
       <div class="output-box pastel-blue">
-        <p><strong>Evidence level:</strong> ${badge(ab.evidenceLabel)} &nbsp; <span style="font-size:0.85em;color:#777;">(${ab.corroboratingCount} of ${ab.factors.length} factors present — a single present factor never produces a strong evidence level)</span></p>
+        <p><strong>Evidence level:</strong> ${badge(ab.evidenceLabel)} &nbsp; <span style="font-size:0.85em;color:#777;">(${ab.corroboratingCount} of ${ab.factors.length} factors present — a single present factor never produces a strong evidence level)</span>
+          <button id="relpart-attraction-trace-toggle" type="button" class="tab-button" style="margin-left:8px;font-size:0.8em;padding:2px 8px;">${traceToggleLabel}</button>
+        </p>
+        ${showAttractionTrace ? `<details class="avp-calc" open><summary>CALCULATION SEQUENCE — how this result was derived</summary><p style="font-family:monospace;line-height:1.8;font-size:0.85em;">${traceSteps}${traceBlock}</p></details>` : ''}
         <table class="rem-table"><thead><tr><th>Factor</th><th>Status</th><th>Evidence</th><th>Explanation</th></tr></thead><tbody>${rows}</tbody></table>
         <p style="font-size:0.85em;color:#a33;"><strong>${esc(ab.neverVerdict)}</strong></p>
       </div>`;
@@ -172,6 +189,8 @@ window.RelationshipPartnershipTimingUI = (function () {
     root.querySelectorAll('tr[data-relpart-window]').forEach(tr => tr.addEventListener('click', () => { selectedWindowIndex = Number(tr.getAttribute('data-relpart-window')); UI.render(); const el = document.getElementById('relpart-sec-detail'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
     const focusSelect = root.querySelector('#relpart-focus-select'); if (focusSelect) focusSelect.addEventListener('change', () => { loveRelFocus = focusSelect.value; UI.render(); });
     const explainBtn = root.querySelector('#relpart-explain-btn'); if (explainBtn) explainBtn.addEventListener('click', () => { showExplain = !showExplain; UI.render(); });
+    const distinctionBtn = root.querySelector('#relpart-distinction-toggle'); if (distinctionBtn) distinctionBtn.addEventListener('click', () => { showDistinctionNote = !showDistinctionNote; UI.render(); });
+    const attractionTraceBtn = root.querySelector('#relpart-attraction-trace-toggle'); if (attractionTraceBtn) attractionTraceBtn.addEventListener('click', () => { showAttractionTrace = !showAttractionTrace; UI.render(); });
   }
 
   UI.render = function () {
