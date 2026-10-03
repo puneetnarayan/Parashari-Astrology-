@@ -83,6 +83,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabMajorLifeTransition' && window.MajorLifeTransitionTimingUI) window.MajorLifeTransitionTimingUI.render();
       if (btn.dataset.tab === 'tabChildEducationTiming' && window.ChildEducationTimingUI) window.ChildEducationTimingUI.render();
       if (btn.dataset.tab === 'tabRelationshipPartnershipTiming' && window.RelationshipPartnershipTimingUI) window.RelationshipPartnershipTimingUI.render();
+      if (btn.dataset.tab === 'tabPanchangDailyAlmanac' && window.PanchangDailyAlmanacUI) window.PanchangDailyAlmanacUI.render();
       if (btn.dataset.tab === 'tabHomeConstructionTiming' && window.HomeConstructionTimingUI) window.HomeConstructionTimingUI.render();
       if (btn.dataset.tab === 'tabSalaryIncomeTiming' && window.SalaryIncomeTimingUI) window.SalaryIncomeTimingUI.render();
       if (btn.dataset.tab === 'tabLoanDebtReliefTiming' && window.LoanDebtReliefTimingUI) window.LoanDebtReliefTimingUI.render();
