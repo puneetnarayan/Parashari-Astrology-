@@ -2399,6 +2399,197 @@ function initSavedNatives() {
   document.getElementById('snSearchBox').addEventListener('input', snRenderTable);
   snRenderTable();
   if (!snState.supportsFsApi) snSetFileStatus('This browser doesn\'t support direct file read/write — "Connect" opens a file for reading, and "Save" downloads a replacement file instead of writing back to disk.');
+
+  initSavedNativesCloud();
+}
+
+// --- Natives: Supabase cloud storage (additive, parallel to the CSV workflow above) ---
+//
+// Internal record fields (Name, Sex, Location, City, State, Country,
+// BirthDate, BirthTime, Latitude, Longitude, TimezoneMode, UTCOffset, Notes)
+// map to the `parashari_natives` table columns as follows:
+//   Name -> name, Sex -> sex, Location -> location, City -> city,
+//   State -> state, Country -> country, BirthDate -> birth_date,
+//   BirthTime -> birth_time, Latitude -> latitude, Longitude -> longitude,
+//   TimezoneMode -> timezone_mode, Notes -> notes.
+//   UTCOffset is split by TimezoneMode: when TimezoneMode is 'iana' the
+//   value (an IANA zone name) is stored in the `time_zone` column and
+//   `utc_offset` is cleared; when 'offset' the value is stored in
+//   `utc_offset` and `time_zone` is cleared. See docs/savedNatives/research-notes.md.
+
+let snEditingSupabaseId = null;
+let snCloudRecordsCache = [];
+
+function snCloudSetStatus(text) { document.getElementById('snCloudSaveStatus').textContent = text; }
+
+function snSupabaseReady() {
+  return !!(window.ParashariSupabase && window.ParashariSupabase.isConfigured && window.ParashariSupabase.client);
+}
+
+function snRecordToSupabaseRow(record) {
+  const isIana = record.TimezoneMode !== 'offset';
+  return {
+    name: record.Name,
+    sex: record.Sex || null,
+    location: record.Location || null,
+    city: record.City || null,
+    state: record.State || null,
+    country: record.Country || null,
+    birth_date: record.BirthDate || null,
+    birth_time: record.BirthTime || null,
+    latitude: record.Latitude || null,
+    longitude: record.Longitude || null,
+    timezone_mode: record.TimezoneMode || null,
+    utc_offset: isIana ? null : (record.UTCOffset || null),
+    time_zone: isIana ? (record.UTCOffset || null) : null,
+    notes: record.Notes || null
+  };
+}
+
+function snSupabaseRowToRecord(row) {
+  const isIana = row.timezone_mode !== 'offset';
+  return {
+    Name: row.name || '',
+    Sex: row.sex || '',
+    Location: row.location || '',
+    City: row.city || '',
+    State: row.state || '',
+    Country: row.country || '',
+    BirthDate: row.birth_date || '',
+    BirthTime: row.birth_time || '',
+    Latitude: row.latitude || '',
+    Longitude: row.longitude || '',
+    TimezoneMode: row.timezone_mode || 'iana',
+    UTCOffset: isIana ? (row.time_zone || '') : (row.utc_offset || ''),
+    Notes: row.notes || ''
+  };
+}
+
+async function snCheckSupabaseConnection() {
+  const el = document.getElementById('snSupabaseStatus');
+  if (!snSupabaseReady()) {
+    el.textContent = 'Not Connected (client library failed to load)';
+    el.style.color = '#b00';
+    return;
+  }
+  try {
+    const { error } = await window.ParashariSupabase.client
+      .from(window.ParashariSupabase.TABLE_NAME)
+      .select('id')
+      .limit(1);
+    if (error) {
+      el.textContent = `Not Connected (${error.message})`;
+      el.style.color = '#b00';
+      return;
+    }
+    el.textContent = 'Connected';
+    el.style.color = '#2a7a2a';
+  } catch (e) {
+    el.textContent = `Not Connected (${e.message || 'network error'})`;
+    el.style.color = '#b00';
+  }
+}
+
+function snCloudRenderTable(rows) {
+  const records = rows || snCloudRecordsCache;
+  const body = records.map(row => {
+    const r = snSupabaseRowToRecord(row);
+    return `
+    <tr>
+      <td>${escapeHtml(r.Name)}</td><td>${escapeHtml(r.Sex)}</td><td>${escapeHtml(r.City)}</td><td>${escapeHtml(r.State)}</td><td>${escapeHtml(r.Country)}</td>
+      <td>${escapeHtml(r.BirthDate)}</td><td>${escapeHtml(r.BirthTime)}</td><td>${escapeHtml(r.Latitude)}</td><td>${escapeHtml(r.Longitude)}</td>
+      <td>${escapeHtml(r.TimezoneMode)}</td><td>${escapeHtml(r.UTCOffset)}</td><td>${escapeHtml(r.Notes)}</td>
+      <td><button type="button" data-sn-cloud-edit="${row.id}">Edit</button> <button type="button" data-sn-cloud-delete="${row.id}">Delete</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('snCloudTableOutput').innerHTML = `
+    <table>
+      <thead><tr><th>Name</th><th>Sex</th><th>City</th><th>State</th><th>Country</th><th>Birth Date</th><th>Birth Time</th><th>Latitude</th><th>Longitude</th><th>Timezone Mode</th><th>UTC Offset</th><th>Notes</th><th>Actions</th></tr></thead>
+      <tbody>${body || '<tr><td colspan="13">No cloud records found.</td></tr>'}</tbody>
+    </table>`;
+
+  document.querySelectorAll('#snCloudTableOutput [data-sn-cloud-edit]').forEach(btn => btn.addEventListener('click', () => snCloudEdit(btn.dataset.snCloudEdit)));
+  document.querySelectorAll('#snCloudTableOutput [data-sn-cloud-delete]').forEach(btn => btn.addEventListener('click', () => snCloudDelete(btn.dataset.snCloudDelete)));
+}
+
+async function snCloudSearch() {
+  if (!snSupabaseReady()) { snCloudRenderTable([]); return; }
+  const term = document.getElementById('snCloudSearchBox').value.trim();
+  try {
+    let query = window.ParashariSupabase.client.from(window.ParashariSupabase.TABLE_NAME).select('*').order('name', { ascending: true }).limit(100);
+    if (term) query = query.ilike('name', `%${term}%`);
+    const { data, error } = await query;
+    if (error) { snCloudSetStatus(`Failed to search cloud natives: ${error.message}`); return; }
+    snCloudRecordsCache = data || [];
+    snCloudRenderTable(snCloudRecordsCache);
+  } catch (e) {
+    snCloudSetStatus('Failed to search cloud natives.');
+  }
+}
+
+function snCloudEdit(id) {
+  const row = snCloudRecordsCache.find(r => String(r.id) === String(id));
+  if (!row) return;
+  const record = snSupabaseRowToRecord(row);
+  snPopulateFormFromRecord(record);
+  snEditingSupabaseId = row.id;
+  snCloudSetStatus(`Editing cloud native "${record.Name}" — click "Save to Supabase" to update, or "Clear Form" to cancel.`);
+}
+
+async function snCloudDelete(id) {
+  if (!snSupabaseReady()) return;
+  const row = snCloudRecordsCache.find(r => String(r.id) === String(id));
+  const label = row ? (row.name || 'this record') : 'this record';
+  if (!confirm(`Delete "${label}" from the Supabase cloud table? This cannot be undone.`)) return;
+  try {
+    const { error } = await window.ParashariSupabase.client.from(window.ParashariSupabase.TABLE_NAME).delete().eq('id', id);
+    if (error) { snCloudSetStatus(`Failed to delete native: ${error.message}`); return; }
+    if (snEditingSupabaseId === id) { snEditingSupabaseId = null; }
+    snCloudSetStatus(`Deleted "${label}" from Supabase.`);
+    snCloudSearch();
+  } catch (e) {
+    snCloudSetStatus('Failed to delete native.');
+  }
+}
+
+async function snCloudSave() {
+  if (!snSupabaseReady()) { snCloudSetStatus('Supabase is not connected — cannot save.'); return; }
+  const form = snReadFormRecord();
+  if (!form.Name) { snCloudSetStatus('Enter a Name before saving to Supabase.'); return; }
+  const payload = snRecordToSupabaseRow(form);
+  try {
+    if (snEditingSupabaseId) {
+      payload.updated_at = new Date().toISOString();
+      const { error } = await window.ParashariSupabase.client
+        .from(window.ParashariSupabase.TABLE_NAME)
+        .update(payload)
+        .eq('id', snEditingSupabaseId);
+      if (error) { snCloudSetStatus(`Failed to update native: ${error.message}`); return; }
+      snCloudSetStatus(`Updated "${form.Name}" in Supabase.`);
+      snEditingSupabaseId = null;
+    } else {
+      const { error } = await window.ParashariSupabase.client
+        .from(window.ParashariSupabase.TABLE_NAME)
+        .insert(payload);
+      if (error) { snCloudSetStatus(`Failed to save native: ${error.message}`); return; }
+      snCloudSetStatus(`Saved "${form.Name}" to Supabase.`);
+    }
+    snCloudSearch();
+  } catch (e) {
+    snCloudSetStatus('Failed to save native.');
+  }
+}
+
+function initSavedNativesCloud() {
+  document.getElementById('snCloudSaveBtn').addEventListener('click', snCloudSave);
+  document.getElementById('snCloudSearchBox').addEventListener('input', snCloudSearch);
+  // Additional listener alongside the existing CSV clear-form handler, so
+  // "Clear Form" also resets cloud-edit state without altering the
+  // existing CSV clear-form behavior.
+  document.getElementById('snClearFormBtn').addEventListener('click', () => { snEditingSupabaseId = null; snCloudSetStatus(''); });
+  snCheckSupabaseConnection();
+  snCloudSearch();
 }
 
 // --- Remedies ---

@@ -706,6 +706,18 @@
 <h3>Search &amp; Load</h3>
 <input type="text" id="snSearchBox" placeholder="Search all fields…" style="width:100%;max-width:400px;">
 <div id="snTableOutput" class="output-box pastel-mint"></div>
+
+<h3>Cloud Natives (Supabase)</h3>
+<p style="font-size:0.9em;color:#555;">
+  Status: <strong id="snSupabaseStatus">Checking…</strong><br>
+  <span style="color:#888;">Note: this cloud table currently has no access restriction (an explicit, informed choice, since this app has no login/auth system). Anyone with the site URL could in principle read or write these records if they inspected the page's network calls. Use the CSV workflow above if that is a concern.</span>
+</p>
+<div class="controls">
+  <button id="snCloudSaveBtn" type="button">Save to Supabase</button>
+</div>
+<div id="snCloudSaveStatus" style="font-size:0.9em;color:#555;"></div>
+<input type="text" id="snCloudSearchBox" placeholder="Search cloud natives by name…" style="width:100%;max-width:400px;">
+<div id="snCloudTableOutput" class="output-box pastel-blue"></div>
 </div>
 
 <div class="tab-panel" id="tabRemedies">
@@ -1012,7 +1024,9 @@
 <script src="js/kakshya/kakshyaEngine.js"></script>
 <script src="js/kakshyaTimeline/timelineLifeAreas.js"></script>
 <script src="js/kakshyaTimeline/timelineEngine.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/savedNatives/csvUtil.js"></script>
+<script src="js/savedNatives/supabaseClient.js"></script>
 <script src="js/remedies/remedyData.js"></script>
 <script src="js/remedies/remedyEngine.js"></script>
 <script src="js/knowledgebase/parashariKB.js"></script>
