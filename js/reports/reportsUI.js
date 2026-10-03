@@ -18,6 +18,7 @@ window.ReportsUI = (function () {
   let selectedSynthesis = null;
   let selectedDaily = null;
   let statusMsg = '';
+  let chartStyle = 'north'; // 'north' | 'south' — controls every chart diagram this tab produces
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
@@ -82,6 +83,14 @@ window.ReportsUI = (function () {
       <label><input type="radio" name="reports-type" value="layman" ${reportType === 'layman' ? 'checked' : ''}> Layman Report</label>
       &nbsp;&nbsp;
       <label><input type="radio" name="reports-type" value="researcher" ${reportType === 'researcher' ? 'checked' : ''}> Researcher Report</label>
+      &nbsp;&nbsp;&nbsp;
+      <label>Chart Style:
+        <select id="reports-chart-style">
+          <option value="north" ${chartStyle === 'north' ? 'selected' : ''}>North Indian</option>
+          <option value="south" ${chartStyle === 'south' ? 'selected' : ''}>South Indian</option>
+        </select>
+      </label>
+      <div style="font-size:0.8em;color:#666;margin-top:4px;">Controls how every chart diagram (D1, D9, and all divisional charts) is drawn in the generated PDF.</div>
     </div>`;
   }
 
@@ -135,6 +144,9 @@ window.ReportsUI = (function () {
       r.addEventListener('change', (e) => { reportType = e.target.value; UI.render(); });
     });
 
+    const styleSel = document.getElementById('reports-chart-style');
+    if (styleSel) styleSel.addEventListener('change', (e) => { chartStyle = e.target.value; });
+
     root.querySelectorAll('.reports-chk').forEach(cb => {
       cb.addEventListener('change', (e) => {
         const group = e.target.dataset.group;
@@ -159,12 +171,12 @@ window.ReportsUI = (function () {
     });
 
     const genBtn = document.getElementById('reports-generate-btn');
-    if (genBtn) genBtn.addEventListener('click', () => {
+    if (genBtn) genBtn.addEventListener('click', async () => {
       try {
         statusMsg = 'Generating…';
         UI.render();
-        if (reportType === 'layman') generateLayman();
-        else generateResearcher();
+        if (reportType === 'layman') await generateLayman();
+        else await generateResearcher();
         statusMsg = 'PDF generated and downloaded.';
       } catch (e) {
         console.error('Report generation failed:', e);
@@ -180,7 +192,7 @@ window.ReportsUI = (function () {
   // ---------------------------------------------------------------
   // LAYMAN assembly
   // ---------------------------------------------------------------
-  function generateLayman() {
+  async function generateLayman() {
     const E = window.ReportsEngine;
     const native = E.getNativeInfo();
     if (!native) throw new Error('Generate a chart first.');
@@ -242,25 +254,41 @@ window.ReportsUI = (function () {
 
     const disclaimers = E.collectDisclaimers(disclaimerResults);
 
-    const content = { native, chartSnapshot, currentLifePhase, timelineHighlights, topics, yogas, panchang, glossary: E.GLOSSARY, disclaimers };
-    const doc = window.ReportsPdfBuilder.buildLaymanPdf(content);
+    let d1DiagramHtml = null;
+    try {
+      if (state.chart && typeof renderNorthIndianChart === 'function') {
+        const { planets, ascendant } = state.chart;
+        d1DiagramHtml = chartStyle === 'south'
+          ? renderSouthIndianChart('D1 (Rasi)', buildD1ChartData(planets))
+          : renderNorthIndianChart('D1 (Rasi)', buildD1NorthIndian(planets, ascendant.longitude));
+      }
+    } catch (e) { d1DiagramHtml = null; }
+
+    const content = { native, chartSnapshot, currentLifePhase, timelineHighlights, topics, yogas, panchang, glossary: E.GLOSSARY, disclaimers, chartStyle, d1DiagramHtml };
+    const doc = await window.ReportsPdfBuilder.buildLaymanPdf(content);
     window.ReportsPdfBuilder.download(doc, `LaymanReport-${fileSafeName(native.name)}-${dateStamp()}.pdf`);
   }
 
   // ---------------------------------------------------------------
   // RESEARCHER assembly
   // ---------------------------------------------------------------
-  function generateResearcher() {
+  async function generateResearcher() {
     const E = window.ReportsEngine;
     const native = E.getNativeInfo();
     if (!native) throw new Error('Generate a chart first.');
     const chartSnapshot = E.getChartSnapshot();
     const disclaimerResults = [];
     const rulesCollector = [];
-    const content = { native, chartSnapshot, disclaimers: [] };
+    const content = { native, chartSnapshot, disclaimers: [], chartStyle };
 
     if (selectedCore.has('d1Table')) content.d1Table = E.getD1Table();
-    if (selectedCore.has('divisionalCharts')) content.divisionalCharts = E.getDivisionalCharts();
+    if (selectedCore.has('divisionalCharts')) {
+      content.divisionalCharts = E.getDivisionalCharts();
+      // Full verified varga list (D1..D60, from js/divisionalCharts.js's own
+      // DIVISIONAL_CHART_LIST) — the same checkbox now also drives the
+      // diagram gallery, per the task's "reuse the existing checkbox" guidance.
+      content.divisionalDiagramKeys = (typeof DIVISIONAL_CHART_LIST !== 'undefined') ? DIVISIONAL_CHART_LIST.slice() : ['D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12', 'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'];
+    }
     if (selectedCore.has('dashaTree')) content.dashaTree = E.getDashaTree();
     if (selectedCore.has('currentPD')) content.currentPratyantardasha = E.getCurrentPratyantardasha();
     if (selectedCore.has('shadbala')) content.shadbala = E.getShadbalaTable();
@@ -313,7 +341,7 @@ window.ReportsUI = (function () {
     content.ruleProvenance = E.collectRuleProvenance(rulesCollector);
     content.disclaimers = E.collectDisclaimers(disclaimerResults);
 
-    const doc = window.ReportsPdfBuilder.buildResearcherPdf(content);
+    const doc = await window.ReportsPdfBuilder.buildResearcherPdf(content);
     window.ReportsPdfBuilder.download(doc, `ResearcherReport-${fileSafeName(native.name)}-${dateStamp()}.pdf`);
   }
 

@@ -245,6 +245,28 @@ window.ReportsEngine = (function () {
     });
   };
 
+  // Label -> 3-color-scheme hex, reused everywhere a module only exposes a
+  // qualitative strength/evidence string (no existing numeric threshold
+  // function). Pure substring matching on the module's OWN existing
+  // vocabulary — never invents a new category, and degrades to null (no
+  // color) for anything that doesn't clearly match one of the 3 buckets.
+  // Matches the exact 3 hex values used by bavFillColor/savFillColor in
+  // js/ui.js (lines ~351-354 and ~449-452).
+  const GREEN_KEYWORDS = ['strong', 'favorable', 'favourable', 'supported', 'supportive', 'excellent', 'good', 'auspicious', 'present'];
+  const RED_KEYWORDS = ['weak', 'avoided', 'limited', 'delayed', 'requires careful', 'unfavorable', 'unfavourable', 'poor', 'absent'];
+  const YELLOW_KEYWORDS = ['mixed', 'moderate', 'contextual', 'average', 'neutral', 'dormant'];
+  NS.COLOR_GREEN = '#d9f2d9';
+  NS.COLOR_YELLOW = '#fff6c9';
+  NS.COLOR_RED = '#ffdcdc';
+  NS.labelColorHex = function (label) {
+    if (!label) return null;
+    const s = String(label).toLowerCase();
+    if (GREEN_KEYWORDS.some(k => s.includes(k))) return NS.COLOR_GREEN;
+    if (RED_KEYWORDS.some(k => s.includes(k))) return NS.COLOR_RED;
+    if (YELLOW_KEYWORDS.some(k => s.includes(k))) return NS.COLOR_YELLOW;
+    return null;
+  };
+
   const DIVISIONAL_CHART_LIST = ['D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12', 'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'];
   NS.getDivisionalCharts = function (selectedVargas) {
     if (!state.chart || typeof vargaPosition !== 'function') return null;
