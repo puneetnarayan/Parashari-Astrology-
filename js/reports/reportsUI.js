@@ -211,12 +211,12 @@ window.ReportsUI = (function () {
         .map(p => p.narrative || `${p.label}: ${(p.domains || []).join(', ')}`);
     }
 
-    const topicFindings = E.collectTopicFindings(null); // all topics, layman always evaluates all
+    const topicFindings = E.collectTopicFindings(null, 5); // all topics, layman always evaluates all, next 5 years
     const topics = topicFindings.filter(f => f.ok).map(f => {
       disclaimerResults.push({ label: f.topic.label, result: f.result });
       const w = f.windows[0];
       const summary = `This chart shows at least one astrologically notable window related to ${f.topic.label.toLowerCase()} (around ${w.mahadasha || ''}${w.antardasha ? '/' + w.antardasha : ''} Dasha), shown here as a theme to reflect on rather than a guaranteed event.`;
-      return { label: f.topic.label, summary };
+      return { label: f.topic.label, summary, windows: f.windows };
     });
 
     let yogas = [];
@@ -268,7 +268,7 @@ window.ReportsUI = (function () {
     if (selectedCore.has('yogaReport')) content.yogaReport = E.getFullYogaReport();
 
     const selectedTopics = Array.from(selectedTopicIds);
-    const topicFindings = selectedTopics.length ? E.collectTopicFindings(selectedTopics) : [];
+    const topicFindings = selectedTopics.length ? E.collectTopicFindings(selectedTopics, 5) : [];
     content.topics = topicFindings.filter(f => f.ok).map(f => {
       disclaimerResults.push({ label: f.topic.label, result: f.result });
       rulesCollector.push(f.result);
