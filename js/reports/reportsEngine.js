@@ -142,11 +142,12 @@ window.ReportsEngine = (function () {
   // Topic finding collection — the ~27 single-event timing modules.
   // Returns { topic, ok, windows, result, reason }.
   // ---------------------------------------------------------------
-  NS.collectTopicFindings = function (topicIds) {
+  NS.collectTopicFindings = function (topicIds, horizonYears) {
+    const horizon = horizonYears || 5;
     const topics = NS.getTopics().filter(t => !topicIds || topicIds.includes(t.id));
     const out = [];
     topics.forEach(t => {
-      const r = safeRefresh(t.global);
+      const r = safeRefresh(t.global, [horizon]);
       if (!r.ok) { out.push({ topic: t, ok: false, reason: r.reason }); return; }
       const windows = windowsArrayFrom(r.result);
       if (!windows || !windows.length) { out.push({ topic: t, ok: false, reason: 'no candidate windows for this chart' }); return; }

@@ -125,7 +125,7 @@ window.ReportsPdfBuilder = (function () {
 
     if (content.topics && content.topics.length) {
       y = ensureRoom(doc, y, 20);
-      y = addHeading(doc, 'Topic-by-Topic Snapshot', y);
+      y = addHeading(doc, 'Topic-by-Topic Snapshot (Timing Windows, Next 5 Years)', y);
       content.topics.forEach(t => {
         y = ensureRoom(doc, y, 14);
         doc.setFont(undefined, 'bold');
@@ -133,6 +133,10 @@ window.ReportsPdfBuilder = (function () {
         doc.setFont(undefined, 'normal');
         y += 5.5;
         y = addParagraph(doc, t.summary, y);
+        if (t.windows && t.windows.length) {
+          y = addTable(doc, ['Period', 'Theme / Assessment'],
+            t.windows.map(w => [fmtDate(w.startDate) + ' – ' + fmtDate(w.endDate), (w.strength && w.strength.label) || w.qualification || w.evidenceLabel || '—']), y);
+        }
       });
     }
 
@@ -214,9 +218,17 @@ window.ReportsPdfBuilder = (function () {
     }
 
     if (content.ashtakavarga) {
+      doc.addPage(); y = 20;
+      y = addHeading(doc, 'Ashtakavarga Chart — Sarvashtakavarga (SAV)', y);
+      y = addParagraph(doc, 'Total bindu (benefic-point) count per sign, summed across all 7 classical planets. Signs shown Aries → Pisces.', y);
+      const signHead = ['Sign'].concat(SIGNS);
+      y = addTable(doc, signHead, [['SAV Total'].concat(content.ashtakavarga.sav.map(v => String(v)))], y);
+
       y = ensureRoom(doc, y, 20);
-      y = addHeading(doc, 'Ashtakavarga', y);
-      y = addParagraph(doc, 'Sarvashtakavarga and Bhinnashtakavarga totals as computed by this chart\'s existing Ashtakavarga engine (see the Ashtakavarga tab for the full sign-by-sign breakdown).', y);
+      y = addHeading(doc, 'Bhinnashtakavarga (BAV) — Per-Planet Bindu Grid', y);
+      y = addParagraph(doc, 'Bindu count (0–8) cast by each planet onto each sign, per classical Ashtakavarga rules.', y);
+      const bavRows = AV_PLANETS.map(name => [name].concat((content.ashtakavarga.bav[name] || []).map(v => String(v))));
+      y = addTable(doc, signHead, bavRows, y);
     }
 
     if (content.yogaReport) {
@@ -228,7 +240,7 @@ window.ReportsPdfBuilder = (function () {
     if (content.topics && content.topics.length) {
       content.topics.forEach(t => {
         doc.addPage(); y = 20;
-        y = addHeading(doc, t.label + ' — Candidate Windows', y);
+        y = addHeading(doc, t.label + ' — Candidate Windows (Next 5 Years)', y);
         y = addTable(doc, ['Mahadasha', 'Antardasha', 'Pratyantar', 'Start', 'End', 'Evidence'],
           t.windows.map(w => [w.mahadasha || '—', w.antardasha || '—', w.pratyantar || '—', fmtDate(w.startDate), fmtDate(w.endDate), (w.strength && w.strength.label) || w.qualification || '—']), y);
         if (t.calculationLog && t.calculationLog.length) {
