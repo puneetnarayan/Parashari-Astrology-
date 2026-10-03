@@ -352,6 +352,7 @@
   <button class="tab-button" id="tabBtnLifeTimeline" data-tab="tabLifeTimeline">Important Event Sequence / Life Timeline</button>
   <button class="tab-button" id="tabBtnMajorLifeTransition" data-tab="tabMajorLifeTransition">Major Life Transition / Phase Change Timing</button>
   <button class="tab-button" id="tabBtnMuhurtaElectional" data-tab="tabMuhurtaElectional">Muhurta / Electional Timing</button>
+  <button class="tab-button" id="tabBtnReports" data-tab="tabReports">Reports</button>
   </div>
 </nav>
 
@@ -981,6 +982,11 @@
 
 <div class="tab-panel" id="tabMuhurtaElectional"></div>
 
+<div class="tab-panel" id="tabReports">
+  <h2>Reports</h2>
+  <div id="reports-root"></div>
+</div>
+
 </main>
 </div>
 
@@ -1145,6 +1151,11 @@
 <script src="js/muhurtaElectional/muhurtaElectionalEngine.js"></script>
 <script src="js/muhurtaElectional/muhurtaElectionalUI.js"></script>
 <script src="js/timezone.js"></script>
+<script src="js/vendor/jspdf/jspdf.umd.min.js"></script>
+<script src="js/vendor/jspdf/jspdf.plugin.autotable.min.js"></script>
+<script src="js/reports/reportsEngine.js"></script>
+<script src="js/reports/reportsPdfBuilder.js"></script>
+<script src="js/reports/reportsUI.js"></script>
 <script src="js/ui.js"></script>
 </body>
 </html>
