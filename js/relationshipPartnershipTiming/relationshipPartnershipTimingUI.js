@@ -10,6 +10,8 @@ window.RelationshipPartnershipTimingUI = (function () {
   let horizonYears = 5;
   let minStrength = 'All';
   let selectedWindowIndex = null;
+  let loveRelFocus = 'Full Timeline';
+  let showExplain = false;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function fmtDate(d) { return d ? `${String(d.getUTCDate()).padStart(2, '0')}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${d.getUTCFullYear()}` : 'N/A'; }
@@ -23,6 +25,73 @@ window.RelationshipPartnershipTimingUI = (function () {
   }
   function badge(label) { return `<span class="${qualityClass(label)}">${esc(label)}</span>`; }
   function evidenceDetails(title, items) { return `<details class="avp-calc"><summary>${esc(title)}</summary><ul>${items.map(e => `<li>${esc(e)}</li>`).join('')}</ul></details>`; }
+
+  function renderExplainTab() {
+    const body = `<ul style="font-size:0.9em;line-height:1.5;">
+        <li><strong>What this tab analyzes / does not establish:</strong> It describes astrological evidence in the natal chart, D9, Dasha, and transit for relationship/partnership-related themes (premarital connection, during-marriage relationship quality, and broad attraction/boundary temperament themes). It does not establish, verify, or predict real-world events, a specific partner's identity, or anyone's actual conduct — including infidelity, which a chart can never confirm or deny.</li>
+        <li><strong>How to read the three stages:</strong> "Premarital" covers connection/partnership-start themes (reusing the existing natal-promise and candidate-window calculation). "During Marriage" covers the ongoing quality of the 7th-house/Venus/Jupiter partnership significators over time. "Attraction & Boundaries" covers broad temperament factors read qualitatively, each shown as Present/Absent/Ambiguous — never as a verdict.</li>
+        <li><strong>Plain-language meaning of factors:</strong> Each factor (e.g., "Venus–Rahu association") is a classical astrological signature with a specific, limited meaning explained in its own rule panel below — it is not a label for a person.</li>
+        <li><strong>Why timing = reflection windows, not guarantees:</strong> Dasha/transit windows show when a theme is astrologically emphasized. They are prompts for reflection, not predictions that something specific will occur during that window.</li>
+        <li><strong>Why a chart can't prove an affair or reveal someone else's private conduct:</strong> A birth chart reflects the native's own astrological evidence only. It cannot observe real-world behavior, and it cannot be used to analyze a partner's chart unless that partner's own separately-supplied chart is explicitly selected and clearly labelled as theirs.</li>
+      </ul>`;
+    return `<p><button id="relpart-explain-btn" type="button" class="tab-button" style="margin-bottom:6px;">${showExplain ? 'Hide' : 'What does this tab do?'}</button></p>
+      ${showExplain ? `<div class="output-box pastel-lavender">${body}</div>` : ''}`;
+  }
+
+  function renderOverview(lr) {
+    const ov = lr.overview;
+    return `<h3 id="relpart-sec-overview">A. Relationship Overview</h3><div class="output-box pastel-lavender">
+      <ul>${ov.summary.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+      <p style="font-size:0.85em;color:#777;">"Evidence" labels throughout this tab describe the strength/consistency of astrological indicators found in this chart only — they are never a probability or likelihood of any real-world outcome, including infidelity.</p>
+    </div>`;
+  }
+
+  function renderFocusSelector() {
+    const options = ['Premarital', 'During Marriage', 'Attraction & Boundaries', 'Full Timeline'];
+    return `<p><label>Focus: <select id="relpart-focus-select">${options.map(o => `<option value="${esc(o)}" ${o === loveRelFocus ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label></p>`;
+  }
+
+  function renderDuringMarriage(lr) {
+    const dm = lr.duringMarriage;
+    if (!dm || !dm.available) return '<p style="font-size:0.9em;color:#555;">During-marriage analysis unavailable (generate a chart first).</p>';
+    const rows = dm.factors.map(f => `<tr><td>${esc(f.label)}</td><td class="${qualityClass(f.present ? 'Supported' : 'Mixed')}">${f.present ? 'Present' : 'Absent'}</td><td>${esc(f.evidence)}</td></tr>`).join('');
+    return `<h3 id="relpart-sec-duringmarriage">C. During Marriage — Relationship Quality Themes</h3><div class="output-box pastel-peach">
+      <p><strong>${badge(dm.qualityLabel)}</strong></p>
+      <table class="rem-table"><thead><tr><th>Factor</th><th>Status</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table>
+      <ul style="font-size:0.85em;color:#555;">${dm.contextualNotes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+      <ul style="font-size:0.85em;color:#777;">${dm.caveats.map(c => `<li>${esc(c)}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  function renderAttractionBoundaries(lr) {
+    const ab = lr.attractionBoundaries;
+    if (!ab || !ab.available) return '<p style="font-size:0.9em;color:#555;">Attraction &amp; Boundaries analysis unavailable (generate a chart first).</p>';
+    const rows = ab.factors.map(f => `<tr><td>${esc(f.label)}</td><td class="${qualityClass(f.present === 'Present' ? 'Mixed' : '')}">${esc(f.present)}</td><td>${esc(f.evidence)}</td><td>${evidenceDetails('Alternative reading / rule', [f.alternativeReading])}</td></tr>`).join('');
+    return `<h3 id="relpart-sec-attraction">D. Attraction, Boundaries &amp; Relationship Complexity</h3>
+      <div class="output-box pastel-yellow" style="border:1px solid #e0b800;">
+        <p><strong>This is not an affair detector.</strong> ${esc(ab.distinctionNote)}</p>
+      </div>
+      <div class="output-box pastel-blue">
+        <p><strong>Evidence level:</strong> ${badge(ab.evidenceLabel)} &nbsp; <span style="font-size:0.85em;color:#777;">(${ab.corroboratingCount} of ${ab.factors.length} factors present — a single present factor never produces a strong evidence level)</span></p>
+        <table class="rem-table"><thead><tr><th>Factor</th><th>Status</th><th>Evidence</th><th>Explanation</th></tr></thead><tbody>${rows}</tbody></table>
+        <p style="font-size:0.85em;color:#a33;"><strong>${esc(ab.neverVerdict)}</strong></p>
+      </div>`;
+  }
+
+  function renderCombinedTimeline(lr) {
+    const t = lr.timeline;
+    if (!t || !t.available || !t.entries.length) return `<h3 id="relpart-sec-timeline">E. Relationship Timeline</h3><p style="font-size:0.9em;color:#555;">No timeline entries available for the current focus/horizon (real Dasha-based windows only — no dates are fabricated).</p>`;
+    const rows = t.entries.map(e => `<tr class="${qualityClass(e.label)}"><td>${esc(e.section)}</td><td>${fmtDate(e.startDate)} &rarr; ${fmtDate(e.endDate)}</td><td>${badge(e.label)}</td></tr>`).join('');
+    return `<h3 id="relpart-sec-timeline">E. Relationship Timeline (Focus: ${esc(lr.focus)})</h3>
+      <div class="output-box pastel-mint" style="overflow-x:auto;"><table class="rem-table"><thead><tr><th>Section</th><th>Period</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p style="font-size:0.85em;color:#777;">All dates come directly from this chart's computed Vimshottari Dasha periods. None are fabricated or estimated.</p>`;
+  }
+
+  function renderDataCompleteness(lr) {
+    const dc = lr.dataCompleteness;
+    if (!dc) return '';
+    return `<div class="output-box pastel-yellow" style="border:1px solid #e0b800;"><p style="font-size:0.85em;"><strong>Data completeness:</strong> ${esc(dc.note)}</p></div>`;
+  }
 
   function renderScopeNote() {
     return `<div class="output-box pastel-yellow" style="border:1px solid #e0b800;"><p style="font-size:0.9em;"><strong>Scope:</strong> This module never guarantees a relationship, commitment, or marriage; never infers another person's thoughts, intentions, or fidelity; never infers abuse, a mental-health condition, or a personality disorder; never predicts coercion or violence; and never identifies a specific destined partner. It is explicitly distinct from Marriage Timing, Marriage Separation/Divorce Timing, and Matching/Compatibility.</p></div>`;
@@ -101,6 +170,8 @@ window.RelationshipPartnershipTimingUI = (function () {
     const horizonSelect = root.querySelector('#relpart-horizon-select'); if (horizonSelect) horizonSelect.addEventListener('change', () => { horizonYears = Number(horizonSelect.value); selectedWindowIndex = null; UI.render(); });
     const strengthSelect = root.querySelector('#relpart-strength-select'); if (strengthSelect) strengthSelect.addEventListener('change', () => { minStrength = strengthSelect.value; selectedWindowIndex = null; UI.render(); });
     root.querySelectorAll('tr[data-relpart-window]').forEach(tr => tr.addEventListener('click', () => { selectedWindowIndex = Number(tr.getAttribute('data-relpart-window')); UI.render(); const el = document.getElementById('relpart-sec-detail'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+    const focusSelect = root.querySelector('#relpart-focus-select'); if (focusSelect) focusSelect.addEventListener('change', () => { loveRelFocus = focusSelect.value; UI.render(); });
+    const explainBtn = root.querySelector('#relpart-explain-btn'); if (explainBtn) explainBtn.addEventListener('click', () => { showExplain = !showExplain; UI.render(); });
   }
 
   UI.render = function () {
@@ -108,10 +179,22 @@ window.RelationshipPartnershipTimingUI = (function () {
     if (!root) return;
     const result = window.RelationshipPartnershipTiming.refresh(horizonYears, minStrength);
     if (!result) { root.innerHTML = '<p style="font-size:0.9em;color:#555;">Generate a chart first (Chart &amp; Analysis tab) to see the Relationship / Partnership Start Timing analysis.</p>'; return; }
+    const lr = window.RelationshipPartnershipTiming.refreshLoveRelationshipTimeline(horizonYears, loveRelFocus);
+    const showPremarital = loveRelFocus === 'Premarital' || loveRelFocus === 'Full Timeline';
+    const showDuringMarriage = loveRelFocus === 'During Marriage' || loveRelFocus === 'Full Timeline';
+    const showAttraction = loveRelFocus === 'Attraction & Boundaries' || loveRelFocus === 'Full Timeline';
     root.innerHTML = [
+      renderExplainTab(),
       renderScopeNote(),
-      '<p>Parashari/Vimshottari relationship/partnership-start timing. Traces: <strong>Natal Promise &rarr; D9 Confirmation &rarr; Dasha &rarr; Transit &rarr; Candidate Window &rarr; Personal/Professional Context &rarr; Cross-Module Checks</strong>.</p>',
-      renderPromise(result), renderD9(result), renderCurrentDasha(result), renderWindows(result), renderLog(result), renderRules(result)
+      lr ? renderDataCompleteness(lr) : '',
+      '<p>Parashari/Vimshottari love &amp; relationship analysis: premarital connection timing, during-marriage relationship quality, and attraction/boundaries/complexity temperament factors, plus a combined timeline below. Traces: <strong>Natal Promise &rarr; D9 Confirmation &rarr; Dasha &rarr; Transit &rarr; Candidate Window &rarr; Personal/Professional Context &rarr; Cross-Module Checks</strong>.</p>',
+      lr ? renderOverview(lr) : '',
+      renderFocusSelector(),
+      showPremarital ? (renderPromise(result) + renderD9(result) + renderCurrentDasha(result) + renderWindows(result)) : '',
+      showDuringMarriage && lr ? renderDuringMarriage(lr) : '',
+      showAttraction && lr ? renderAttractionBoundaries(lr) : '',
+      lr ? renderCombinedTimeline(lr) : '',
+      renderLog(result), renderRules(result)
     ].join('');
     attachInteractions(root, result);
   };
