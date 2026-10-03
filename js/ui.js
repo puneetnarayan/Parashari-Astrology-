@@ -87,6 +87,7 @@ function initTabs() {
       if (btn.dataset.tab === 'tabHomeConstructionTiming' && window.HomeConstructionTimingUI) window.HomeConstructionTimingUI.render();
       if (btn.dataset.tab === 'tabSalaryIncomeTiming' && window.SalaryIncomeTimingUI) window.SalaryIncomeTimingUI.render();
       if (btn.dataset.tab === 'tabLoanDebtReliefTiming' && window.LoanDebtReliefTimingUI) window.LoanDebtReliefTimingUI.render();
+      if (btn.dataset.tab === 'tabMuhurtaElectional' && window.MuhurtaElectionalUI) window.MuhurtaElectionalUI.render();
     });
   });
 }
