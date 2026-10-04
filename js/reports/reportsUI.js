@@ -54,7 +54,7 @@ window.ReportsUI = (function () {
     const body = `<ul style="font-size:0.9em;line-height:1.5;">
       <li><strong>What this tab does:</strong> Generates a downloadable PDF report for the currently generated chart, entirely in your browser — nothing about this native is ever sent to any external service.</li>
       <li><strong>Layman Report:</strong> A readable, reassuring, non-technical summary for the client themselves: chart snapshot, current life phase, upcoming timeline highlights, a topic-by-topic snapshot, notable yogas, Panchang for today, a glossary, and a closing disclaimer. It is a fixed structure — no module checklist.</li>
-      <li><strong>Researcher Report:</strong> Full technical transparency for a practitioner/researcher — raw chart data, divisional charts, the full Dasha tree, Shadbala, Ashtakavarga, the full Yoga report, every selected timing module's complete candidate-window table and calculation trace, the synthesis modules' full detail, Panchang/Muhurta, a rule-provenance appendix, and a methodology/limitations appendix. You choose which modules to include via the checkboxes below (all checked by default).</li>
+      <li><strong>Researcher Report:</strong> Full technical transparency for a practitioner/researcher — raw chart data, divisional charts, the full Dasha tree, Shadbala, Ashtakavarga, the full Yoga report, every selected timing module's complete candidate-window table and calculation trace, the synthesis modules' full detail, Panchang/Muhurta, and a methodology/limitations appendix. You choose which modules to include via the checkboxes below (all checked by default).</li>
       <li><strong>Only sections with real findings appear:</strong> a checked module with zero findings for this chart is silently omitted, never shown as an empty section or filled with a fabricated finding.</li>
       <li><strong>Shared disclaimer framing:</strong> every included module's own safety/disclaimer language is reused verbatim; nothing here guarantees any outcome, and this is not medical, legal, financial or relationship advice.</li>
     </ul>`;
@@ -278,7 +278,6 @@ window.ReportsUI = (function () {
     if (!native) throw new Error('Generate a chart first.');
     const chartSnapshot = E.getChartSnapshot();
     const disclaimerResults = [];
-    const rulesCollector = [];
     const content = { native, chartSnapshot, disclaimers: [], chartStyle };
 
     if (selectedCore.has('d1Table')) content.d1Table = E.getD1Table();
@@ -299,13 +298,12 @@ window.ReportsUI = (function () {
     const topicFindings = selectedTopics.length ? E.collectTopicFindings(selectedTopics, 5) : [];
     content.topics = topicFindings.filter(f => f.ok).map(f => {
       disclaimerResults.push({ label: f.topic.label, result: f.result });
-      rulesCollector.push(f.result);
       return { label: f.topic.label, windows: f.windows, calculationLog: f.result.calculationLog };
     });
 
     if (selectedSynthesis.has('yogaActivation')) {
       const ya = E.collectYogaActivation();
-      if (ya.ok) { content.yogaActivation = ya.result; disclaimerResults.push({ label: 'Yoga Activation Timing', result: ya.result }); rulesCollector.push(ya.result); }
+      if (ya.ok) { content.yogaActivation = ya.result; disclaimerResults.push({ label: 'Yoga Activation Timing', result: ya.result }); }
     }
     if (selectedSynthesis.has('dashaLifePhase')) {
       const dlp = E.collectDashaLifePhase();
@@ -313,11 +311,11 @@ window.ReportsUI = (function () {
     }
     if (selectedSynthesis.has('lifeTimeline')) {
       const lt = E.collectLifeTimeline(5);
-      if (lt.ok) { content.lifeTimeline = lt.result; disclaimerResults.push({ label: 'Life Timeline', result: lt.result }); rulesCollector.push(lt.result); }
+      if (lt.ok) { content.lifeTimeline = lt.result; disclaimerResults.push({ label: 'Life Timeline', result: lt.result }); }
     }
     if (selectedSynthesis.has('majorLifeTransition')) {
       const mlt = E.collectMajorLifeTransition();
-      if (mlt.ok) { content.majorLifeTransition = mlt.result; disclaimerResults.push({ label: 'Major Life Transition', result: mlt.result }); rulesCollector.push(mlt.result); }
+      if (mlt.ok) { content.majorLifeTransition = mlt.result; disclaimerResults.push({ label: 'Major Life Transition', result: mlt.result }); }
     }
 
     if (selectedDaily.has('panchang')) {
@@ -338,7 +336,6 @@ window.ReportsUI = (function () {
       if (ms.ok) content.muhurtaScan = ms;
     }
 
-    content.ruleProvenance = E.collectRuleProvenance(rulesCollector);
     content.disclaimers = E.collectDisclaimers(disclaimerResults);
 
     const doc = await window.ReportsPdfBuilder.buildResearcherPdf(content);
