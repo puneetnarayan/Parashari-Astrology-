@@ -53,15 +53,31 @@ window.ReportsPdfBuilder = (function () {
     return y;
   }
 
+  // Best-effort "keep the whole table on one page" heuristic: estimate the
+  // table's total rendered height (title + header + one row per body entry,
+  // ~7mm/row at fontSize 8/cellPadding 2) and, if that estimate fits within
+  // a FRESH page but not the remaining space on the current page, start a
+  // new page first so the table renders in full without splitting. A table
+  // whose estimated height exceeds even a full fresh page (e.g. a lifetime
+  // Dasha tree with 100+ rows) cannot avoid spanning multiple pages — that
+  // is an accepted, documented exception, not a bug.
   function addTable(doc, head, body, y, title) {
     if (!body || !body.length) return y;
-    y = ensureRoom(doc, y, 20);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const usableHeight = pageHeight - 15 - 15;
+    const estTotal = (title ? 8 : 0) + 10 + body.length * 7;
+    if (estTotal <= usableHeight && (y + estTotal) > (pageHeight - 15)) {
+      doc.addPage();
+      y = 15;
+    } else {
+      y = ensureRoom(doc, y, 20);
+    }
     if (title) y = addHeading(doc, title, y);
     if (typeof doc.autoTable !== 'function') {
       // Defensive fallback if autotable failed to load — never throw.
       return addParagraph(doc, '[Table omitted — autotable plugin unavailable]', y);
     }
-    doc.autoTable({ head: [head], body, startY: y, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [90, 70, 140] }, margin: { left: 14, right: 14 } });
+    doc.autoTable({ head: [head], body, startY: y, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [90, 70, 140] }, margin: { left: 14, right: 14 }, rowPageBreak: 'avoid' });
     return doc.lastAutoTable.finalY + 6;
   }
 
@@ -138,24 +154,54 @@ window.ReportsPdfBuilder = (function () {
     });
   }
 
-  // Embeds a single chart diagram as a full-width image, with a
-  // numeric-table fallback note if rasterization is unavailable/fails.
-  async function addChartImage(doc, title, html, y) {
-    y = ensureRoom(doc, y, 20);
-    y = addHeading(doc, title, y);
-    const img = await renderChartHtmlToImage(html);
-    if (!img) {
-      y = addParagraph(doc, 'Chart diagram unavailable — see table.', y);
-      return y;
-    }
-    const maxWidthMm = 150;
-    const maxHeightMm = 150;
-    let wMm = maxWidthMm;
-    let hMm = wMm * (img.height / img.width);
-    if (hMm > maxHeightMm) { hMm = maxHeightMm; wMm = hMm * (img.width / img.height); }
-    y = ensureRoom(doc, y, hMm + 6);
-    doc.addImage(img.dataUrl, 'JPEG', 14, y, wMm, hMm);
-    return y + hMm + 8;
+  // Embeds one or two chart diagrams side by side (two charts share a row
+  // and are each proportionately shrunk to fit; a single chart is centered
+  // within the full usable width), both centered on the page. Pass a single
+  // {title, html} item for a lone chart (e.g. Layman's D1), or two for a
+  // pair (e.g. D1+D9, or any two divisional charts sharing a page). Falls
+  // back to a text note per-item if rasterization is unavailable/fails.
+  async function addChartImagePair(doc, items, y) {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const leftMargin = 14;
+    const usableWidth = pageWidth - leftMargin * 2;
+    const gutter = 10;
+    const n = items.length;
+    const colWidth = n === 2 ? (usableWidth - gutter) / 2 : usableWidth;
+    const maxHeightMm = 115;
+
+    const imgs = await Promise.all(items.map(it => renderChartHtmlToImage(it.html)));
+    const boxes = imgs.map(img => {
+      if (!img) return null;
+      let w = colWidth;
+      let h = w * (img.height / img.width);
+      if (h > maxHeightMm) { h = maxHeightMm; w = h * (img.width / img.height); }
+      return { img, w, h };
+    });
+
+    const rowHeight = Math.max(20, ...boxes.map(b => b ? b.h : 0));
+    const titleHeight = 7;
+    y = ensureRoom(doc, y, titleHeight + rowHeight + 10);
+
+    const colStartX = n === 2 ? [leftMargin, leftMargin + colWidth + gutter] : [leftMargin];
+
+    items.forEach((it, i) => {
+      const slotX = colStartX[i];
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      const textWidth = doc.getTextWidth(it.title);
+      doc.text(it.title, slotX + Math.max(0, (colWidth - textWidth) / 2), y);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      const box = boxes[i];
+      if (box) {
+        const imgX = slotX + (colWidth - box.w) / 2;
+        doc.addImage(box.img.dataUrl, 'JPEG', imgX, y + 3, box.w, box.h);
+      } else {
+        doc.text('Chart diagram unavailable — see table.', slotX, y + 10);
+      }
+    });
+
+    return y + titleHeight + rowHeight + 10;
   }
 
   // Builds the chart-diagram HTML for one divisional chart (D1..D60),
@@ -234,7 +280,7 @@ window.ReportsPdfBuilder = (function () {
     // selector) — a simple visual snapshot, kept lean per the Layman
     // report's scope (the full divisional-chart gallery is Researcher-only).
     if (content.d1DiagramHtml) {
-      y = await addChartImage(doc, 'D1 (Rasi) Chart', content.d1DiagramHtml, y);
+      y = await addChartImagePair(doc, [{ title: 'D1 (Rasi) Chart', html: content.d1DiagramHtml }], y);
     }
 
     if (content.currentLifePhase) {
@@ -316,23 +362,35 @@ window.ReportsPdfBuilder = (function () {
     }
 
     // All divisional chart DIAGRAMS (North/South per the Reports tab's
-    // Chart Style selector), including D1 and D9, each as a full-width
-    // image on its own page — built from the exact same data/render
+    // Chart Style selector) — built from the exact same data/render
     // functions as the Divisional Charts tab (js/ui.js, js/divisionalCharts.js).
+    // D1+D9 always share the first page, side by side; every other
+    // divisional chart is then paired two-per-page (a trailing single
+    // chart is centered alone on its own page).
     if (content.divisionalDiagramKeys && content.divisionalDiagramKeys.length && state.chart) {
       const { planets, ascendant } = state.chart;
       const names = (typeof DIVISIONAL_CHART_NAMES !== 'undefined') ? DIVISIONAL_CHART_NAMES : {};
-      for (const key of content.divisionalDiagramKeys) {
-        doc.addPage(); y = 20;
+      const allKeys = content.divisionalDiagramKeys.slice();
+      const primaryPair = ['D1', 'D9'].filter(k => allKeys.includes(k));
+      const restKeys = allKeys.filter(k => !primaryPair.includes(k));
+
+      const buildItem = async (key) => {
         let html = null;
         try { html = buildVargaChartHtml(key, content.chartStyle, planets, ascendant); } catch (e) { html = null; }
-        const title = `Divisional Chart ${names[key] || key} Diagram`;
-        if (html) {
-          y = await addChartImage(doc, title, html, y);
-        } else {
-          y = addHeading(doc, title, y);
-          y = addParagraph(doc, 'Chart diagram unavailable — see table.', y);
-        }
+        const title = key === 'D1' ? 'D1 (Rasi) Chart' : key === 'D9' ? 'D9 (Navamsa) Chart' : `Divisional Chart ${names[key] || key}`;
+        return { title, html };
+      };
+
+      if (primaryPair.length) {
+        doc.addPage(); y = 20;
+        const items = await Promise.all(primaryPair.map(buildItem));
+        y = await addChartImagePair(doc, items, y);
+      }
+
+      for (let i = 0; i < restKeys.length; i += 2) {
+        doc.addPage(); y = 20;
+        const items = await Promise.all(restKeys.slice(i, i + 2).map(buildItem));
+        y = await addChartImagePair(doc, items, y);
       }
     }
 
@@ -384,7 +442,7 @@ window.ReportsPdfBuilder = (function () {
                 sign => savStrengthClass(sav[SIGNS.indexOf(sign)]), 'bav-score-circle')
             : renderNorthIndianChart('Sarvashtakavarga', buildD1NorthIndian(planets, ascendant.longitude), sav, null,
                 signIndex => savFillColor(sav[signIndex]), BAV_CIRCLE_COLORS);
-          y = await addChartImage(doc, 'Sarvashtakavarga Chart Diagram (colored by strength)', html, y);
+          y = await addChartImagePair(doc, [{ title: 'Sarvashtakavarga Chart Diagram (colored by strength)', html }], y);
         } catch (e) { /* non-fatal — table above already shown */ }
       }
 
@@ -458,13 +516,6 @@ window.ReportsPdfBuilder = (function () {
       y = ensureRoom(doc, y, 20);
       y = addTable(doc, ['Date', 'Verdict', 'Score'], content.muhurtaScan.rows.map(r => [fmtDate(r.date), r.verdict || '—', r.score != null ? r.score : '—']), y,
         `Muhurta Scan (${content.muhurtaScan.activityId}, ${fmtDate(content.muhurtaScan.start)} to ${fmtDate(content.muhurtaScan.end)})`);
-    }
-
-    if (content.ruleProvenance && content.ruleProvenance.length) {
-      doc.addPage(); y = 20;
-      y = addHeading(doc, 'Rule Provenance Appendix', y);
-      y = addTable(doc, ['ID', 'Category', 'Provenance', 'Source'],
-        content.ruleProvenance.map(r => [r.id, r.category || '—', r.provenance + (r.provenance === 'needs_review' ? ' [NEEDS SOURCED RULE REVIEW]' : ''), r.source || '—']), y);
     }
 
     doc.addPage(); y = 20;
